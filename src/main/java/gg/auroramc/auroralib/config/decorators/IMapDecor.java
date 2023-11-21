@@ -8,6 +8,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface IMapDecor {
-    String value();
-    Class<?> valueType() default String.class;
+    String v();
 }

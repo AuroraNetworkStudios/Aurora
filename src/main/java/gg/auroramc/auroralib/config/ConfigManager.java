@@ -37,16 +37,18 @@ public final class ConfigManager {
 
         // Iterate over each field
         for(Field field : fields) {
+            if(field.isAnnotationPresent(IMapDecor.class)) {
+                IMapDecor mapping = field.getAnnotation(IMapDecor.class);
+                String key = mapping.v();
+                handleMapLoading(field, config, section.getConfigurationSection(key));
+                continue;
+            }
+
             // Skip fields that are not annotated with @IYamlMapping
             if(!field.isAnnotationPresent(IYamlMapping.class)) continue;
 
             if(field.isAnnotationPresent(IClassList.class)) {
                 handleClassListLoading(field, config, section);
-                continue;
-            }
-
-            if(field.isAnnotationPresent(IMapDecor.class)) {
-                handleMapLoading(field, config, section);
                 continue;
             }
 
@@ -142,12 +144,22 @@ public final class ConfigManager {
 
         Map<Object, Object> map = new HashMap<>();
 
+        if(section == null) {
+            try {
+                field.setAccessible(true);
+                field.set(config, map);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+
         for (String keyString : section.getKeys(false)) {
             Object mapKey = convertKey(keyType, keyString);
             if (mapKey == null) continue;
 
             Object mapValue;
-            if (isPrimitiveOrWrapper(valueType) || valueType == String.class) {
+            if (isPrimitiveOrWrapper(valueType)) {
                 mapValue = loadPrimitiveType(valueType, section, keyString);
             } else {
                 // If it's a custom class, we assume it has a no-arg constructor and use reflection to instantiate it.
@@ -198,7 +210,7 @@ public final class ConfigManager {
     private static boolean isPrimitiveOrWrapper(Class<?> type) {
         return type.isPrimitive() || type == Double.class || type == Float.class ||
                 type == Long.class || type == Integer.class || type == Short.class ||
-                type == Character.class || type == Byte.class || type == Boolean.class;
+                type == Character.class || type == Byte.class || type == Boolean.class || type == String.class;
     }
 
     private static Object loadPrimitiveType(Class<?> type, ConfigurationSection section, String key) {
@@ -214,6 +226,8 @@ public final class ConfigManager {
             return section.getLong(key);
         } else if(type == Float.class || type == float.class) {
             return ((Double) section.getDouble(key)).floatValue();
+        } else if(type == Character.class || type == char.class) {
+            return section.getString(key) != null && section.getString(key).length() > 0 ? section.getString(key).charAt(0) : null;
         }
         // Add more primitive types as needed
         return null;
