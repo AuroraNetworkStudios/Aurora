@@ -33,8 +33,8 @@ public class Chat {
      */
     public static void sendMessage(CommandSender sender, String message, Placeholder... placeholders) {
         message = Placeholder.execute(message + "", placeholders);
-        if(AuroraLib.isPAPIEnabled())
-            message = PlaceholderAPI.setPlaceholders((Player) sender, message);
+        if(AuroraLib.isPAPIEnabled() && sender instanceof Player player)
+            message = PlaceholderAPI.setPlaceholders(player, message);
         sender.sendMessage(translateColorCodes(message));
     }
 
