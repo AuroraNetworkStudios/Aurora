@@ -55,21 +55,9 @@ public final class ConfigManager {
             String key = mapping.v();
             if(debug) System.out.println( "trying to load " + key );
             try {
-                if(isInteger(field)) {
-                    if(debug) System.out.println( " | Given value is an integer" );
-                    Object number = section.getInt(key);
-                    setValue(field, config, number);
-                } else if(isDouble(field)) {
-                    if(debug) System.out.println( " | Given value is a Double" );
-                    Object number = section.getDouble(key);
-                    setValue(field, config, number);
-                } else if(isBoolean(field)) {
-                    if(debug) System.out.println( " | Given value is a Boolean" );
-                    Object number = section.getBoolean(key);
-                    setValue(field, config, number);
-                } else if(isFloat(field)) {
-                    if(debug) System.out.println( " | Given value is a Float" );
-                    Object number = ((Double) section.getDouble(key)).floatValue();
+                if(isPrimitiveOrWrapper(field.getType())) {
+                    if(debug) System.out.println( " | Given value is primitive type" );
+                    Object number = loadPrimitiveType(field.getType(), section, key);
                     setValue(field, config, number);
                 } else if(isChar(field)) {
                     if(debug) System.out.println( " | Given value is a char" );
@@ -78,10 +66,6 @@ public final class ConfigManager {
                 } else if(isList(field)) {
                     if(debug) System.out.println( " | Given value is a List" );
                     Object number = section.getList(key);
-                    setValue(field, config, number);
-                } else if(isString(field)) {
-                    if(debug) System.out.println( " | Given value is a String" );
-                    Object number = section.getString(key);
                     setValue(field, config, number);
                 } else if(isItemStack(field)) {
                     if(debug) System.out.println( " | Given value is an ItemStack" );
@@ -141,7 +125,7 @@ public final class ConfigManager {
     private static void handleMapLoading(Field field, Object config, ConfigurationSection section) {
         // Check if the field is a Map
         if (!Map.class.isAssignableFrom(field.getType())) {
-            System.out.println("Found @IYamlMap decorator but the field was not a Map!");
+            System.out.println("Found @IMapDecor decorator but the field was not a Map!");
             return;
         }
 
@@ -150,27 +134,37 @@ public final class ConfigManager {
 
         ParameterizedType parameterizedType = (ParameterizedType) genericType;
         Type[] typeArguments = parameterizedType.getActualTypeArguments();
-        if (typeArguments.length < 2) return;
+        if (typeArguments.length != 2) return;
 
-        Type valueType = ((ParameterizedType) typeArguments[1]).getActualTypeArguments()[0];
-        Map<String, List<Object>> map = new HashMap<>();
+        // Determine the types of the keys and values of the map
+        Class<?> keyType = (Class<?>) typeArguments[0];
+        Class<?> valueType = (Class<?>) typeArguments[1];
 
-        for (String key : section.getKeys(false)) {
-            List<?> list = section.getList(key);
-            List<Object> values = new ArrayList<>();
-            if(list == null) continue;
-            for (Object obj : list) {
-                if (valueType == Number.class && obj instanceof String) {
+        Map<Object, Object> map = new HashMap<>();
+
+        for (String keyString : section.getKeys(false)) {
+            Object mapKey = convertKey(keyType, keyString);
+            if (mapKey == null) continue;
+
+            Object mapValue;
+            if (isPrimitiveOrWrapper(valueType) || valueType == String.class) {
+                mapValue = loadPrimitiveType(valueType, section, keyString);
+            } else {
+                // If it's a custom class, we assume it has a no-arg constructor and use reflection to instantiate it.
+                ConfigurationSection subSection = section.getConfigurationSection(keyString);
+                if (subSection != null) {
                     try {
-                        values.add(Double.parseDouble((String) obj));
-                    } catch (NumberFormatException e) {
+                        mapValue = valueType.getDeclaredConstructor().newInstance();
+                        load(mapValue, subSection);
+                    } catch (ReflectiveOperationException e) {
                         e.printStackTrace();
+                        continue;
                     }
                 } else {
-                    values.add(obj);
+                    continue;
                 }
             }
-            map.put(key, values);
+            map.put(mapKey, mapValue);
         }
 
         try {
@@ -179,6 +173,50 @@ public final class ConfigManager {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+    }
+
+    private static Object convertKey(Class<?> keyType, String key) {
+        if (keyType == String.class) {
+            return key;
+        } else if (keyType == Integer.class || keyType == int.class) {
+            try {
+                return Integer.parseInt(key);
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        } else if (keyType == Long.class || keyType == long.class) {
+            try {
+                return Long.parseLong(key);
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        // Add more types as necessary
+        return null;
+    }
+
+    private static boolean isPrimitiveOrWrapper(Class<?> type) {
+        return type.isPrimitive() || type == Double.class || type == Float.class ||
+                type == Long.class || type == Integer.class || type == Short.class ||
+                type == Character.class || type == Byte.class || type == Boolean.class;
+    }
+
+    private static Object loadPrimitiveType(Class<?> type, ConfigurationSection section, String key) {
+        if (type == String.class) {
+            return section.getString(key);
+        } else if (type == Integer.class || type == int.class) {
+            return section.getInt(key);
+        } else if (type == Double.class || type == double.class) {
+            return section.getDouble(key);
+        } else if (type == Boolean.class || type == boolean.class) {
+            return section.getBoolean(key);
+        } else if (type == Long.class || type == long.class) {
+            return section.getLong(key);
+        } else if(type == Float.class || type == float.class) {
+            return ((Double) section.getDouble(key)).floatValue();
+        }
+        // Add more primitive types as needed
+        return null;
     }
 
     private static void handleClassListLoading(Field field, Object config, ConfigurationSection section) {
@@ -291,11 +329,11 @@ public final class ConfigManager {
                 isLong(field);
     }
 
-    private static void setValue(Field field, Object config, Object number) {
+    private static void setValue(Field field, Object config, Object value) {
         try {
 
             field.setAccessible(true);
-            field.set(config, number);
+            field.set(config, value);
 
         } catch (IllegalAccessException e) {
             e.printStackTrace();
