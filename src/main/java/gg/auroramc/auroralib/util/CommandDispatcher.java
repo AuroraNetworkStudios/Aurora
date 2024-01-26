@@ -18,7 +18,7 @@ public class CommandDispatcher {
             player.performCommand(cmd);
         } else if(command.startsWith("[console]")) {
             var cmd = removeFirstSpace(command.replace("[console]", ""));
-            if(AuroraLib.isPAPIEnabled()) cmd = PlaceholderAPI.setPlaceholders(player, command);
+            if(AuroraLib.isPAPIEnabled()) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
         } else {
             var cmd = AuroraLib.isPAPIEnabled() ? PlaceholderAPI.setPlaceholders(player, command) : command;
