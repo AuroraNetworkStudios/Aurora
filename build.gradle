@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 group = 'gg.auroramc'
@@ -50,3 +51,24 @@ processResources {
         expand props
     }
 }
+
+publishing {
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url "http://10.8.0.1:9091/repository/maven-releases/"
+            credentials {
+                username "aurora"
+                password "aurorapublish-!"
+            }
+        }
+    }
+    publications {
+        maven(MavenPublication) {
+            artifact("build/libs/AuroraLib-$version" + ".jar") {
+                extension 'jar'
+            }
+        }
+    }
+}
+
