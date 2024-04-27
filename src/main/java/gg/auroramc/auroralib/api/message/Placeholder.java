@@ -1,4 +1,6 @@
-package gg.auroramc.auroralib.message;
+package gg.auroramc.auroralib.api.message;
+
+import java.util.List;
 
 public class Placeholder {
     private final String key;
@@ -9,6 +11,7 @@ public class Placeholder {
         this.key = key;
         this.value = value;
     }
+
     public Placeholder(String key, double value) {
         this(key, numberFormat(value));
     }
@@ -16,6 +19,9 @@ public class Placeholder {
         this(key, numberFormat(value));
     }
     public Placeholder(String key, float value) {
+        this(key, numberFormat(value));
+    }
+    public Placeholder(String key, int value) {
         this(key, numberFormat(value));
     }
 
@@ -130,6 +136,17 @@ public class Placeholder {
     }
 
     /**
+     * Creates a new Placeholder instance with a given value.
+     *
+     * @param key   The key for the placeholder.
+     * @param value The value for the placeholder.
+     * @return The created Placeholder instance.
+     */
+    public static Placeholder of(String key, Integer value) {
+        return new Placeholder(key ,value);
+    }
+
+    /**
      * Executes placeholder replacement in the given text using the provided Placeholder objects.
      *
      * @param text        The text in which placeholder replacement will be performed.
@@ -139,6 +156,23 @@ public class Placeholder {
     public static String execute(String text, Placeholder... placeholders) {
         if(placeholders == null) return text;
         if(placeholders.length < 1) return text;
+
+        for(Placeholder placeholder : placeholders) {
+            text = placeholder.replace(text);
+        }
+        return text;
+    }
+
+    /**
+     * Executes placeholder replacement in the given text using the provided Placeholder objects.
+     *
+     * @param text        The text in which placeholder replacement will be performed.
+     * @param placeholders The Placeholder objects representing the placeholders to be replaced.
+     * @return The text with the placeholder replacements applied.
+     */
+    public static String execute(String text, List<Placeholder> placeholders) {
+        if(placeholders == null) return text;
+        if(placeholders.isEmpty()) return text;
 
         for(Placeholder placeholder : placeholders) {
             text = placeholder.replace(text);

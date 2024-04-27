@@ -1,4 +1,4 @@
-package gg.auroramc.auroralib.message;
+package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
 
@@ -19,10 +19,10 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(Player player, String message, Placeholder... placeholders) {
-        message = Placeholder.execute(message + "", placeholders);
+        message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled())
             message = PlaceholderAPI.setPlaceholders(player, message);
-        player.sendMessage(translateColorCodes(message));
+        player.sendMessage(AuroraLib.getMiniMessage().deserialize(translateColorCodes(message)));
     }
 
     /**
@@ -32,10 +32,10 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(CommandSender sender, String message, Placeholder... placeholders) {
-        message = Placeholder.execute(message + "", placeholders);
+        message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled() && sender instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
-        sender.sendMessage(translateColorCodes(message));
+        sender.sendMessage(AuroraLib.getMiniMessage().deserialize(translateColorCodes(message)));
     }
 
     /**
@@ -45,10 +45,10 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(HumanEntity entity, String message, Placeholder... placeholders) {
-        message = Placeholder.execute(message + "", placeholders);
+        message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled() && entity instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
-        entity.sendMessage(translateColorCodes(message));
+        entity.sendMessage(AuroraLib.getMiniMessage().deserialize(translateColorCodes(message)));
     }
 
     public static String translateColorCodes(String text) {
