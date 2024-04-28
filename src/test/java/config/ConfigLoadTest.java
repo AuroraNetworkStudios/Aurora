@@ -103,21 +103,21 @@ public class ConfigLoadTest {
     @BeforeEach
     public void setUp() {
         yaml = new YamlConfiguration();
-        yaml.set("simple_int", 10);
-        yaml.set("simple_string", "ExampleName");
-        yaml.set("simple_double", 12.5);
-        yaml.set("simple_boolean", true);
-        yaml.set("simple_long", 1L);
-        yaml.set("simple_float", (float) 1.5);
-        yaml.set("nested_object.long_nested_name", "Nested name");
-        yaml.set("list_string", List.of("one", "two", "three"));
-        yaml.set("list_integer", List.of(1, 2, 3));
-        yaml.set("list_double", List.of(1.5, 2.5, 3.5));
-        yaml.set("map_class_list", List.of(Map.of("key1", "value1", "key2", "value2", "key3", new NestedClass("longname"))));
-        yaml.set("nested_object_map.key1.long_nested_name", "longname");
-        yaml.set("nested_object_map.key2.long_nested_name", "longname2");
-        yaml.set("nested_object_map_int.1.long_nested_name", "longname");
-        yaml.set("nested_object_map_int.2.long_nested_name", "longname2");
+        yaml.set("simple-int", 10);
+        yaml.set("simple-string", "ExampleName");
+        yaml.set("simple-double", 12.5);
+        yaml.set("simple-boolean", true);
+        yaml.set("simple-long", 1L);
+        yaml.set("simple-float", (float) 1.5);
+        yaml.set("nested-object.long-nested-name", "Nested name");
+        yaml.set("list-string", List.of("one", "two", "three"));
+        yaml.set("list-integer", List.of(1, 2, 3));
+        yaml.set("list-double", List.of(1.5, 2.5, 3.5));
+        yaml.set("map-class-list", List.of(Map.of("key1", "value1", "key2", "value2", "key3", new NestedClass("longname"))));
+        yaml.set("nested-object-map.key1.long-nested-name", "longname");
+        yaml.set("nested-object-map.key2.long-nested-name", "longname2");
+        yaml.set("nested-object-map-int.1.long-nested-name", "longname");
+        yaml.set("nested-object-map-int.2.long-nested-name", "longname2");
     }
 
     @Test

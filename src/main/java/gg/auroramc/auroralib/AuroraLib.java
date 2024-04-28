@@ -8,6 +8,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+
 public final class AuroraLib extends JavaPlugin implements Listener {
 
     @Getter
@@ -22,7 +24,8 @@ public final class AuroraLib extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        libConfig = new Config(this, "config.yml");
+        saveDefaultConfig();
+        libConfig = new Config(new File(getDataFolder(), "config.yml"));
         menuManager = new MenuManager(this);
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) PAPIEnabled = true;
     }

@@ -1,39 +1,38 @@
 package gg.auroramc.auroralib.api.config;
 
+import gg.auroramc.auroralib.api.config.decorators.IgnoreField;
+import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
-public abstract class AuroraConfig extends AuroraYaml {
+public abstract class AuroraConfig {
+    @Getter
+    @IgnoreField
+    private final File file;
 
-    protected int configVersion = 1;
+    @IgnoreField
+    private final YamlConfiguration rawConfiguration;
 
-    public AuroraConfig(JavaPlugin plugin, String path) {
-        super(plugin, path);
+    public AuroraConfig(File file) {
+        this.file = file;
+        this.rawConfiguration = YamlConfiguration.loadConfiguration(file);
+        ConfigManager.load(this, rawConfiguration);
     }
 
-    @Override
-    protected void load() {
-        if (rawConfiguration.getInt("config_version") < getVersion()) {
-            ConfigManager.syncConfigurations(
-                    rawConfiguration,
-                    YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource(path), StandardCharsets.UTF_8))
-            );
-
-            try {
-                rawConfiguration.save(file);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to update config file " + file.getAbsolutePath());
-            }
-
-            ConfigManager.load(this, rawConfiguration);
-        } else {
-            ConfigManager.load(this, rawConfiguration);
-        }
+    public void saveChanges() {
+        ConfigManager.save(this, rawConfiguration, file);
     }
 
-    public abstract int getVersion();
+    public CompletableFuture<Void> saveChangesAsync() {
+        return CompletableFuture.supplyAsync(() -> {
+            ConfigManager.save(this, rawConfiguration, file);
+            return null;
+        });
+    }
+
+    public YamlConfiguration getRawConfig() {
+        return rawConfiguration;
+    }
 }
