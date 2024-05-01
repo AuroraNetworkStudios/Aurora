@@ -121,6 +121,7 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void handleEvent(InventoryCloseEvent e) {
+        AuroraLib.getMenuManager().getRefresher().remove(this);
         if (closeHandler != null) {
             this.closeHandler.accept(this, e);
         }
