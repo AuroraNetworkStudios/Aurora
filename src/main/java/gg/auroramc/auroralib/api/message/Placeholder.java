@@ -1,5 +1,6 @@
 package gg.auroramc.auroralib.api.message;
 
+import gg.auroramc.auroralib.api.util.BooleanSupplier;
 import gg.auroramc.auroralib.api.util.NumberSupplier;
 import gg.auroramc.auroralib.api.util.StringSupplier;
 import lombok.Getter;
@@ -45,11 +46,19 @@ public class Placeholder<T> {
         return new Placeholder<>(key, value);
     }
 
+    public static Placeholder<Boolean> of(String key, Boolean value) {
+        return new Placeholder<>(key, value);
+    }
+
     public static Placeholder<String> of(String key, StringSupplier supplier) {
         return new Placeholder<>(key, supplier);
     }
 
     public static Placeholder<Number> of(String key, NumberSupplier supplier) {
+        return new Placeholder<>(key, supplier);
+    }
+
+    public static Placeholder<Boolean> of(String key, BooleanSupplier supplier) {
         return new Placeholder<>(key, supplier);
     }
 
