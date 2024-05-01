@@ -1,14 +1,12 @@
 package gg.auroramc.auroralib.api.config;
 
 import gg.auroramc.auroralib.api.config.decorators.IgnoreField;
-import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class AuroraConfig {
-    @Getter
     @IgnoreField
     private final File file;
 

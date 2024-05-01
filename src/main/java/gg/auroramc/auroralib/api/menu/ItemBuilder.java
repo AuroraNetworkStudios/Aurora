@@ -48,6 +48,23 @@ public class ItemBuilder {
         return new ItemBuilder(config).defaultMaterial(Material.ARROW).defaultSlot(45);
     }
 
+    public static ItemStack filler(Material material, String name) {
+        if(material == Material.AIR) return new ItemStack(Material.AIR);
+        var item = new ItemStack(material);
+        var meta = item.getItemMeta();
+        meta.displayName(Text.component(name));
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public static ItemStack filler(Material material) {
+        return filler(material, " ");
+    }
+
+    public static ItemStack filler() {
+        return filler(Material.BLACK_STAINED_GLASS_PANE);
+    }
+
     public ItemBuilder enableRefreshing() {
         config.setRefresh(true);
         return this;
@@ -150,6 +167,10 @@ public class ItemBuilder {
     }
 
     public MenuItem build(Player player) {
+        return new MenuItem(player, this, toItemStack(player), config.getSlot());
+    }
+
+    public ItemStack toItemStack(Player player) {
         var item = new ItemStack(Material.valueOf(config.getMaterial()));
         item.setAmount(Math.max(config.getAmount(), 1));
 
@@ -232,8 +253,7 @@ public class ItemBuilder {
         }
 
         item.setItemMeta(meta);
-
-        return new MenuItem(player, this, item, config.getSlot());
+        return item;
     }
 
     public static String decodeSkinUrl(String base64Texture) {

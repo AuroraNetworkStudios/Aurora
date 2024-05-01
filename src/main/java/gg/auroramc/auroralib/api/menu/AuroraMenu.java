@@ -4,7 +4,6 @@ import gg.auroramc.auroralib.AuroraLib;
 import gg.auroramc.auroralib.api.message.Placeholder;
 import gg.auroramc.auroralib.api.message.Text;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
@@ -12,8 +11,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -21,15 +19,14 @@ public class AuroraMenu implements InventoryHolder {
     private final Inventory inventory;
     private ItemStack filler;
     private final Map<Integer, MenuEntry> menuItems = new HashMap<>();
+    private final Map<Integer, Consumer<InventoryClickEvent>> freeSlotHandlers = new HashMap<>();
+    private Set<Integer> freeSlots;
+    private List<ItemStack> freeItems;
 
-    public AuroraMenu(Player player, String title, int size, boolean refreshEnabled,  Placeholder... placeholders) {
+    public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder... placeholders) {
         this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
-        var filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        var fillerMeta = filler.getItemMeta();
-        fillerMeta.setDisplayName(" ");
-        filler.setItemMeta(fillerMeta);
-        this.filler = filler;
-        if(refreshEnabled) {
+        this.filler = ItemBuilder.filler();
+        if (refreshEnabled) {
             AuroraLib.getMenuManager().getRefresher().add(this);
         }
     }
@@ -46,13 +43,54 @@ public class AuroraMenu implements InventoryHolder {
         this.menuItems.put(item.getSlot(), new MenuEntry(item));
     }
 
+    public void freeSlotHandler(int slot, Consumer<InventoryClickEvent> handler) {
+        this.freeSlotHandlers.put(slot, handler);
+    }
+
     public AuroraMenu addFiller(ItemStack filler) {
         this.filler = filler;
         return this;
     }
 
+    public AuroraMenu freeSlots(List<Integer> slots) {
+        if (freeSlots == null) {
+            freeSlots = new HashSet<>(slots.size());
+        }
+        freeSlots.addAll(slots);
+        return this;
+    }
+
+    public AuroraMenu freeSlots(int start, int end) {
+        if (freeSlots == null) {
+            freeSlots = new HashSet<>(end - start);
+        }
+        for (int i = start; i < end; i++) {
+            freeSlots.add(i);
+        }
+        return this;
+    }
+
+    public AuroraMenu freeSlots(int end) {
+        return freeSlots(0, end);
+    }
+
+    public AuroraMenu setFreeSlotsContent(List<ItemStack> items) {
+        if (freeItems == null) {
+            freeItems = new ArrayList<>(items.size());
+        }
+        freeItems.addAll(items);
+        return this;
+    }
+
     public void handleEvent(InventoryClickEvent e) {
-        e.setCancelled(true);
+        if (freeSlots != null && freeSlots.contains(e.getSlot())) {
+            e.setCancelled(false);
+            if (freeSlotHandlers.containsKey(e.getSlot())) {
+                freeSlotHandlers.get(e.getSlot()).accept(e);
+            }
+        } else {
+            e.setCancelled(true);
+        }
 
         if (!(e.getWhoClicked() instanceof Player player)) return;
 
@@ -77,8 +115,16 @@ public class AuroraMenu implements InventoryHolder {
     public void open(Player player) {
         AuroraLib.getMenuManager().getDupeFixer().getMarker().mark(filler);
 
+        int j = 0;
         for (int i = 0; i < inventory.getSize(); i++) {
-            inventory.setItem(i, filler);
+            if (freeSlots != null && freeSlots.contains(i)) {
+                if (freeItems != null && j < freeItems.size()) {
+                    inventory.setItem(i, freeItems.get(j));
+                    j++;
+                }
+            } else {
+                inventory.setItem(i, filler);
+            }
         }
 
         for (var menuEntry : menuItems.values()) {
