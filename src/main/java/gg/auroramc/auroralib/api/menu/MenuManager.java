@@ -20,7 +20,7 @@ public class MenuManager implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onMenuClick(InventoryClickEvent event) {
         if(event.getInventory().getHolder() instanceof AuroraMenu menu) {
             event.setCancelled(true);
@@ -28,9 +28,10 @@ public class MenuManager implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onMenuClick(InventoryCloseEvent event) {
         if(event.getInventory().getHolder() instanceof AuroraMenu menu) {
+            menu.handleEvent(event);
             refresher.remove(menu);
         }
     }
