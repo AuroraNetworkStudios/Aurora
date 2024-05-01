@@ -6,12 +6,14 @@ import gg.auroramc.auroralib.api.message.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,6 +24,7 @@ public class AuroraMenu implements InventoryHolder {
     private final Map<Integer, Consumer<InventoryClickEvent>> freeSlotHandlers = new HashMap<>();
     private Set<Integer> freeSlots;
     private List<ItemStack> freeItems;
+    private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder... placeholders) {
         this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
@@ -29,6 +32,11 @@ public class AuroraMenu implements InventoryHolder {
         if (refreshEnabled) {
             AuroraLib.getMenuManager().getRefresher().add(this);
         }
+    }
+
+    public AuroraMenu onClose(BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler) {
+        this.closeHandler = closeHandler;
+        return this;
     }
 
     public void addItem(MenuItem item, Function<InventoryClickEvent, MenuAction> handler) {
@@ -109,6 +117,12 @@ public class AuroraMenu implements InventoryHolder {
                 }
                 player.updateInventory();
             }
+        }
+    }
+
+    public void handleEvent(InventoryCloseEvent e) {
+        if (closeHandler != null) {
+            this.closeHandler.accept(this, e);
         }
     }
 
