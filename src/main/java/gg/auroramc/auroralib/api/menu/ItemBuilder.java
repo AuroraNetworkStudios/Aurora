@@ -22,13 +22,14 @@ import org.bukkit.potion.PotionType;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ItemBuilder {
     @Getter
     private final ItemConfig config;
 
-    private final List<Placeholder> placeholders = new ArrayList<>();
-    private Function<List<Placeholder>, List<Component>> loreBuilder = null;
+    private final List<Placeholder<?>> placeholders = new ArrayList<>();
+    private Supplier<List<Component>> loreBuilder = null;
     private final Collection<PotionEffect> potionEffects = new ArrayList<>();
     private Color potionColor = null;
 
@@ -124,7 +125,7 @@ public class ItemBuilder {
         return this;
     }
 
-    public ItemBuilder loreCompute(Function<List<Placeholder>, List<Component>> builder) {
+    public ItemBuilder loreCompute(Supplier<List<Component>> builder) {
         loreBuilder = builder;
         return this;
     }
@@ -156,12 +157,12 @@ public class ItemBuilder {
         return this;
     }
 
-    public ItemBuilder placeholder(Placeholder placeholder) {
+    public ItemBuilder placeholder(Placeholder<?> placeholder) {
         this.placeholders.add(placeholder);
         return this;
     }
 
-    public ItemBuilder placeholder(List<Placeholder> placeholders) {
+    public ItemBuilder placeholder(List<Placeholder<?>> placeholders) {
         this.placeholders.addAll(placeholders);
         return this;
     }
@@ -187,7 +188,7 @@ public class ItemBuilder {
         }
 
         if (loreBuilder != null) {
-            meta.lore(loreBuilder.apply(this.placeholders));
+            meta.lore(loreBuilder.get());
         }
 
         if (config.getDurability() != null && meta instanceof Damageable damageable) {

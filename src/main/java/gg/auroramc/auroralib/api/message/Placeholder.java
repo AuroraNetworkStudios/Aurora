@@ -1,44 +1,24 @@
 package gg.auroramc.auroralib.api.message;
 
+import gg.auroramc.auroralib.api.util.NumberSupplier;
+import gg.auroramc.auroralib.api.util.StringSupplier;
+import lombok.Getter;
+
 import java.util.List;
+import java.util.function.Supplier;
 
-public class Placeholder {
+public class Placeholder<T> {
+    @Getter
     private final String key;
-    private final String value;
+    private final Supplier<T> valueSupplier;
 
-    // constructors
-    public Placeholder(String key, String value) {
+    private Placeholder(String key, T value) {
+        this(key, () -> value);
+    }
+
+    private Placeholder(String key, Supplier<T> supplier) {
         this.key = key;
-        this.value = value;
-    }
-
-    public Placeholder(String key, double value) {
-        this(key, numberFormat(value));
-    }
-    public Placeholder(String key, long value) {
-        this(key, numberFormat(value));
-    }
-    public Placeholder(String key, float value) {
-        this(key, numberFormat(value));
-    }
-    public Placeholder(String key, int value) {
-        this(key, numberFormat(value));
-    }
-
-    /**
-     * Formats a number as a String.
-     * If the number is a whole number, it is formatted without decimal places.
-     * If the number has decimal places, it is formatted with the appropriate decimal places.
-     *
-     * @param num The number to format.
-     * @return The formatted number as a String.
-     */
-    private static String numberFormat(double num) {
-        if (num == Math.floor(num)) {
-            return String.format("%d", (long) num);
-        } else {
-            return String.format("%s", num);
-        }
+        this.valueSupplier = supplier;
     }
 
     /**
@@ -48,103 +28,31 @@ public class Placeholder {
      * @return The modified text with replacements.
      */
     public String replace(String text) {
-        return text.replace(key, value);
+        var value = this.valueSupplier.get();
+        if(value instanceof String val) {
+            return text.replace(key, val);
+        } else if(value instanceof Number val) {
+            return text.replace(key, String.valueOf(val));
+        }
+        return text.replace(key, valueSupplier.get().toString());
     }
 
-    /**
-     * Checks if the given text contains the specified key string.
-     *
-     * @param text The text to check for the presence of the key.
-     * @return True if the key is found in the text, false otherwise.
-     */
-    public Boolean has(String text) {
-        return text.contains(key);
+    public static Placeholder<String> of(String key, String value) {
+        return new Placeholder<>(key, value);
     }
 
-    /**
-     * Checks if the given text contains the specified key string, ignoring the case.
-     *
-     * @param text The text to check for the presence of the key.
-     * @return True if the key is found in the text (ignoring case), false otherwise.
-     */
-    public Boolean hasIgnoreCase(String text) {
-        return text.toLowerCase().contains(key.toLowerCase());
+    public static Placeholder<Number> of(String key, Number value) {
+        return new Placeholder<>(key, value);
     }
 
-    /**
-     * Removes occurrences of the specified key string from the given text.
-     *
-     * @param text The text from which the key occurrences will be removed.
-     * @return The modified text with the key occurrences removed.
-     */
-    public String remove(String text) {
-        return text.replaceAll(key, "");
+    public static Placeholder<String> of(String key, StringSupplier supplier) {
+        return new Placeholder<>(key, supplier);
     }
 
-    /**
-     * Removes occurrences of the specified key string from the given text, ignoring the case.
-     *
-     * @param text The text from which the key occurrences will be removed (ignoring case).
-     * @return The modified text with the key occurrences removed (ignoring case).
-     */
-    public String removeIgnoreCase(String text) {
-        return text.toLowerCase().replaceAll(key.toLowerCase(), "");
+    public static Placeholder<Number> of(String key, NumberSupplier supplier) {
+        return new Placeholder<>(key, supplier);
     }
 
-    /**
-     * Creates a new Placeholder instance with a given value.
-     *
-     * @param key   The key for the placeholder.
-     * @param value The String value for the placeholder.
-     * @return The created Placeholder instance.
-     */
-    public static Placeholder of(String key, String value) {
-        return new Placeholder(key ,value);
-    }
-
-    /**
-     * Creates a new Placeholder instance with a given value.
-     *
-     * @param key   The key for the placeholder.
-     * @param value The value for the placeholder.
-     * @return The created Placeholder instance.
-     */
-    public static Placeholder of(String key, Double value) {
-        return new Placeholder(key ,value);
-    }
-
-    /**
-     * Creates a new Placeholder instance with a given value.
-     *
-     * @param key   The key for the placeholder.
-     * @param value The value for the placeholder.
-     * @return The created Placeholder instance.
-     */
-    public static Placeholder of(String key, Float value) {
-        return new Placeholder(key ,value);
-    }
-
-    /**
-     * Creates a new Placeholder instance with a given value.
-     *
-     * @param key   The key for the placeholder.
-     * @param value The value for the placeholder.
-     * @return The created Placeholder instance.
-     */
-    public static Placeholder of(String key, Long value) {
-        return new Placeholder(key ,value);
-    }
-
-    /**
-     * Creates a new Placeholder instance with a given value.
-     *
-     * @param key   The key for the placeholder.
-     * @param value The value for the placeholder.
-     * @return The created Placeholder instance.
-     */
-    public static Placeholder of(String key, Integer value) {
-        return new Placeholder(key ,value);
-    }
 
     /**
      * Executes placeholder replacement in the given text using the provided Placeholder objects.
@@ -153,11 +61,11 @@ public class Placeholder {
      * @param placeholders The Placeholder objects representing the placeholders to be replaced.
      * @return The text with the placeholder replacements applied.
      */
-    public static String execute(String text, Placeholder... placeholders) {
+    public static String execute(String text, Placeholder<?>... placeholders) {
         if(placeholders == null) return text;
         if(placeholders.length < 1) return text;
 
-        for(Placeholder placeholder : placeholders) {
+        for(Placeholder<?> placeholder : placeholders) {
             text = placeholder.replace(text);
         }
         return text;
@@ -170,28 +78,25 @@ public class Placeholder {
      * @param placeholders The Placeholder objects representing the placeholders to be replaced.
      * @return The text with the placeholder replacements applied.
      */
-    public static String execute(String text, List<Placeholder> placeholders) {
+    public static String execute(String text, List<Placeholder<?>> placeholders) {
         if(placeholders == null) return text;
         if(placeholders.isEmpty()) return text;
 
-        for(Placeholder placeholder : placeholders) {
+        for(Placeholder<?> placeholder : placeholders) {
             text = placeholder.replace(text);
         }
         return text;
     }
 
-    public String getKey() {
-        return key;
-    }
-    public String getValue() {
-        return value;
+    public T getValue() {
+        return valueSupplier.get();
     }
 
     @Override
     public String toString() {
         return "Placeholder{" +
                 "key='" + key + '\'' +
-                ", value='" + value + '\'' +
+                ", value='" + valueSupplier.get() + '\'' +
                 '}';
     }
 }

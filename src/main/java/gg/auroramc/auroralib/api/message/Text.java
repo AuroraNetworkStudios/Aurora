@@ -9,11 +9,11 @@ import java.util.List;
 
 public class Text {
 
-    public static String build(String text, Placeholder... placeholders) {
+    public static String build(String text, Placeholder<?>... placeholders) {
         return Chat.translateColorCodes(Placeholder.execute(text, placeholders));
     }
 
-    public static String build(Player player, String text, Placeholder... placeholders) {
+    public static String build(Player player, String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
         if(AuroraLib.isPAPIEnabled()) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
@@ -21,7 +21,7 @@ public class Text {
         return Chat.translateColorCodes(msg);
     }
 
-    public static Component component(Player player, String text, Placeholder... placeholders) {
+    public static Component component(Player player, String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
         if(AuroraLib.isPAPIEnabled()) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
@@ -29,7 +29,7 @@ public class Text {
         return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
     }
 
-    public static Component component(Player player, String text, List<Placeholder> placeholders) {
+    public static Component component(Player player, String text, List<Placeholder<?>> placeholders) {
         var msg = Placeholder.execute(text, placeholders);
         if(AuroraLib.isPAPIEnabled()) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
@@ -37,12 +37,12 @@ public class Text {
         return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
     }
 
-    public static Component component(String text, Placeholder... placeholders) {
+    public static Component component(String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
         return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
     }
 
-    public static Component component(String text, List<Placeholder> placeholders) {
+    public static Component component(String text, List<Placeholder<?>> placeholders) {
         var msg = Placeholder.execute(text, placeholders);
         return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
     }
