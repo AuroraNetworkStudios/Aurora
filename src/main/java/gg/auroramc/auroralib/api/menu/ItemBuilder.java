@@ -21,7 +21,6 @@ import org.bukkit.potion.PotionType;
 
 import java.net.URL;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ItemBuilder {
@@ -32,9 +31,14 @@ public class ItemBuilder {
     private Supplier<List<Component>> loreBuilder = null;
     private final Collection<PotionEffect> potionEffects = new ArrayList<>();
     private Color potionColor = null;
+    private ItemStack item;
 
     private ItemBuilder(ItemConfig config) {
         this.config = new ItemConfig(config);
+    }
+    private ItemBuilder(ItemConfig config, ItemStack item) {
+        this.config = new ItemConfig(config);
+        this.item = item.clone();
     }
 
     public static ItemBuilder of(ItemConfig config) {
@@ -47,6 +51,10 @@ public class ItemBuilder {
 
     public static ItemBuilder back(ItemConfig config) {
         return new ItemBuilder(config).defaultMaterial(Material.ARROW).defaultSlot(45);
+    }
+
+    public static ItemBuilder item(ItemStack item) {
+        return new ItemBuilder(new ItemConfig()).defaultMaterial(Material.ARROW).defaultSlot(45);
     }
 
     public static ItemStack filler(Material material, String name) {
@@ -168,11 +176,19 @@ public class ItemBuilder {
     }
 
     public MenuItem build(Player player) {
-        return new MenuItem(player, this, toItemStack(player), config.getSlot());
+        if(item == null) {
+            return new MenuItem(player, this, toItemStack(player), config.getSlot());
+        } else {
+            return new MenuItem(player, this, toItemStack(item, player), config.getSlot());
+        }
     }
 
     public ItemStack toItemStack(Player player) {
         var item = new ItemStack(Material.valueOf(config.getMaterial()));
+        return toItemStack(item, player);
+    }
+
+    public ItemStack toItemStack(ItemStack item, Player player) {
         item.setAmount(Math.max(config.getAmount(), 1));
 
         var meta = item.getItemMeta();
