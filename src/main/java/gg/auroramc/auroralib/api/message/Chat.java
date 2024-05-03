@@ -98,6 +98,29 @@ public class Chat {
     }
 
     public static String translateToMM(String text) {
+        String message = translateHex(text);
+        return legacyCodesToMiniMessage(message);
+    }
+
+    public static String translateEverythingToMiniMessage(String text) {
+        String message = translateHex(text);
+
+        Pattern legacyHexPattern = Pattern.compile("§x§([A-Fa-f0-9])§([A-Fa-f0-9])§([A-Fa-f0-9])§([A-Fa-f0-9])§([A-Fa-f0-9])§([A-Fa-f0-9])");
+        Matcher matcher = legacyHexPattern.matcher(message);
+
+        while (matcher.find()) {
+            String colorCode = matcher.group(1) + matcher.group(2) + matcher.group(3) + matcher.group(4) + matcher.group(5) + matcher.group(6);
+            message = message.replace(
+                    "§x§" + matcher.group(1) + "§" + matcher.group(2) + "§" + matcher.group(3) + "§" + matcher.group(4) + "§" + matcher.group(5) + "§" + matcher.group(6),
+                    "<#" + colorCode + ">");
+        }
+
+        message = message.replaceAll("§", "&");
+
+        return legacyCodesToMiniMessage(message);
+    }
+
+    private static String translateHex(String text) {
         String message = text;
 
         Pattern hexPattern = Pattern.compile("&#([A-Fa-f0-9]{6})");
@@ -108,7 +131,7 @@ public class Chat {
             message = message.replace("&#" + colorCode, "<#" + colorCode + ">");
         }
 
-        Pattern bracketHexPattern = Pattern.compile("\\{#([A-Fa-f0-9]{6})\\}");
+        Pattern bracketHexPattern = Pattern.compile("\\{#([A-Fa-f0-9]{6})}");
         matcher = bracketHexPattern.matcher(message);
 
         while (matcher.find()) {
@@ -116,6 +139,6 @@ public class Chat {
             message = message.replace("{#" + colorCode + "}", "<#" + colorCode + ">");
         }
 
-        return legacyCodesToMiniMessage(message);
+        return message;
     }
 }
