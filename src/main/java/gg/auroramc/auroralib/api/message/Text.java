@@ -26,7 +26,7 @@ public class Text {
         if(AuroraLib.isPAPIEnabled()) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
-        return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
+        return AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg));
     }
 
     public static Component component(Player player, String text, List<Placeholder<?>> placeholders) {
@@ -34,16 +34,16 @@ public class Text {
         if(AuroraLib.isPAPIEnabled()) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
-        return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
+        return AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg));
     }
 
     public static Component component(String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
-        return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
+        return AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg));
     }
 
     public static Component component(String text, List<Placeholder<?>> placeholders) {
         var msg = Placeholder.execute(text, placeholders);
-        return AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg));
+        return AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg));
     }
 }

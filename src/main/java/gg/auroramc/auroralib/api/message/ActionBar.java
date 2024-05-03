@@ -11,9 +11,9 @@ public class ActionBar {
 
     public static void send(Player player, String msg) {
         if(AuroraLib.isPAPIEnabled()) {
-            player.sendActionBar(AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(PlaceholderAPI.setPlaceholders(player, msg))));
+            player.sendActionBar(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(PlaceholderAPI.setPlaceholders(player, msg))));
         } else {
-            player.sendActionBar(AuroraLib.getMiniMessage().deserialize(Chat.translateColorCodes(msg)));
+            player.sendActionBar(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));
         }
     }
 }

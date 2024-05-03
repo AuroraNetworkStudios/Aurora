@@ -12,10 +12,12 @@ public class SkullConfig {
     @Setter
     private String url;
 
-    public SkullConfig() {}
+    public SkullConfig() {
+    }
 
     public SkullConfig(SkullConfig other) {
+        if (other == null) return;
         this.base64 = other.base64;
         this.url = other.url;
     }
- }
+}

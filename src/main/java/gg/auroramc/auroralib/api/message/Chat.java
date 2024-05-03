@@ -2,6 +2,7 @@ package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
 
+import gg.auroramc.auroralib.api.util.TextUtil;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -12,6 +13,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Chat {
+    private static final String[] LEGACY_CODES = {
+            "&0", "&1", "&2", "&3", "&4", "&5", "&6", "&7", "&8", "&9",
+            "&a", "&b", "&c", "&d", "&e", "&f",
+            "&k", "&l", "&m", "&n", "&o", "&r"
+    };
+    private static final String[] MINI_MESSAGE_CODES = {
+            "<black>", "<dark_blue>", "<dark_green>", "<dark_aqua>", "<dark_red>", "<dark_purple>", "<gold>", "<gray>", "<dark_gray>", "<blue>",
+            "<green>", "<aqua>", "<red>", "<light_purple>", "<yellow>", "<white>",
+            "<obfuscated>", "<bold>", "<strikethrough>", "<underline>", "<italic>", "<reset>"
+    };
+
     /**
      * Sends a translated color message to a player.
      *
@@ -79,5 +91,31 @@ public class Chat {
         }
 
         return ChatColor.translateAlternateColorCodes('&', message);
+    }
+
+    public static String legacyCodesToMiniMessage(String input) {
+        return TextUtil.replaceEach(input, LEGACY_CODES, MINI_MESSAGE_CODES, false, 0);
+    }
+
+    public static String translateToMM(String text) {
+        String message = text;
+
+        Pattern hexPattern = Pattern.compile("&#([A-Fa-f0-9]{6})");
+        Matcher matcher = hexPattern.matcher(message);
+
+        while (matcher.find()) {
+            String colorCode = matcher.group(1);
+            message = message.replace("&#" + colorCode, "<#" + colorCode + ">");
+        }
+
+        Pattern bracketHexPattern = Pattern.compile("\\{#([A-Fa-f0-9]{6})\\}");
+        matcher = bracketHexPattern.matcher(message);
+
+        while (matcher.find()) {
+            String colorCode = matcher.group(1);
+            message = message.replace("{#" + colorCode + "}", "<#" + colorCode + ">");
+        }
+
+        return legacyCodesToMiniMessage(message);
     }
 }

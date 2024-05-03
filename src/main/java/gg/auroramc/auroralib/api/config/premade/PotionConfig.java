@@ -19,6 +19,7 @@ public class PotionConfig {
     public PotionConfig() {}
 
     public PotionConfig(PotionConfig other) {
+        if(other == null) return;
         this.type = other.type;
         this.extended = other.extended;
         this.upgraded = other.upgraded;
