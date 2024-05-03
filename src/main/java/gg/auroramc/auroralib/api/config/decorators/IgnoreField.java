@@ -1,4 +1,4 @@
-package gg.auroramc.auroralib.config.decorators;
+package gg.auroramc.auroralib.api.config.decorators;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,5 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface IMapDecor {
-    String v();
+public @interface IgnoreField {
 }
