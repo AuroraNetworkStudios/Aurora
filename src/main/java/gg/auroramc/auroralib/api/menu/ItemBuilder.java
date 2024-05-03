@@ -1,5 +1,6 @@
 package gg.auroramc.auroralib.api.menu;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -32,6 +33,7 @@ public class ItemBuilder {
     private final Collection<PotionEffect> potionEffects = new ArrayList<>();
     private Color potionColor = null;
     private ItemStack item;
+    private PlayerProfile playerProfile;
 
     private ItemBuilder(ItemConfig config) {
         this.config = new ItemConfig(config);
@@ -54,7 +56,7 @@ public class ItemBuilder {
     }
 
     public static ItemBuilder item(ItemStack item) {
-        return new ItemBuilder(new ItemConfig()).defaultMaterial(Material.ARROW).defaultSlot(45);
+        return new ItemBuilder(new ItemConfig(), item);
     }
 
     public static ItemStack filler(Material material, String name) {
@@ -157,11 +159,7 @@ public class ItemBuilder {
 
     public ItemBuilder setPlayerHead(Player player) {
         config.setMaterial(Material.PLAYER_HEAD.name());
-        if (config.getSkull() == null) {
-            config.setSkull(new SkullConfig());
-        }
-        if (player.getPlayerProfile().getTextures().getSkin() == null) return this;
-        config.getSkull().setUrl(player.getPlayerProfile().getTextures().getSkin().toString());
+        playerProfile = player.getPlayerProfile();
         return this;
     }
 
@@ -244,12 +242,17 @@ public class ItemBuilder {
             }
 
             if (url != null) {
-                var profile = Bukkit.createProfile(UUID.randomUUID());
+                // If you don't use these profile methods, than it won't work for some reason
+                var profile = Bukkit.createPlayerProfile(UUID.randomUUID());
                 try {
                     profile.getTextures().setSkin(new URL(url));
-                    skullMeta.setPlayerProfile(profile);
+                    skullMeta.setOwnerProfile(profile);
                 } catch (Exception ignored) {
                 }
+            }
+
+            if(playerProfile != null) {
+                skullMeta.setPlayerProfile(playerProfile);
             }
         }
 

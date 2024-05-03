@@ -30,7 +30,7 @@ public class MenuRefresher {
     public void remove(AuroraMenu menu) {
         menus.remove(menu);
 
-        if(menus.isEmpty()) {
+        if(menus.isEmpty() && refreshTask != null) {
             refreshTask.cancel();
             refreshTask = null;
         }

@@ -30,11 +30,11 @@ public class Chat {
      * @param player  The player to send the message to.
      * @param message The message to be sent, possibly containing color codes.
      */
-    public static void sendMessage(Player player, String message, Placeholder... placeholders) {
+    public static void sendMessage(Player player, String message, Placeholder<?>... placeholders) {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled())
             message = PlaceholderAPI.setPlaceholders(player, message);
-        player.sendMessage(AuroraLib.getMiniMessage().deserialize(translateColorCodes(message)));
+        player.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     /**
@@ -43,11 +43,11 @@ public class Chat {
      * @param sender  The command sender to send the message to.
      * @param message The message to be sent, possibly containing color codes.
      */
-    public static void sendMessage(CommandSender sender, String message, Placeholder... placeholders) {
+    public static void sendMessage(CommandSender sender, String message, Placeholder<?>... placeholders) {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled() && sender instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
-        sender.sendMessage(AuroraLib.getMiniMessage().deserialize(translateColorCodes(message)));
+        sender.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     /**
@@ -56,11 +56,11 @@ public class Chat {
      * @param entity       The HumanEntity to send the message to.
      * @param message The message to be sent, possibly containing color codes.
      */
-    public static void sendMessage(HumanEntity entity, String message, Placeholder... placeholders) {
+    public static void sendMessage(HumanEntity entity, String message, Placeholder<?>... placeholders) {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled() && entity instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
-        entity.sendMessage(AuroraLib.getMiniMessage().deserialize(translateColorCodes(message)));
+        entity.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     public static String translateColorCodes(String text) {
