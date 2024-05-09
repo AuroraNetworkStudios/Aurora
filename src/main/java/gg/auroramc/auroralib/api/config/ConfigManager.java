@@ -306,6 +306,23 @@ public final class ConfigManager {
                         }
                         section.set(key, complexList); // Set the serialized list of maps
                     }
+                } else if (Set.class.isAssignableFrom(field.getType())) {
+                    Set<?> set = (Set<?>) fieldValue;
+                    // Check if the list's generic type is primitive or wrapper
+                    if (!set.isEmpty() && isPrimitiveOrWrapper(set.stream().findFirst().get().getClass())) {
+                        section.set(key, new ArrayList<>(set)); // Directly set primitive lists
+                    } else {
+                        // Handle list of complex objects
+                        List<Map<String, Object>> complexList = new ArrayList<>();
+                        for (Object elem : set) {
+                            if (elem != null) {
+                                Map<String, Object> elemMap = new HashMap<>();
+                                saveObject(elem, section.createSection(key)); // Recursively save complex object into a map
+                                complexList.add(elemMap);
+                            }
+                        }
+                        section.set(key, complexList); // Set the serialized list of maps
+                    }
                 } else if (Map.class.isAssignableFrom(field.getType())) {
                     Map<?, ?> map = (Map<?, ?>) fieldValue;
                     for (Map.Entry<?, ?> entry : map.entrySet()) {
