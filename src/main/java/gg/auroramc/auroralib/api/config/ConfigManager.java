@@ -28,7 +28,7 @@ public final class ConfigManager {
     public static <T> T load(T config, ConfigurationSection section) {
         Field[] fields = config.getClass().getDeclaredFields();
         for (Field field : fields) {
-            if(field.isAnnotationPresent(IgnoreField.class)) continue;
+            if (field.isAnnotationPresent(IgnoreField.class)) continue;
 
             field.setAccessible(true);
             String key = serializeKey(field.getName());
@@ -38,6 +38,8 @@ public final class ConfigManager {
                     handleMapLoading(field, config, section.getConfigurationSection(key));
                 } else if (List.class.isAssignableFrom(field.getType())) {
                     handleListLoading(field, config, section, key);
+                } else if (Set.class.isAssignableFrom(field.getType())) {
+                    handleSetLoading(field, config, section, key);
                 } else if (isPrimitiveOrWrapper(field.getType())) {
                     Object value = loadPrimitiveType(config, field, section, key);
                     field.set(config, value);
@@ -75,10 +77,10 @@ public final class ConfigManager {
 
         Map<Object, Object> map = new HashMap<>();
 
-        if(section == null) {
+        if (section == null) {
             try {
                 field.setAccessible(true);
-                if(field.get(config) == null) field.set(config, map);
+                if (field.get(config) == null) field.set(config, map);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -121,9 +123,9 @@ public final class ConfigManager {
     private static void handleListLoading(Field field, Object config, ConfigurationSection section, String key) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         List<?> listSection = section.getList(key);
         if (listSection == null) {
-            if(field.get(config) == null) field.set(config, new ArrayList<>());
+            if (field.get(config) == null) field.set(config, new ArrayList<>());
             return;
-        };
+        }
 
         Type genericType = field.getGenericType();
         if (!(genericType instanceof ParameterizedType)) return;
@@ -161,6 +163,49 @@ public final class ConfigManager {
         field.set(config, list);
     }
 
+    private static void handleSetLoading(Field field, Object config, ConfigurationSection section, String key) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        List<?> listSection = section.getList(key);
+        if (listSection == null) {
+            if (field.get(config) == null) field.set(config, new HashSet<>());
+            return;
+        }
+
+        Type genericType = field.getGenericType();
+        if (!(genericType instanceof ParameterizedType)) return;
+
+        ParameterizedType parameterizedType = (ParameterizedType) genericType;
+        Type typeArgument = parameterizedType.getActualTypeArguments()[0];
+        if (!(typeArgument instanceof Class<?>)) return;
+        Class<?> itemType = (Class<?>) typeArgument;
+
+        Set<Object> list = new HashSet<>();
+        for (Object elem : listSection) {
+            if (elem instanceof Map) {
+                // Handle complex object types
+                Map<?, ?> subSection = (Map<?, ?>) elem;
+                Object item = itemType.getDeclaredConstructor().newInstance();
+
+                for (var innerField : itemType.getDeclaredFields()) {
+                    var ifKey = serializeKey(innerField.getName());
+                    innerField.setAccessible(true);
+                    var sec = subSection.get(ifKey);
+                    if (sec instanceof ConfigurationSection) {
+                        load(item, ((ConfigurationSection) sec).getConfigurationSection(ifKey));
+                    }
+
+                    innerField.set(item, sec);
+                }
+
+                // Assuming there's a load method that handles loading an object of Class<?> from a ConfigurationSection
+                list.add(item);
+            } else if (isPrimitiveOrWrapper(itemType)) {
+                // Directly add primitives or their wrappers if elem matches expected type
+                list.add(loadPrimitiveType(itemType, elem));
+            }
+        }
+        field.set(config, list);
+    }
+
 
     public static String serializeKey(String fieldName) {
         return fieldName.replaceAll("([a-z])([A-Z]+)", "$1-$2").toLowerCase();
@@ -168,8 +213,9 @@ public final class ConfigManager {
 
     private static Object loadPrimitiveType(Object config, Field field, ConfigurationSection section, String key) throws IllegalAccessException {
         var type = field.getType();
-        if(!section.contains(key) && field.get(config) != null) {
-            if(type == int.class || type == double.class || type == long.class || type == boolean.class || type == float.class) return -1;
+        if (!section.contains(key) && field.get(config) != null) {
+            if (type == int.class || type == double.class || type == long.class || type == boolean.class || type == float.class)
+                return -1;
             return field.get(config);
         }
         return getPrimitive(type, section, key);
@@ -197,7 +243,7 @@ public final class ConfigManager {
     }
 
     private static Object loadPrimitiveType(Class<?> type, Object value) {
-        if(value == null) return null;
+        if (value == null) return null;
         return type.cast(value);
     }
 

@@ -2,14 +2,12 @@ package config;
 
 import gg.auroramc.auroralib.api.config.ConfigManager;
 import gg.auroramc.auroralib.api.config.decorators.IgnoreField;
+import gg.auroramc.auroralib.api.config.premade.ItemConfig;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -96,8 +94,10 @@ public class ConfigLoadTest {
         private List<String> defaultListString = List.of("a", "b", "c");
         private List<MapClass> mapClassList;
         private List<MapClass> nullMapClassList;
-        private Map<String, NestedClass> nestedObjectMap;
+        public Map<String, NestedClass> nestedObjectMap;
         private Map<Integer, NestedClass> nestedObjectMapInt;
+        private Map<String, ItemConfig> tags;
+        private Set<String> set;
     }
 
     @BeforeEach
@@ -118,6 +118,8 @@ public class ConfigLoadTest {
         yaml.set("nested-object-map.key2.long-nested-name", "longname2");
         yaml.set("nested-object-map-int.1.long-nested-name", "longname");
         yaml.set("nested-object-map-int.2.long-nested-name", "longname2");
+        yaml.set("tags.test-tag.name", "hello");
+        yaml.set("set", List.of("a", "b", "c"));
     }
 
     @Test
@@ -153,6 +155,7 @@ public class ConfigLoadTest {
         assertEquals(List.of(1.5, 2.5, 3.5), config.listDouble);
         assertEquals(new ArrayList<>(), config.nullListInteger);
         assertEquals(List.of("a", "b", "c"), config.defaultListString);
+        assertEquals(Set.of("a", "b", "c"), config.set);
     }
 
     @Test
@@ -169,6 +172,8 @@ public class ConfigLoadTest {
     @Test
     public void testMaps() {
         var config = ConfigManager.load(new Config(), yaml);
+
+        assertEquals("hello", config.tags.get("test-tag").getName());
 
         assertEquals(
                 new NestedClass("longname"),

@@ -2,7 +2,6 @@ package gg.auroramc.auroralib.api.config.premade;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.Material;
 
 import java.util.*;
 
