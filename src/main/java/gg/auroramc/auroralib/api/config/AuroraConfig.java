@@ -43,6 +43,7 @@ public abstract class AuroraConfig {
     }
 
     private List<Consumer<YamlConfiguration>> getApplicableMigrationSteps(int from) {
+        if(getMigrationSteps().size() < from) return List.of();
         return getMigrationSteps().subList(from, getMigrationSteps().size());
     }
 
