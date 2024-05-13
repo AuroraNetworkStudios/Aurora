@@ -1,6 +1,7 @@
 package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
+import gg.auroramc.auroralib.api.util.Platform;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 
@@ -11,9 +12,9 @@ public class ActionBar {
 
     public static void send(Player player, String msg) {
         if(AuroraLib.isPAPIEnabled()) {
-            player.sendActionBar(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(PlaceholderAPI.setPlaceholders(player, msg))));
+            Platform.sendActionBar(player, AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(PlaceholderAPI.setPlaceholders(player, msg))));
         } else {
-            player.sendActionBar(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));
+            Platform.sendActionBar(player, AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));
         }
     }
 }

@@ -2,11 +2,11 @@ package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
 
+import gg.auroramc.auroralib.api.util.Platform;
 import gg.auroramc.auroralib.api.util.TextUtil;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 
 import java.util.regex.Matcher;
@@ -34,7 +34,7 @@ public class Chat {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled())
             message = PlaceholderAPI.setPlaceholders(player, message);
-        player.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
+        Platform.sendMessage(player, AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     /**
@@ -47,20 +47,7 @@ public class Chat {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled() && sender instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
-        sender.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
-    }
-
-    /**
-     * Sends a translated color message to a HumanEntity.
-     *
-     * @param entity       The HumanEntity to send the message to.
-     * @param message The message to be sent, possibly containing color codes.
-     */
-    public static void sendMessage(HumanEntity entity, String message, Placeholder<?>... placeholders) {
-        message = Placeholder.execute(message, placeholders);
-        if(AuroraLib.isPAPIEnabled() && entity instanceof Player player)
-            message = PlaceholderAPI.setPlaceholders(player, message);
-        entity.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
+        Platform.sendMessage(sender, AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     public static String translateColorCodes(String text) {

@@ -1,6 +1,5 @@
 package gg.auroramc.auroralib.api.menu;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -8,6 +7,7 @@ import gg.auroramc.auroralib.api.config.premade.*;
 import gg.auroramc.auroralib.api.message.Placeholder;
 import gg.auroramc.auroralib.api.message.Text;
 import gg.auroramc.auroralib.api.util.BukkitPotionType;
+import gg.auroramc.auroralib.api.util.Platform;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
@@ -19,6 +19,7 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionType;
+import org.bukkit.profile.PlayerProfile;
 
 import java.net.URL;
 import java.util.*;
@@ -63,7 +64,7 @@ public class ItemBuilder {
         if(material == Material.AIR) return new ItemStack(Material.AIR);
         var item = new ItemStack(material);
         var meta = item.getItemMeta();
-        meta.displayName(Text.component(name));
+        Platform.setItemName(meta, Text.component(name));
         item.setItemMeta(meta);
         return item;
     }
@@ -157,9 +158,46 @@ public class ItemBuilder {
         return this;
     }
 
+    public ItemBuilder flag(ItemFlag... flags) {
+        for(var flag : flags) {
+            config.getFlags().add(flag.name());
+        }
+        return this;
+    }
+
+    public ItemBuilder flag(String flag) {
+        config.getFlags().add(flag);
+        return this;
+    }
+
+    public ItemBuilder flag(String... flags) {
+        for(var flag : flags) {
+            config.getFlags().add(flag);
+        }
+        return this;
+    }
+
     public ItemBuilder setPlayerHead(Player player) {
         config.setMaterial(Material.PLAYER_HEAD.name());
         playerProfile = player.getPlayerProfile();
+        return this;
+    }
+
+    public ItemBuilder skullUrl(String url) {
+        config.setMaterial(Material.PLAYER_HEAD.name());
+        if(config.getSkull() == null) {
+            config.setSkull(new SkullConfig());
+        }
+        config.getSkull().setUrl(url);
+        return this;
+    }
+
+    public ItemBuilder skullBase64(String base64) {
+        config.setMaterial(Material.PLAYER_HEAD.name());
+        if(config.getSkull() == null) {
+            config.setSkull(new SkullConfig());
+        }
+        config.getSkull().setBase64(base64);
         return this;
     }
 
@@ -194,15 +232,15 @@ public class ItemBuilder {
         var placeholders = this.placeholders.toArray(Placeholder[]::new);
 
         if (config.getName() != null) {
-            meta.displayName(Text.component(player, config.getName(), placeholders));
+            Platform.setItemName(meta, Text.component(player, config.getName(), placeholders));
         }
 
         if (!config.getLore().isEmpty()) {
-            meta.lore(config.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+            Platform.setItemLore(meta, config.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
         }
 
         if (loreBuilder != null) {
-            meta.lore(loreBuilder.get());
+            Platform.setItemLore(meta, loreBuilder.get());
         }
 
         if (config.getDurability() != null && meta instanceof Damageable damageable) {
@@ -252,7 +290,7 @@ public class ItemBuilder {
             }
 
             if(playerProfile != null) {
-                skullMeta.setPlayerProfile(playerProfile);
+                skullMeta.setOwnerProfile(playerProfile);
             }
         }
 
