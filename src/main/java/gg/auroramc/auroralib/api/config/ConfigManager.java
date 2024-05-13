@@ -214,7 +214,7 @@ public final class ConfigManager {
     private static Object loadPrimitiveType(Object config, Field field, ConfigurationSection section, String key) throws IllegalAccessException {
         var type = field.getType();
         if (!section.contains(key) && field.get(config) != null) {
-            if (type == int.class || type == double.class || type == long.class || type == boolean.class || type == float.class)
+            if (type == int.class || type == double.class || type == long.class || type == float.class)
                 return -1;
             return field.get(config);
         }
