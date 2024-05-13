@@ -34,7 +34,7 @@ public class Text {
         if(AuroraLib.isPAPIEnabled()) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
-        return  removeItalic(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));
+        return removeItalic(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));
     }
 
     public static Component component(Player player, String text, List<Placeholder<?>> placeholders) {

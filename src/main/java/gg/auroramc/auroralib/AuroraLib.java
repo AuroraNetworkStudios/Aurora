@@ -21,6 +21,8 @@ public final class AuroraLib extends JavaPlugin implements Listener {
     private static Config libConfig;
     @Getter
     private static MenuManager menuManager;
+    @Getter
+    private static AuroraLib instance;
 
     @Getter
     private static BukkitAudiences adventure;
@@ -28,6 +30,7 @@ public final class AuroraLib extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        instance = this;
         saveDefaultConfig();
         libConfig = new Config(new File(getDataFolder(), "config.yml"));
         menuManager = new MenuManager(this);

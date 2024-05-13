@@ -2,6 +2,6 @@ name: AuroraLib
 version: '${version}'
 main: gg.auroramc.auroralib.AuroraLib
 api-version: 1.19
-authors: ["Perwollnt", "erik_sz"]
+authors: ["erik_sz"]
 softdepend:
   - PlaceholderAPI

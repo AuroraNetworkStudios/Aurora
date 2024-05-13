@@ -90,17 +90,18 @@ public class AuroraMenu implements InventoryHolder {
         return this;
     }
 
-    public void handleEvent(InventoryClickEvent e) {
+    public boolean handleEvent(InventoryClickEvent e) {
         if (freeSlots != null && freeSlots.contains(e.getSlot())) {
             e.setCancelled(false);
             if (freeSlotHandlers.containsKey(e.getSlot())) {
                 freeSlotHandlers.get(e.getSlot()).accept(e);
             }
+            return false;
         } else {
             e.setCancelled(true);
         }
 
-        if (!(e.getWhoClicked() instanceof Player player)) return;
+        if (!(e.getWhoClicked() instanceof Player player)) return false;
 
         if (menuItems.containsKey(e.getSlot())) {
             var menuEntry = menuItems.get(e.getSlot());
@@ -117,7 +118,10 @@ public class AuroraMenu implements InventoryHolder {
                 }
                 player.updateInventory();
             }
+            return true;
         }
+
+        return false;
     }
 
     public void handleEvent(InventoryCloseEvent e) {
@@ -128,6 +132,7 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void open(Player player) {
+        if(player.isSleeping()) return;
         AuroraLib.getMenuManager().getDupeFixer().getMarker().mark(filler);
 
         int j = 0;
