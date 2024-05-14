@@ -2,6 +2,8 @@ package gg.auroramc.auroralib.api;
 
 import gg.auroramc.auroralib.AuroraLib;
 import gg.auroramc.auroralib.api.expansions.ExpansionManager;
+import gg.auroramc.auroralib.api.placeholder.PlaceholderHandler;
+import gg.auroramc.auroralib.api.placeholder.PlaceholderHandlerRegistry;
 import gg.auroramc.auroralib.api.user.AuroraUser;
 import gg.auroramc.auroralib.api.user.UserManager;
 import gg.auroramc.auroralib.expansions.economy.AuroraEconomy;
@@ -41,5 +43,13 @@ public class AuroraAPI {
 
     public static String formatNumber(double number) {
         return AuroraLib.getExpansionManager().getExpansion(NumberFormatExpansion.class).formatDecimalNumber(number);
+    }
+
+    public static void registerPlaceholderHandler(PlaceholderHandler handler) {
+        PlaceholderHandlerRegistry.addHandler(handler);
+    }
+
+    public static void removePlaceholderHandler(PlaceholderHandler handler) {
+        PlaceholderHandlerRegistry.removeHandler(handler);
     }
 }
