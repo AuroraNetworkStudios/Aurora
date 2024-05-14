@@ -7,7 +7,6 @@ import gg.auroramc.auroralib.api.config.premade.*;
 import gg.auroramc.auroralib.api.message.Placeholder;
 import gg.auroramc.auroralib.api.message.Text;
 import gg.auroramc.auroralib.api.util.BukkitPotionType;
-import gg.auroramc.auroralib.api.util.Platform;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
@@ -64,7 +63,7 @@ public class ItemBuilder {
         if(material == Material.AIR) return new ItemStack(Material.AIR);
         var item = new ItemStack(material);
         var meta = item.getItemMeta();
-        Platform.setItemName(meta, Text.component(name));
+        meta.displayName(Text.component(name));
         item.setItemMeta(meta);
         return item;
     }
@@ -232,15 +231,15 @@ public class ItemBuilder {
         var placeholders = this.placeholders.toArray(Placeholder[]::new);
 
         if (config.getName() != null) {
-            Platform.setItemName(meta, Text.component(player, config.getName(), placeholders));
+            meta.displayName(Text.component(player, config.getName(), placeholders));
         }
 
         if (!config.getLore().isEmpty()) {
-            Platform.setItemLore(meta, config.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+            meta.lore(config.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
         }
 
         if (loreBuilder != null) {
-            Platform.setItemLore(meta, loreBuilder.get());
+            meta.lore(loreBuilder.get());
         }
 
         if (config.getDurability() != null && meta instanceof Damageable damageable) {

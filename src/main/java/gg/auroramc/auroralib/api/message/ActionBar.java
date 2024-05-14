@@ -1,6 +1,5 @@
 package gg.auroramc.auroralib.api.message;
 
-import gg.auroramc.auroralib.api.util.Platform;
 import org.bukkit.entity.Player;
 
 public class ActionBar {
@@ -9,6 +8,6 @@ public class ActionBar {
     }
 
     public static void send(Player player, String msg, Placeholder<?>... placeholders) {
-        Platform.sendActionBar(player, Text.component(player, msg, placeholders));
+        player.sendActionBar(Text.component(player, msg, placeholders));
     }
 }

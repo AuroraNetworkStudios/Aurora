@@ -2,7 +2,6 @@ package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
 
-import gg.auroramc.auroralib.api.util.Platform;
 import gg.auroramc.auroralib.api.util.TextUtil;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
@@ -34,7 +33,7 @@ public class Chat {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled())
             message = PlaceholderAPI.setPlaceholders(player, message);
-        Platform.sendMessage(player, AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
+        player.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     /**
@@ -47,7 +46,7 @@ public class Chat {
         message = Placeholder.execute(message, placeholders);
         if(AuroraLib.isPAPIEnabled() && sender instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
-        Platform.sendMessage(sender, AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
+        sender.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
 
     public static String translateColorCodes(String text) {

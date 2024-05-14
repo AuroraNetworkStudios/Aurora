@@ -2,7 +2,6 @@ package gg.auroramc.auroralib.api.command;
 
 import gg.auroramc.auroralib.AuroraLib;
 import gg.auroramc.auroralib.api.message.Text;
-import gg.auroramc.auroralib.api.util.Platform;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -11,7 +10,7 @@ public class CommandDispatcher {
     public static void dispatch(Player player, String command) {
         if(command.startsWith("[message]")) {
             var msg = Text.component(player, removeFirstSpace(command.replace("[message]", "")));
-            Platform.sendMessage(player, msg);
+            player.sendMessage(msg);
         } else if(command.startsWith("[player]")) {
             var cmd = removeFirstSpace(command.replace("[player]", ""));
             if(AuroraLib.isPAPIEnabled()) cmd = PlaceholderAPI.setPlaceholders(player, cmd);

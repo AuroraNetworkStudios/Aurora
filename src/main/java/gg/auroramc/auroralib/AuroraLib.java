@@ -3,7 +3,6 @@ package gg.auroramc.auroralib;
 import gg.auroramc.auroralib.api.menu.MenuManager;
 import gg.auroramc.auroralib.config.Config;
 import lombok.Getter;
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
@@ -24,10 +23,6 @@ public final class AuroraLib extends JavaPlugin implements Listener {
     @Getter
     private static AuroraLib instance;
 
-    @Getter
-    private static BukkitAudiences adventure;
-
-
     @Override
     public void onEnable() {
         instance = this;
@@ -35,6 +30,5 @@ public final class AuroraLib extends JavaPlugin implements Listener {
         libConfig = new Config(new File(getDataFolder(), "config.yml"));
         menuManager = new MenuManager(this);
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) PAPIEnabled = true;
-        adventure = BukkitAudiences.create(this);
     }
 }

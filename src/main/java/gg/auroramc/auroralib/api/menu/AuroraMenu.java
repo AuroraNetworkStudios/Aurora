@@ -3,7 +3,7 @@ package gg.auroramc.auroralib.api.menu;
 import gg.auroramc.auroralib.AuroraLib;
 import gg.auroramc.auroralib.api.message.Placeholder;
 import gg.auroramc.auroralib.api.message.Text;
-import gg.auroramc.auroralib.api.util.Platform;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -27,7 +27,7 @@ public class AuroraMenu implements InventoryHolder {
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder<?>... placeholders) {
-        this.inventory = Platform.createChestInventory(this, size, Text.component(player, title, placeholders));
+        this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
         this.filler = ItemBuilder.filler();
         if (refreshEnabled) {
             AuroraLib.getMenuManager().getRefresher().add(this);
