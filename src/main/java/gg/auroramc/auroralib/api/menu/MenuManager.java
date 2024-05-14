@@ -66,8 +66,9 @@ public class MenuManager implements Listener {
     public void onMenuClose(InventoryCloseEvent event) {
         if (event.getInventory().getHolder() instanceof AuroraMenu menu) {
             menu.handleEvent(event);
-            Bukkit.getScheduler().runTaskLater(AuroraLib.getInstance(),
-                    () -> cleanInventory((Player) event.getPlayer(), dupeFixer.getMarker()), 3L);
+            event.getPlayer().getScheduler().runDelayed(AuroraLib.getInstance(), (task) -> {
+                cleanInventory((Player) event.getPlayer(), dupeFixer.getMarker());
+            }, null,3L);
         }
     }
 

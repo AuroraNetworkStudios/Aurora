@@ -2,6 +2,8 @@ package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
 
+import gg.auroramc.auroralib.api.dependency.Dep;
+import gg.auroramc.auroralib.api.dependency.DependencyManager;
 import gg.auroramc.auroralib.api.util.TextUtil;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.ChatColor;
@@ -31,7 +33,7 @@ public class Chat {
      */
     public static void sendMessage(Player player, String message, Placeholder<?>... placeholders) {
         message = Placeholder.execute(message, placeholders);
-        if(AuroraLib.isPAPIEnabled())
+        if(DependencyManager.hasDep(Dep.PAPI))
             message = PlaceholderAPI.setPlaceholders(player, message);
         player.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }
@@ -44,7 +46,7 @@ public class Chat {
      */
     public static void sendMessage(CommandSender sender, String message, Placeholder<?>... placeholders) {
         message = Placeholder.execute(message, placeholders);
-        if(AuroraLib.isPAPIEnabled() && sender instanceof Player player)
+        if(DependencyManager.hasDep(Dep.PAPI) && sender instanceof Player player)
             message = PlaceholderAPI.setPlaceholders(player, message);
         sender.sendMessage(AuroraLib.getMiniMessage().deserialize(translateToMM(message)));
     }

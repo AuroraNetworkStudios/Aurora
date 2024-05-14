@@ -8,7 +8,7 @@ import java.util.*;
 @Setter
 @Getter
 public class ItemConfig {
-    private Boolean refresh = false;
+    private boolean refresh = false;
     private String name;
     private List<String> lore;
     private String material;

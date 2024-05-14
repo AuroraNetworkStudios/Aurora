@@ -25,7 +25,7 @@ public abstract class AuroraConfig {
         this.file = file;
         this.rawConfiguration = YamlConfiguration.loadConfiguration(file);
 
-        var migrationSteps = getApplicableMigrationSteps(rawConfiguration.getInt("config-version", 0) + 1);
+        var migrationSteps = getApplicableMigrationSteps(rawConfiguration.getInt("config-version", 0));
 
         for(var migration : migrationSteps) {
             migration.accept(rawConfiguration);
@@ -38,8 +38,6 @@ public abstract class AuroraConfig {
                 e.printStackTrace();
             }
         }
-
-        ConfigManager.load(this, rawConfiguration);
     }
 
     private List<Consumer<YamlConfiguration>> getApplicableMigrationSteps(int from) {
@@ -63,5 +61,9 @@ public abstract class AuroraConfig {
 
     public YamlConfiguration getRawConfig() {
         return rawConfiguration;
+    }
+
+    public void load() {
+        ConfigManager.load(this, rawConfiguration);
     }
 }

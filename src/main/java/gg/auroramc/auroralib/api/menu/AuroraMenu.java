@@ -25,8 +25,10 @@ public class AuroraMenu implements InventoryHolder {
     private Set<Integer> freeSlots;
     private List<ItemStack> freeItems;
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
+    private final Player player;
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder<?>... placeholders) {
+        this.player = player;
         this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
         this.filler = ItemBuilder.filler();
         if (refreshEnabled) {
@@ -131,8 +133,9 @@ public class AuroraMenu implements InventoryHolder {
         }
     }
 
-    public void open(Player player) {
+    public void open() {
         if(player.isSleeping()) return;
+        if(!player.isOnline()) return;
         AuroraLib.getMenuManager().getDupeFixer().getMarker().mark(filler);
 
         int j = 0;
@@ -155,16 +158,19 @@ public class AuroraMenu implements InventoryHolder {
         player.openInventory(inventory);
     }
 
+
     @Override
     public @NotNull Inventory getInventory() {
         return inventory;
     }
 
     public void refresh() {
-        for (var menuEntry : menuItems.values()) {
-            if (menuEntry.getItem().isRefreshEnabled()) {
-                menuEntry.getItem().refresh();
+        player.getScheduler().run(AuroraLib.getInstance(), (task) -> {
+            for (var menuEntry : menuItems.values()) {
+                if (menuEntry.getItem().isRefreshEnabled()) {
+                    menuEntry.getItem().refresh();
+                }
             }
-        }
+        }, null);
     }
 }

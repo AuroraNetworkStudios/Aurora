@@ -270,7 +270,7 @@ public final class ConfigManager {
      * @param config  The object to save the values from.
      * @param section The ConfigurationSection to store the values in.
      */
-    private static void saveObject(Object config, ConfigurationSection section) {
+    public static void saveObject(Object config, ConfigurationSection section) {
         // Get all the declared fields of the object's class
         Field[] fields = config.getClass().getDeclaredFields();
 

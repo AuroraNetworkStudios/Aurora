@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ConfigLoadTest {
     private YamlConfiguration yaml;
@@ -71,6 +70,7 @@ public class ConfigLoadTest {
     }
 
     public static class Config {
+        private Boolean simpleBoolean = false;
         @IgnoreField
         private Integer ignore = -10;
         private Integer defaultValue = -10;
@@ -82,7 +82,6 @@ public class ConfigLoadTest {
         private Integer simpleInt;
         private Double simpleDouble;
         private Float simpleFloat;
-        private Boolean simpleBoolean;
         private Long simpleLong;
         private String simpleString;
         private NestedClass nestedObject;
@@ -128,7 +127,7 @@ public class ConfigLoadTest {
         assertEquals(10, config.simpleInt);
         assertEquals("ExampleName", config.simpleString);
         assertEquals(12.5, config.simpleDouble, 0);
-        assertEquals(true, config.simpleBoolean);
+        assertTrue(config.simpleBoolean);
         assertEquals(1L, config.simpleLong);
         assertEquals(1.5F, config.simpleFloat);
         assertNull(config.shouldBeNullInteger);

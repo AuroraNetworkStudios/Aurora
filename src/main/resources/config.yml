@@ -1,1 +1,21 @@
 debug: false
+
+number-format:
+  locale: "hu-HU"
+  int-format: "#,###"
+  double-format: "#,##0.00"
+
+user-auto-save-in-minutes: 30
+# Can be yaml or mysql
+storage-type: "yaml"
+
+mysql:
+  host: "127.0.0.1"
+  port: "3306"
+  ssl: false
+  database: "db name"
+  username: "username"
+  password: "password"
+  network-latency: 500
+  pool-size: 10
+  sync-retry-count: 3

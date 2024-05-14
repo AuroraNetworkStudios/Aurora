@@ -49,6 +49,6 @@ public class MenuItem {
     }
 
     public boolean isRefreshEnabled() {
-        return itemBuilder.getConfig().getRefresh();
+        return itemBuilder.getConfig().isRefresh();
     }
 }

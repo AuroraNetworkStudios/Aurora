@@ -1,6 +1,8 @@
 package gg.auroramc.auroralib.api.message;
 
 import gg.auroramc.auroralib.AuroraLib;
+import gg.auroramc.auroralib.api.dependency.Dep;
+import gg.auroramc.auroralib.api.dependency.DependencyManager;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
@@ -23,7 +25,7 @@ public class Text {
 
     public static String build(Player player, String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
-        if(AuroraLib.isPAPIEnabled()) {
+        if(DependencyManager.hasDep(Dep.PAPI)) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
         return Chat.translateColorCodes(msg);
@@ -31,7 +33,7 @@ public class Text {
 
     public static Component component(Player player, String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
-        if(AuroraLib.isPAPIEnabled()) {
+        if(DependencyManager.hasDep(Dep.PAPI)) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
         return removeItalic(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));
@@ -39,7 +41,7 @@ public class Text {
 
     public static Component component(Player player, String text, List<Placeholder<?>> placeholders) {
         var msg = Placeholder.execute(text, placeholders);
-        if(AuroraLib.isPAPIEnabled()) {
+        if(DependencyManager.hasDep(Dep.PAPI)) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
         return removeItalic(AuroraLib.getMiniMessage().deserialize(Chat.translateToMM(msg)));

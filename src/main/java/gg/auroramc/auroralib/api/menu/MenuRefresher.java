@@ -1,15 +1,17 @@
 package gg.auroramc.auroralib.api.menu;
 
 import gg.auroramc.auroralib.AuroraLib;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class MenuRefresher {
-    private final Set<AuroraMenu> menus = new HashSet<>();
-    private BukkitTask refreshTask = null;
+    private final Set<AuroraMenu> menus = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private ScheduledTask refreshTask = null;
     private final AuroraLib plugin;
 
     public MenuRefresher(AuroraLib plugin) {
@@ -19,11 +21,11 @@ public class MenuRefresher {
     public void add(AuroraMenu menu) {
         menus.add(menu);
         if(refreshTask == null || refreshTask.isCancelled()) {
-            refreshTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            refreshTask = Bukkit.getAsyncScheduler().runAtFixedRate(plugin, (task) -> {
                 for(AuroraMenu m : menus) {
                     m.refresh();
                 }
-            }, 20L, 20L);
+            }, 1, 1, TimeUnit.SECONDS);
         }
     }
 

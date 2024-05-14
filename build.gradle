@@ -1,13 +1,22 @@
 plugins {
     id 'java'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.1.0'
+}
+
+configurations {
+    shade
 }
 
 group = 'gg.auroramc'
-version = '2.0.8'
+version = '3.0.0'
 
 repositories {
+    flatDir {
+        dirs 'libs'
+    }
     mavenCentral()
+    maven { url 'https://jitpack.io' }
     maven {
         url = "https://repo.papermc.io/repository/maven-public/"
     }
@@ -22,16 +31,33 @@ repositories {
         name = "placeholderapi"
         url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
     }
+    maven { url "https://maven.enginehub.org/repo/" }
+    maven {
+        name "essentialsx-releases"
+        url "https://repo.essentialsx.net/releases/"
+    }
 }
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
-//    compileOnly "org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT"
+
+    // 3rd party
     compileOnly "me.clip:placeholderapi:2.11.3"
+    compileOnly 'net.essentialsx:EssentialsX:2.19.0'
+    compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.9'
+    compileOnly "com.github.MilkBowl:VaultAPI:1.7"
+
+    // 3rd party local
+    compileOnly name: 'CMI9.0.0.0API'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // HikariCP
+    implementation("com.zaxxer:HikariCP:5.1.0") {
+        exclude group: "org.slf4j", module: "slf4j-api"
+    }
 
     // JUnit Jupiter API and Engine dependencies
     testImplementation "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
@@ -70,6 +96,15 @@ processResources {
     filesMatching('plugin.yml') {
         expand props
     }
+}
+
+shadowJar {
+    archiveClassifier = ''
+    // Include dependency from the 'shade' configuration into the JAR
+    configurations = [project.configurations.runtimeClasspath]
+
+    // Relocate the exp4j package to prevent any conflicts with other versions that might be on the classpath
+    relocate "com.zaxxer.hikari", "gg.auroramc.auroralib.libs.hikari"
 }
 
 publishing {
