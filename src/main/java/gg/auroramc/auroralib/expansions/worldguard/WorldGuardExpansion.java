@@ -17,9 +17,8 @@ import java.util.*;
 
 public class WorldGuardExpansion implements AuroraExpansion, Listener {
 
-    private Map<UUID, Set<ProtectedRegion>> previousRegions = new HashMap<>();
-    private Map<UUID, Location> teleportMoves = new HashMap<>();
-    private WorldGuardEntryAndLeaveHandler.Factory handler;
+    private final Map<UUID, Set<ProtectedRegion>> previousRegions = new HashMap<>();
+    private final Map<UUID, Location> teleportMoves = new HashMap<>();
 
     protected void onRegionUpdate(UUID playerUUID, Set<ProtectedRegion> newRegions) {
         var oldRegions = previousRegions.get(playerUUID);
@@ -67,8 +66,8 @@ public class WorldGuardExpansion implements AuroraExpansion, Listener {
 
     @Override
     public void hook() {
-        this.handler = WorldGuardEntryAndLeaveHandler.FACTORY(this);
-        WorldGuard.getInstance().getPlatform().getSessionManager().registerHandler(this.handler, null);
+        WorldGuardEntryAndLeaveHandler.Factory handler = WorldGuardEntryAndLeaveHandler.FACTORY(this);
+        WorldGuard.getInstance().getPlatform().getSessionManager().registerHandler(handler, null);
     }
 
     @Override
