@@ -30,7 +30,7 @@ public class VaultEconomy implements AuroraEconomy {
 
     @Override
     public boolean hasBalance(Player player, double amount) {
-        return false;
+        return economy.getBalance(player) > amount;
     }
 
     private Economy resolveEconomy() {
