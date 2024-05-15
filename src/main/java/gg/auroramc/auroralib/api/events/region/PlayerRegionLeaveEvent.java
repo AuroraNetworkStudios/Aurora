@@ -1,4 +1,4 @@
-package gg.auroramc.auroralib.api.events;
+package gg.auroramc.auroralib.api.events.region;
 
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 @Getter
-public class PlayerRegionEnterEvent extends Event {
+public class PlayerRegionLeaveEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();
     public static HandlerList getHandlerList() {
         return HANDLERS;
@@ -25,7 +25,7 @@ public class PlayerRegionEnterEvent extends Event {
     private final Player player;
     private final List<ProtectedRegion> regions;
 
-    public PlayerRegionEnterEvent(Player player, List<ProtectedRegion> regions) {
+    public PlayerRegionLeaveEvent(Player player, List<ProtectedRegion> regions) {
         this.player = player;
         this.regions = regions;
     }
