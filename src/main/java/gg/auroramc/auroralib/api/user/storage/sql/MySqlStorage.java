@@ -131,39 +131,43 @@ public class MySqlStorage implements UserStorage {
         String saveQuery = "INSERT INTO " + tableName + " (player_uuid, holder, data) VALUES (?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE data=?;";
 
-        try {
-            final var start = System.nanoTime();
-            try (Connection connection = connection()) {
-                connection.setAutoCommit(false);
-                try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
-                    for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
-                        var data = new YamlConfiguration();
-                        holder.serializeInto(data);
-                        var serializedData = data.saveToString();
+        synchronized (user.getSerializeLock()) {
+            try {
+                final var start = System.nanoTime();
+                try (Connection connection = connection()) {
+                    connection.setAutoCommit(false);
 
-                        statement.setString(1, uuid.toString());
-                        statement.setString(2, holder.getId().toString());
-                        statement.setString(3, serializedData);
-                        statement.setString(4, serializedData);
-                        statement.addBatch();
+
+                    try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
+                        for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
+                            var data = new YamlConfiguration();
+                            holder.serializeInto(data);
+                            var serializedData = data.saveToString();
+
+                            statement.setString(1, uuid.toString());
+                            statement.setString(2, holder.getId().toString());
+                            statement.setString(3, serializedData);
+                            statement.setString(4, serializedData);
+                            statement.addBatch();
+                        }
+                        statement.executeBatch();
                     }
-                    statement.executeBatch();
+
+                    final var end = System.nanoTime();
+                    AuroraLib.getUserManager().getSaveLatencyMeasure().addLatency(end - start);
+
+                    if (reason == SaveReason.QUIT) {
+                        removeSyncFlag(uuid, connection);
+                    }
+
+                    connection.commit();
+
+                    return true;
                 }
-
-                final var end = System.nanoTime();
-                AuroraLib.getUserManager().getSaveLatencyMeasure().addLatency(end - start);
-
-                if (reason == SaveReason.QUIT) {
-                    removeSyncFlag(uuid, connection);
-                }
-
-                connection.commit();
-
-                return true;
+            } catch (Exception e) {
+                AuroraLib.logger().severe("Failed to save user data for player: " + uuid);
+                return false;
             }
-        } catch (Exception e) {
-            AuroraLib.logger().severe("Failed to save user data for player: " + uuid);
-            return false;
         }
     }
 

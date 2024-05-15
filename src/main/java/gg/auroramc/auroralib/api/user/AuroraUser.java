@@ -18,13 +18,14 @@ public class AuroraUser {
     private YamlConfiguration configuration;
     @Getter
     private final UUID uuid;
+    @Getter
+    private final Object serializeLock = new Object();
 
     private final AtomicBoolean loaded = new AtomicBoolean(true);
 
     public AuroraUser(UUID uuid) {
         this.uuid = uuid;
     }
-    private final Object serializeLock = new Object();
 
     public AuroraUser(UUID uuid, boolean isLoaded) {
         this.uuid = uuid;
@@ -32,17 +33,19 @@ public class AuroraUser {
     }
 
     public void initData(YamlConfiguration data, Set<Class<? extends UserDataHolder>> dataHolders) {
-        this.configuration = data;
-        for(var holderClass : dataHolders) {
-            try {
-                var holder = holderClass.getDeclaredConstructor().newInstance();
-                holder.setUser(this);
-                if(loaded.get() && data != null) {
-                    holder.initFrom(data.getConfigurationSection(holder.getId().toString()));
+        synchronized (serializeLock) {
+            this.configuration = data;
+            for(var holderClass : dataHolders) {
+                try {
+                    var holder = holderClass.getDeclaredConstructor().newInstance();
+                    holder.setUser(this);
+                    if(loaded.get() && data != null) {
+                        holder.initFrom(data.getConfigurationSection(holder.getId().toString()));
+                    }
+                    dataHolderMap.put(holderClass, holder);
+                } catch (Exception e) {
+                    AuroraLib.logger().warning("Failed to initialize data holder: " + holderClass.getSimpleName() + " error: " + e.getMessage());
                 }
-                dataHolderMap.put(holderClass, holder);
-            } catch (Exception e) {
-                AuroraLib.logger().warning("Failed to initialize data holder: " + holderClass.getSimpleName() + " error: " + e.getMessage());
             }
         }
     }
