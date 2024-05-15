@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import gg.auroramc.auroralib.AuroraLib;
 import gg.auroramc.auroralib.api.user.AuroraUser;
-import gg.auroramc.auroralib.api.user.DataHolder;
 import gg.auroramc.auroralib.api.user.UserDataHolder;
 import gg.auroramc.auroralib.api.user.storage.SaveReason;
 import gg.auroramc.auroralib.api.user.storage.UserStorage;
@@ -104,10 +103,17 @@ public class MySqlStorage implements UserStorage {
                     return createEmptyUser(uuid, dataHolders, true);
                 }
 
-                var rawYaml = resultSet.getString("data");
                 var user = new AuroraUser(uuid);
                 var config = new YamlConfiguration();
-                config.loadFromString(rawYaml);
+
+                do {
+                    String holder = resultSet.getString("holder");
+                    String rawYaml = resultSet.getString("data");
+                    var section = new YamlConfiguration();
+                    section.loadFromString(rawYaml);
+                    config.set(holder, section);
+                } while (resultSet.next());
+
                 user.initData(config, dataHolders);
                 final var end = System.nanoTime();
                 AuroraLib.getUserManager().getLoadLatencyMeasure().addLatency(end - start);
@@ -115,60 +121,49 @@ public class MySqlStorage implements UserStorage {
             }
         } catch (Exception e) {
             AuroraLib.logger().severe("Failed to load user data for player: " + uuid);
-            return null;
+            return createEmptyUser(uuid, dataHolders, false);
         }
     }
 
     @Override
     public boolean saveUser(AuroraUser user, SaveReason reason) {
         var uuid = user.getUniqueId();
-        String saveQuery = "INSERT INTO " + tableName + " (player_uuid, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data=?;";
+        String saveQuery = "INSERT INTO " + tableName + " (player_uuid, holder, data) VALUES (?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE data=?;";
 
         try {
             final var start = System.nanoTime();
             try (Connection connection = connection()) {
+                connection.setAutoCommit(false);
                 try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
-                    var data = user.serializeData().saveToString();
-                    statement.setString(1, uuid.toString());
-                    statement.setString(2, data);
-                    statement.setString(3, data);
-                    statement.executeUpdate();
+                    for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
+                        var data = new YamlConfiguration();
+                        holder.serializeInto(data);
+                        var serializedData = data.saveToString();
+
+                        statement.setString(1, uuid.toString());
+                        statement.setString(2, holder.getId().toString());
+                        statement.setString(3, serializedData);
+                        statement.setString(4, serializedData);
+                        statement.addBatch();
+                    }
+                    statement.executeBatch();
                 }
+
                 final var end = System.nanoTime();
                 AuroraLib.getUserManager().getSaveLatencyMeasure().addLatency(end - start);
+
                 if (reason == SaveReason.QUIT) {
                     removeSyncFlag(uuid, connection);
                 }
+
+                connection.commit();
+
                 return true;
             }
         } catch (Exception e) {
             AuroraLib.logger().severe("Failed to save user data for player: " + uuid);
             return false;
-        }
-    }
-
-    @Override
-    @SneakyThrows
-    public void walkUserData(Consumer<AuroraUser> callback, Set<Class<? extends UserDataHolder>> dataHolders) {
-        String loadQuery = "SELECT * FROM " + tableName + ";";
-
-        try (Connection connection = connection()) {
-            try (PreparedStatement statement = connection.prepareStatement(loadQuery)) {
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    if (!resultSet.next()) {
-                        return;
-                    }
-
-                    var uuid = UUID.fromString(resultSet.getString("player_uuid"));
-                    var rawYaml = resultSet.getString("data");
-                    var user = new AuroraUser(uuid);
-                    var config = new YamlConfiguration();
-                    config.loadFromString(rawYaml);
-                    user.initData(config, dataHolders);
-
-                    callback.accept(user);
-                }
-            }
         }
     }
 

@@ -2,35 +2,33 @@ package gg.auroramc.auroralib.api.user;
 
 import gg.auroramc.auroralib.AuroraLib;
 import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AuroraUser {
-    private final Map<Class<? extends UserDataHolder>, UserDataHolder> dataHolderMap = new HashMap<>();
+    private final Map<Class<? extends UserDataHolder>, UserDataHolder> dataHolderMap = new ConcurrentHashMap<>();
     @Getter
     private YamlConfiguration configuration;
     @Getter
     private final UUID uuid;
-    @Getter
-    @Setter
-    private boolean loaded = true;
+
+    private final AtomicBoolean loaded = new AtomicBoolean(true);
 
     public AuroraUser(UUID uuid) {
         this.uuid = uuid;
     }
+    private final Object serializeLock = new Object();
 
     public AuroraUser(UUID uuid, boolean isLoaded) {
         this.uuid = uuid;
-        this.loaded = isLoaded;
+        this.loaded.set(isLoaded);
     }
 
     public void initData(YamlConfiguration data, Set<Class<? extends UserDataHolder>> dataHolders) {
@@ -39,8 +37,8 @@ public class AuroraUser {
             try {
                 var holder = holderClass.getDeclaredConstructor().newInstance();
                 holder.setUser(this);
-                if(loaded && data != null) {
-                    holder.initFrom(data.getConfigurationSection(holder.getId()));
+                if(loaded.get() && data != null) {
+                    holder.initFrom(data.getConfigurationSection(holder.getId().toString()));
                 }
                 dataHolderMap.put(holderClass, holder);
             } catch (Exception e) {
@@ -61,10 +59,16 @@ public class AuroraUser {
     }
 
     public YamlConfiguration serializeData() {
-        for(var holder : dataHolderMap.values()) {
-            holder.serializeInto(getOrCreateSection(holder.getId()));
+        synchronized (serializeLock) {
+            for(var holder : dataHolderMap.values()) {
+                holder.serializeInto(getOrCreateSection(holder.getId().toString()));
+            }
+            return configuration;
         }
-        return configuration;
+    }
+
+    public Collection<UserDataHolder> getDataHolders() {
+        return dataHolderMap.values();
     }
 
     private ConfigurationSection getOrCreateSection(String path) {
@@ -84,5 +88,13 @@ public class AuroraUser {
 
     public OfflinePlayer getOfflinePlayer() {
         return Bukkit.getOfflinePlayer(uuid);
+    }
+
+    public boolean isLoaded() {
+        return loaded.get();
+    }
+
+    public void setLoaded(boolean loaded) {
+        this.loaded.set(loaded);
     }
 }

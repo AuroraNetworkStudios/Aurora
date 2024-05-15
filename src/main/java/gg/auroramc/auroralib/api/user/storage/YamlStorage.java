@@ -64,17 +64,4 @@ public class YamlStorage implements UserStorage {
             return false;
         }
     }
-
-    @Override
-    public void walkUserData(Consumer<AuroraUser> callback, Set<Class<? extends UserDataHolder>> dataHolders) {
-        var userDataFolder = new File(AuroraLib.getInstance().getDataFolder() + "/userdata");
-        if (userDataFolder.listFiles() == null) return;
-        for (File userFile : userDataFolder.listFiles()) {
-            var userConfig = YamlConfiguration.loadConfiguration(userFile);
-            UUID playerUuid = UUID.fromString(userFile.getName().split("\\.")[0]); // Assuming file name format: uuid.yml
-            var user = new AuroraUser(playerUuid);
-            user.initData(userConfig, dataHolders);
-            callback.accept(user);
-        }
-    }
 }

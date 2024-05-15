@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class UserManager implements Listener {
     private final UserStorage storage;
@@ -78,10 +77,6 @@ public class UserManager implements Listener {
                 AuroraLib.logger().info("Auto background saved user data for " + successCount + "/" + all + " online players");
             }
         }, AuroraLib.getLibConfig().getUserAutoSaveInMinutes(), AuroraLib.getLibConfig().getUserAutoSaveInMinutes(), TimeUnit.MINUTES);
-    }
-
-    public void walkUserData(Consumer<AuroraUser> callback) {
-        storage.walkUserData(callback, dataHolders);
     }
 
     public boolean saveUserData(AuroraUser user, SaveReason reason) {
