@@ -54,7 +54,7 @@ public class MySqlStorage implements UserStorage {
         try (Connection connection = connection()) {
             return loadUserForReal(connection, uuid, dataHolders);
         } catch (Exception e) {
-            return createEmptyUser(uuid, dataHolders);
+            return createEmptyUser(uuid, dataHolders, false);
         }
     }
 
@@ -101,7 +101,7 @@ public class MySqlStorage implements UserStorage {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
-                    return createEmptyUser(uuid, dataHolders);
+                    return createEmptyUser(uuid, dataHolders, true);
                 }
 
                 var rawYaml = resultSet.getString("data");
@@ -243,8 +243,8 @@ public class MySqlStorage implements UserStorage {
         }
     }
 
-    private AuroraUser createEmptyUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders) {
-        var user = new AuroraUser(uuid, false);
+    private AuroraUser createEmptyUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders, boolean markAsLoaded) {
+        var user = new AuroraUser(uuid, markAsLoaded);
         user.initData(null, dataHolders);
         return user;
     }

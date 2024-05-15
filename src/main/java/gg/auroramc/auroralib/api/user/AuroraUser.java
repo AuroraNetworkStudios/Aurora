@@ -39,7 +39,7 @@ public class AuroraUser {
             try {
                 var holder = holderClass.getDeclaredConstructor().newInstance();
                 holder.setUser(this);
-                if(loaded) {
+                if(loaded && data != null) {
                     holder.initFrom(data.getConfigurationSection(holder.getId()));
                 }
                 dataHolderMap.put(holderClass, holder);
