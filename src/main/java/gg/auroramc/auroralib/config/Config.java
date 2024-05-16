@@ -35,7 +35,10 @@ public class Config extends AuroraConfig {
                     ConfigManager.saveObject(new MySqlConfig(), yaml.createSection("mysql"));
                     yaml.set("config-version", 1);
                 },
-                (yaml) -> yaml.set("block-tracker-storage", "file")
+                (yaml) -> {
+                    yaml.set("block-tracker-storage", "file");
+                    yaml.set("config-version", 2);
+                }
         );
     }
 }

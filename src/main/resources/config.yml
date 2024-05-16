@@ -22,3 +22,5 @@ mysql:
 
 # can be file or h2
 block-tracker-storage: "file"
+
+config-version: 2
