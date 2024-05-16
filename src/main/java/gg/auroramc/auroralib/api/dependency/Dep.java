@@ -23,6 +23,8 @@ public enum Dep {
     REGIONAPI("RegionAPI"),
     ECONOMYSHOPGUI("EconomyShopGUI"),
     PROTCOLLIB("ProtocolLib"),
+    MULTIVERSECORE("Multiverse-Core"),
+    WILDREGENERATION("WildRegeneration"),
     ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium");
 
     private String id;

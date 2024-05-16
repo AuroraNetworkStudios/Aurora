@@ -9,6 +9,7 @@ import gg.auroramc.auroralib.api.user.UserManager;
 import gg.auroramc.auroralib.expansions.economy.AuroraEconomy;
 import gg.auroramc.auroralib.expansions.economy.EconomyExpansion;
 import gg.auroramc.auroralib.expansions.numberformat.NumberFormatExpansion;
+import gg.auroramc.auroralib.expansions.region.RegionExpansion;
 
 import java.util.UUID;
 
@@ -98,5 +99,9 @@ public class AuroraAPI {
      */
     public static void removePlaceholderHandler(PlaceholderHandler handler) {
         PlaceholderHandlerRegistry.removeHandler(handler);
+    }
+
+    public static RegionExpansion getRegionManager() {
+        return AuroraLib.getExpansionManager().getExpansion(RegionExpansion.class);
     }
 }

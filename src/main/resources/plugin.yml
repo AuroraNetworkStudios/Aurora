@@ -10,3 +10,5 @@ softdepend:
   - WorldGuard
   - CMI
   - Essentials
+  - Multiverse-Core
+  - WildRegeneration

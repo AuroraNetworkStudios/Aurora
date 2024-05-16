@@ -17,6 +17,7 @@ public class Config extends AuroraConfig {
     private NumberFormatConfig numberFormat;
     private Integer userAutoSaveInMinutes = 30;
     private String storageType = "yaml";
+    private String blockTrackerStorage = "file";
     private MySqlConfig mysql;
 
 
@@ -33,7 +34,8 @@ public class Config extends AuroraConfig {
                     ConfigManager.saveObject(new NumberFormatConfig(), yaml.createSection("number-format"));
                     ConfigManager.saveObject(new MySqlConfig(), yaml.createSection("mysql"));
                     yaml.set("config-version", 1);
-                }
+                },
+                (yaml) -> yaml.set("block-tracker-storage", "file")
         );
     }
 }

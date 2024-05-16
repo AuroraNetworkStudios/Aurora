@@ -19,3 +19,6 @@ mysql:
   network-latency: 500
   pool-size: 10
   sync-retry-count: 3
+
+# can be file or h2
+block-tracker-storage: "file"

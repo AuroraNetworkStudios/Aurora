@@ -31,11 +31,14 @@ repositories {
         name = "placeholderapi"
         url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
     }
+    // WorldGuard/WorldEdit
     maven { url "https://maven.enginehub.org/repo/" }
     maven {
         name "essentialsx-releases"
         url "https://repo.essentialsx.net/releases/"
     }
+    // Multiverse core
+    maven { url = "https://repo.onarandombox.com/content/groups/public/" }
 }
 
 dependencies {
@@ -46,6 +49,8 @@ dependencies {
     compileOnly 'net.essentialsx:EssentialsX:2.19.0'
     compileOnly 'com.sk89q.worldguard:worldguard-bukkit:7.0.9'
     compileOnly "com.github.MilkBowl:VaultAPI:1.7"
+    compileOnly 'com.onarandombox.multiversecore:multiverse-core:4.3.12'
+    compileOnly "com.github.angeschossen:WildRegenerationAPI:1.5.0"
 
     // 3rd party local
     compileOnly name: 'CMI9.0.0.0API'

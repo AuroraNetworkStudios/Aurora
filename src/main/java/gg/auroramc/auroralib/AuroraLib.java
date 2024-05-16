@@ -10,6 +10,7 @@ import gg.auroramc.auroralib.config.Config;
 import gg.auroramc.auroralib.api.expansions.ExpansionManager;
 import gg.auroramc.auroralib.expansions.economy.EconomyExpansion;
 import gg.auroramc.auroralib.expansions.numberformat.NumberFormatExpansion;
+import gg.auroramc.auroralib.expansions.region.RegionExpansion;
 import gg.auroramc.auroralib.expansions.worldguard.WorldGuardExpansion;
 import lombok.Getter;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -69,6 +70,7 @@ public final class AuroraLib extends JavaPlugin implements Listener {
         expansionManager = new ExpansionManager();
         expansionManager.loadExpansion(EconomyExpansion.class);
         expansionManager.loadExpansion(NumberFormatExpansion.class);
+        expansionManager.loadExpansion(RegionExpansion.class);
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);
         }

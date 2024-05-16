@@ -43,7 +43,11 @@ public class UserManager implements Listener {
     private final Cache<UUID, AuroraUser> cache = CacheBuilder.newBuilder()
             .removalListener(notification -> {
                 AuroraUser user = (AuroraUser) notification.getValue();
-                CompletableFuture.runAsync(() -> saveUserData(user, SaveReason.QUIT));
+                CompletableFuture.supplyAsync(() -> saveUserData(user, SaveReason.QUIT)).thenAcceptAsync(success -> {
+                    if(user.getPlayer() == null) {
+                        playerLocks.remove(user.getUniqueId());
+                    }
+                });
             })
             .build();
 
