@@ -4,12 +4,13 @@ import gg.auroramc.auroralib.api.AuroraLogger;
 import gg.auroramc.auroralib.api.dependency.Dep;
 import gg.auroramc.auroralib.api.dependency.DependencyManager;
 import gg.auroramc.auroralib.api.menu.MenuManager;
-import gg.auroramc.auroralib.api.placeholder.AuroraPlaceholderExpansion;
 import gg.auroramc.auroralib.api.user.UserManager;
+import gg.auroramc.auroralib.api.user.UserMetaHolder;
 import gg.auroramc.auroralib.config.Config;
 import gg.auroramc.auroralib.api.expansions.ExpansionManager;
 import gg.auroramc.auroralib.expansions.economy.EconomyExpansion;
 import gg.auroramc.auroralib.expansions.numberformat.NumberFormatExpansion;
+import gg.auroramc.auroralib.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.auroralib.expansions.region.RegionExpansion;
 import gg.auroramc.auroralib.expansions.worldguard.WorldGuardExpansion;
 import lombok.Getter;
@@ -48,16 +49,10 @@ public final class AuroraLib extends JavaPlugin implements Listener {
         libConfig.load();
 
         userManager = new UserManager();
+        userManager.registerUserDataHolder(UserMetaHolder.class);
+
         menuManager = new MenuManager(this);
         setupExpansions();
-
-        if (DependencyManager.hasDep(Dep.PAPI)) {
-            if (new AuroraPlaceholderExpansion().register()) {
-                logger().info("PlaceholderAPI expansion registered");
-            } else {
-                logger().warning("Couldn't register PlaceholderAPI expansion");
-            }
-        }
     }
 
     @Override
@@ -69,6 +64,7 @@ public final class AuroraLib extends JavaPlugin implements Listener {
 
     private void setupExpansions() {
         expansionManager = new ExpansionManager();
+        expansionManager.loadExpansion(PlaceholderExpansion.class);
         expansionManager.loadExpansion(EconomyExpansion.class);
         expansionManager.loadExpansion(NumberFormatExpansion.class);
         expansionManager.loadExpansion(RegionExpansion.class);

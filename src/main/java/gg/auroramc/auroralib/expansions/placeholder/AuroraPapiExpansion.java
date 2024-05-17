@@ -1,5 +1,6 @@
-package gg.auroramc.auroralib.api.placeholder;
+package gg.auroramc.auroralib.expansions.placeholder;
 
+import gg.auroramc.auroralib.api.placeholder.PlaceholderHandlerRegistry;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -7,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class AuroraPlaceholderExpansion extends PlaceholderExpansion {
+public class AuroraPapiExpansion extends PlaceholderExpansion {
     @Override
     public @NotNull String getIdentifier() {
         return PlaceholderHandlerRegistry.getGlobalId();

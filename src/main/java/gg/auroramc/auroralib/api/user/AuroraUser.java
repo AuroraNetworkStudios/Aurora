@@ -61,6 +61,10 @@ public class AuroraUser {
         return null;
     }
 
+    public UserMetaHolder getMetaData() {
+        return getData(UserMetaHolder.class);
+    }
+
     public YamlConfiguration serializeData() {
         synchronized (serializeLock) {
             for(var holder : dataHolderMap.values()) {
