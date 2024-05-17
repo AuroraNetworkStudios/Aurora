@@ -36,8 +36,8 @@ public class RegionExpansion implements AuroraExpansion {
     }
 
     public void clearChunk(String name, int x, int z) {
-        int regionX = (int) Math.floor((double) z / 32.0);
-        int regionZ = (int) Math.floor((double) x / 32.0);
+        int regionX = (int) Math.floor((double) x / 32.0);
+        int regionZ = (int) Math.floor((double) z / 32.0);
         Region region = regions.get(new RegionCoordinate(Bukkit.getWorld(name), regionX, regionZ));
         byte regionChunkX = (byte) (x- regionX * 32);
         byte regionChunkZ = (byte) (z - regionZ * 32);
