@@ -14,7 +14,7 @@ public class AuroraLogger {
     }
 
     public AuroraLogger(String prefix, Supplier<Boolean> debug) {
-        this.prefix = Chat.translateToMM(prefix);
+        this.prefix = Chat.translateToMM(String.format("&#1286b8%s &8&l| ", prefix));
         this.debug = debug;
     }
 

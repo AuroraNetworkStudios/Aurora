@@ -12,6 +12,7 @@ import gg.auroramc.auroralib.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.auroralib.expansions.region.RegionExpansion;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 
 public class AuroraAPI {
     public static ExpansionManager getExpansions() {
@@ -23,6 +24,18 @@ public class AuroraAPI {
      */
     public static AuroraLogger getLogger() {
         return AuroraLib.logger();
+    }
+
+    /**
+     * Creates a custom logger with you plugin name as prefix.
+     *
+     * @param plugin the name of your plugin
+     * @param debugMode the supplier for the debug parameter
+     *
+     * @return the newly created logger
+     */
+    public static AuroraLogger createLogger(String plugin, Supplier<Boolean> debugMode) {
+        return new AuroraLogger(plugin, debugMode);
     }
 
     /**
