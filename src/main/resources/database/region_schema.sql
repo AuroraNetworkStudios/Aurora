@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS chunks
     region_id INTEGER,
     chunk_x   INTEGER,
     chunk_z   INTEGER,
-    FOREIGN KEY (region_id) REFERENCES regions (id)
+    FOREIGN KEY (region_id) REFERENCES regions (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS blocks
@@ -23,5 +23,5 @@ CREATE TABLE IF NOT EXISTS blocks
     block_y     INTEGER,
     block_z     INTEGER,
     player_uuid TEXT,
-    FOREIGN KEY (chunk_id) REFERENCES chunks (id)
+    FOREIGN KEY (chunk_id) REFERENCES chunks (id) ON DELETE CASCADE
 );
