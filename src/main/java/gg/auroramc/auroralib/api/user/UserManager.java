@@ -70,7 +70,7 @@ public class UserManager implements Listener {
             var successCount = 0;
             var all = values.size();
             for (var user : values) {
-                if (!user.isLoaded()) {
+                if (!user.isLoaded() || !user.isDirty()) {
                     successCount++;
                     continue;
                 }

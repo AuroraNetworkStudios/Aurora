@@ -104,4 +104,8 @@ public class AuroraUser {
     public void setLoaded(boolean loaded) {
         this.loaded.set(loaded);
     }
+
+    public boolean isDirty() {
+        return dataHolderMap.values().stream().anyMatch(UserDataHolder::isDirty);
+    }
 }
