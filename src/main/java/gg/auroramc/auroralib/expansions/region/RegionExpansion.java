@@ -7,7 +7,7 @@ import gg.auroramc.auroralib.api.expansions.AuroraExpansion;
 import gg.auroramc.auroralib.expansions.region.integrations.MVCore;
 import gg.auroramc.auroralib.expansions.region.integrations.WildRegeneration;
 import gg.auroramc.auroralib.expansions.region.storage.FileRegionStorage;
-import gg.auroramc.auroralib.expansions.region.storage.H2RegionStorage;
+import gg.auroramc.auroralib.expansions.region.storage.SqliteRegionStorage;
 import gg.auroramc.auroralib.expansions.region.storage.RegionStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -16,6 +16,7 @@ import org.bukkit.block.Block;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class RegionExpansion implements AuroraExpansion {
 
@@ -39,10 +40,10 @@ public class RegionExpansion implements AuroraExpansion {
         int regionX = (int) Math.floor((double) x / 32.0);
         int regionZ = (int) Math.floor((double) z / 32.0);
         Region region = regions.get(new RegionCoordinate(Bukkit.getWorld(name), regionX, regionZ));
-        byte regionChunkX = (byte) (x- regionX * 32);
+        byte regionChunkX = (byte) (x - regionX * 32);
         byte regionChunkZ = (byte) (z - regionZ * 32);
 
-        if(region != null) {
+        if (region != null) {
             region.removeChunkData(new ChunkCoordinate(regionChunkX, regionChunkZ));
         } else {
             Bukkit.getAsyncScheduler().runNow(AuroraLib.getInstance(),
@@ -51,8 +52,8 @@ public class RegionExpansion implements AuroraExpansion {
     }
 
     public void clearWorld(String worldName) {
-        for(var region : regions.values()) {
-            if(region.getWorldName().equals(worldName)) {
+        for (var region : regions.values()) {
+            if (region.getWorldName().equals(worldName)) {
                 region.clear();
                 Bukkit.getAsyncScheduler().runNow(AuroraLib.getInstance(), (task) -> storage.deleteRegionsInWorld(worldName));
             }
@@ -152,18 +153,20 @@ public class RegionExpansion implements AuroraExpansion {
         if (AuroraLib.getLibConfig().getBlockTrackerStorage().equals("file")) {
             storage = new FileRegionStorage();
         } else {
-            storage = new H2RegionStorage();
+            storage = new SqliteRegionStorage();
         }
 
+        startSaveTimer();
+
         var plugin = AuroraLib.getInstance();
-        Bukkit.getPluginManager().registerEvents(new RegionListener(plugin, this), plugin);
+        Bukkit.getPluginManager().registerEvents(new RegionListener(this), plugin);
         Bukkit.getPluginManager().registerEvents(new RegionBlockListener(plugin, this), plugin);
 
-        if(DependencyManager.hasDep(Dep.MULTIVERSECORE)) {
+        if (DependencyManager.hasDep(Dep.MULTIVERSECORE)) {
             Bukkit.getPluginManager().registerEvents(new MVCore(), plugin);
         }
 
-        if(DependencyManager.hasDep(Dep.WILDREGENERATION)) {
+        if (DependencyManager.hasDep(Dep.WILDREGENERATION)) {
             Bukkit.getPluginManager().registerEvents(new WildRegeneration(), plugin);
         }
     }
@@ -171,5 +174,13 @@ public class RegionExpansion implements AuroraExpansion {
     @Override
     public boolean canHook() {
         return true;
+    }
+
+    public void startSaveTimer() {
+        Bukkit.getAsyncScheduler().runAtFixedRate(AuroraLib.getInstance(),
+                (task) -> {
+                    saveAllRegions(true);
+                    AuroraLib.logger().debug("All regions have been auto saved.");
+                }, 300, 300, TimeUnit.SECONDS);
     }
 }

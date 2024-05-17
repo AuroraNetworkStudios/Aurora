@@ -1,23 +1,16 @@
 package gg.auroramc.auroralib.expansions.region;
 
-import gg.auroramc.auroralib.AuroraLib;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 
-import java.util.concurrent.TimeUnit;
-
 public class RegionListener implements Listener {
 
-    private final AuroraLib plugin;
     private final RegionExpansion regionExpansion;
 
-    public RegionListener(AuroraLib plugin, RegionExpansion regionExpansion) {
-        this.plugin = plugin;
+    public RegionListener(RegionExpansion regionExpansion) {
         this.regionExpansion = regionExpansion;
-        startSaveTimer();
     }
 
     @EventHandler
@@ -35,10 +28,5 @@ public class RegionListener implements Listener {
         if (event.isNewChunk()) {
             regionExpansion.clearChunk(event.getChunk());
         }
-    }
-
-    public void startSaveTimer() {
-        Bukkit.getAsyncScheduler().runAtFixedRate(plugin,
-                (task) -> regionExpansion.saveAllRegions(true), 300, 300, TimeUnit.SECONDS);
     }
 }

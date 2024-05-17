@@ -64,6 +64,7 @@ public final class AuroraLib extends JavaPlugin implements Listener {
     public void onDisable() {
         disabling = true;
         userManager.stopTasksAndSaveAllData();
+        expansionManager.getExpansion(RegionExpansion.class).saveAllRegions(false);
     }
 
     private void setupExpansions() {

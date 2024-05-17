@@ -20,7 +20,7 @@ mysql:
   pool-size: 10
   sync-retry-count: 3
 
-# can be file or h2
+# can be file or sqlite
 block-tracker-storage: "file"
 
 config-version: 2
