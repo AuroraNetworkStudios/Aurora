@@ -24,21 +24,4 @@ public class Config extends AuroraConfig {
     public Config() {
         super(new File(Aurora.getInstance().getDataFolder(), "config.yml"));
     }
-
-    @Override
-    protected List<Consumer<YamlConfiguration>> getMigrationSteps() {
-        return List.of(
-                (yaml) -> {
-                    yaml.set("user-auto-save-in-minutes", 30);
-                    yaml.set("storage-type", "yaml");
-                    ConfigManager.saveObject(new NumberFormatConfig(), yaml.createSection("number-format"));
-                    ConfigManager.saveObject(new MySqlConfig(), yaml.createSection("mysql"));
-                    yaml.set("config-version", 1);
-                },
-                (yaml) -> {
-                    yaml.set("block-tracker-storage", "file");
-                    yaml.set("config-version", 2);
-                }
-        );
-    }
 }
