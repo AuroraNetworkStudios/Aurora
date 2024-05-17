@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '7.1.0'
+    id 'maven-publish'
 }
 
 configurations {
@@ -118,22 +118,36 @@ tasks {
     }
 }
 
-publishing {
-    repositories {
-        maven {
-            url "TODO"
-            credentials {
-                username "TODO"
-                password "TODO"
+def publishProperties = rootProject.file('publish.properties')
+
+if (publishProperties.exists()) {
+    Properties properties = new Properties()
+    properties.load(new FileInputStream(publishProperties))
+    // Set the properties as project properties
+    properties.each { key, value ->
+        project.ext.set(key, value)
+    }
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifact("build/libs/Aurora-$version" + ".jar") {
+                    extension 'jar'
+                }
             }
         }
-    }
-    publications {
-        maven(MavenPublication) {
-            artifact("build/libs/Aurora-$version" + ".jar") {
-                extension 'jar'
+
+        repositories {
+            maven {
+                name = 'AuroraMC'
+                url "https://repo.auroramc.gg/repository/maven-releases/"
+                credentials {
+                    username project.ext.username
+                    password project.ext.password
+                }
             }
         }
     }
 }
+
 
