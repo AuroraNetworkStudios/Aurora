@@ -26,7 +26,7 @@ public class AuroraPapiExpansion extends PlaceholderExpansion {
 
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
-        return super.onPlaceholderRequest(player, params);
+        return PlaceholderHandlerRegistry.fillPlaceholderRequest(player, params);
     }
 
     @Override

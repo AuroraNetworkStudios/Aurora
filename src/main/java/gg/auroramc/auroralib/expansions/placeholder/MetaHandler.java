@@ -28,15 +28,13 @@ public class MetaHandler implements PlaceholderHandler {
             return dataType.equals("string") ? "" : "0";
         }
 
-        if (dataType.equals("int")) {
-            return String.valueOf(meta.getMeta(key, 0L));
-        } else if (dataType.equals("double")) {
-            return String.valueOf(meta.getMeta(key, 0.0));
-        } else if (dataType.equals("string")) {
-            return meta.getMeta(key, "");
-        }
+        return switch (dataType) {
+            case "int" -> String.valueOf(meta.getMeta(key, 0L));
+            case "double" -> String.valueOf(meta.getMeta(key, 0.0));
+            case "string" -> meta.getMeta(key, "");
+            default -> null;
+        };
 
-        return null;
     }
 
     @Override
