@@ -1,8 +1,8 @@
 package config;
 
-import gg.auroramc.auroralib.api.config.ConfigManager;
-import gg.auroramc.auroralib.api.config.decorators.IgnoreField;
-import gg.auroramc.auroralib.api.config.premade.ItemConfig;
+import gg.auroramc.aurora.api.config.ConfigManager;
+import gg.auroramc.aurora.api.config.decorators.IgnoreField;
+import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

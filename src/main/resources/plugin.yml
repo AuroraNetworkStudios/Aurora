@@ -1,6 +1,6 @@
-name: AuroraLib
+name: Aurora
 version: '${version}'
-main: gg.auroramc.auroralib.AuroraLib
+main: gg.auroramc.aurora.Aurora
 api-version: 1.19
 authors: [ "erik_sz" ]
 folia-supported: true

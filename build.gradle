@@ -9,7 +9,7 @@ configurations {
 }
 
 group = 'gg.auroramc'
-version = '3.0.0'
+version = '1.0.0'
 
 repositories {
     flatDir {
@@ -109,23 +109,28 @@ shadowJar {
     configurations = [project.configurations.runtimeClasspath]
 
     // Relocate the exp4j package to prevent any conflicts with other versions that might be on the classpath
-    relocate "com.zaxxer.hikari", "gg.auroramc.auroralib.libs.hikari"
+    relocate "com.zaxxer.hikari", "gg.auroramc.aurora.libs.hikari"
+}
+
+tasks {
+    build {
+        dependsOn shadowJar
+    }
 }
 
 publishing {
     repositories {
         maven {
-            allowInsecureProtocol = true
-            url "http://10.8.0.1:9091/repository/maven-releases/"
+            url "TODO"
             credentials {
-                username "aurora"
-                password "aurorapublish-!"
+                username "TODO"
+                password "TODO"
             }
         }
     }
     publications {
         maven(MavenPublication) {
-            artifact("build/libs/AuroraLib-$version" + ".jar") {
+            artifact("build/libs/Aurora-$version" + ".jar") {
                 extension 'jar'
             }
         }
