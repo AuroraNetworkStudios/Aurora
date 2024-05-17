@@ -2,7 +2,7 @@ name: AuroraLib
 version: '${version}'
 main: gg.auroramc.auroralib.AuroraLib
 api-version: 1.19
-authors: ["erik_sz"]
+authors: [ "erik_sz" ]
 folia-supported: true
 softdepend:
   - PlaceholderAPI
