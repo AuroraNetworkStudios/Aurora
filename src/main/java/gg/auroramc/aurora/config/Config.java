@@ -29,10 +29,10 @@ public class Config extends AuroraConfig {
     protected List<Consumer<YamlConfiguration>> getMigrationSteps() {
         return List.of(
                 (yaml) -> {
-                    yaml.set("config-version", 1);
                     yaml.set("block-tracker.enabled", true);
                     yaml.set("block-tracker.storage-type", yaml.get("block-tracker-storage", "file"));
                     yaml.set("block-tracker-storage", null);
+                    yaml.set("config-version", 1);
                 }
         );
     }
