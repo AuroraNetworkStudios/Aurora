@@ -67,9 +67,13 @@ public final class Aurora extends JavaPlugin implements Listener {
         expansionManager.loadExpansion(PlaceholderExpansion.class);
         expansionManager.loadExpansion(EconomyExpansion.class);
         expansionManager.loadExpansion(NumberFormatExpansion.class);
-        expansionManager.loadExpansion(RegionExpansion.class);
+
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);
+        }
+
+        if (libConfig.getBlockTracker().getEnabled()) {
+            expansionManager.loadExpansion(RegionExpansion.class);
         }
     }
 }

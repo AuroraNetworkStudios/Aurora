@@ -150,7 +150,7 @@ public class RegionExpansion implements AuroraExpansion {
 
     @Override
     public void hook() {
-        if (Aurora.getLibConfig().getBlockTrackerStorage().equals("file")) {
+        if (Aurora.getLibConfig().getBlockTracker().getStorageType().equals("file")) {
             storage = new FileRegionStorage();
         } else {
             storage = new SqliteRegionStorage();
