@@ -10,6 +10,11 @@ public class PlaceholderExpansion implements AuroraExpansion {
     public void hook() {
         new AuroraPapiExpansion().register();
         PlaceholderHandlerRegistry.addHandler(new MetaHandler());
+        PlaceholderHandlerRegistry.addHandler(new ColorHandler());
+
+        if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
+            PlaceholderHandlerRegistry.addHandler(new InRegionHandler());
+        }
     }
 
     @Override
