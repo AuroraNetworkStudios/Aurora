@@ -63,4 +63,12 @@ public class YamlStorage implements UserStorage {
             return false;
         }
     }
+
+    @Override
+    public void purgeUser(UUID uuid) {
+        var file = new File(Aurora.getInstance().getDataFolder() + "/userdata", uuid + ".yml");
+        if(file.exists()) {
+            file.delete();
+        }
+    }
 }

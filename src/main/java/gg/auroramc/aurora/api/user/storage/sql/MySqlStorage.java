@@ -171,6 +171,22 @@ public class MySqlStorage implements UserStorage {
         }
     }
 
+    @Override
+    public void purgeUser(UUID uuid) {
+        String deleteStmt = "DELETE FROM " + tableName + " WHERE player_uuid=?;";
+
+        try {
+            try (Connection connection = connection()) {
+                try (PreparedStatement statement = connection.prepareStatement(deleteStmt)) {
+                    statement.setString(1, uuid.toString());
+                    statement.executeUpdate();
+                }
+            }
+        } catch (Exception e) {
+            Aurora.logger().severe("Failed to purge user data for player: " + uuid);
+        }
+    }
+
     private void createSyncFlag(UUID uuid, Connection connection) {
         String insertQuery = "INSERT INTO " + syncTableName + " (player_uuid) VALUES (?) ON DUPLICATE KEY UPDATE created=NOW();";
 

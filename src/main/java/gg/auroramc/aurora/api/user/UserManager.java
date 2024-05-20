@@ -14,6 +14,7 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -40,16 +41,7 @@ public class UserManager implements Listener {
     private final LatencyMeasure syncFlagLatencyMeasure = new LatencyMeasure();
 
     // Stores actual online users data
-    private final Cache<UUID, AuroraUser> cache = CacheBuilder.newBuilder()
-            .removalListener(notification -> {
-                AuroraUser user = (AuroraUser) notification.getValue();
-                CompletableFuture.supplyAsync(() -> saveUserData(user, SaveReason.QUIT)).thenAcceptAsync(success -> {
-                    if(user.getPlayer() == null) {
-                        playerLocks.remove(user.getUniqueId());
-                    }
-                });
-            })
-            .build();
+    private final Cache<UUID, AuroraUser> cache = CacheBuilder.newBuilder().build();
 
 
     // Stores user data for offline players that are loaded for some reason
@@ -194,6 +186,30 @@ public class UserManager implements Listener {
         });
     }
 
+    public void purgeUserData(UUID uuid) {
+        CompletableFuture.runAsync(() -> {
+            synchronized (getPlayerLock(uuid)) {
+                if (offlineCache.getIfPresent(uuid) != null) {
+                    offlineCache.invalidate(uuid);
+                }
+                if (cache.getIfPresent(uuid) != null) {
+                    var oldUser = cache.getIfPresent(uuid);
+                    cache.invalidate(uuid);
+                    var newUser = new AuroraUser(uuid, true);
+                    newUser.initData(new YamlConfiguration(), dataHolders);
+                    cache.put(uuid, newUser);
+                    storage.purgeUser(uuid);
+                    Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
+                        Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(oldUser));
+                        Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(newUser));
+                    });
+                } else {
+                    storage.purgeUser(uuid);
+                }
+            }
+        });
+    }
+
     /**
      * Stop cacheTTL heartbeat task for online players and autosave task.
      * Saves all cached data sync.
@@ -207,7 +223,14 @@ public class UserManager implements Listener {
     }
 
     public void invalidate(Player player) {
+        var user = cache.getIfPresent(player.getUniqueId());
         cache.invalidate(player.getUniqueId());
+        if (user == null) return;
+        CompletableFuture.supplyAsync(() -> saveUserData(user, SaveReason.QUIT)).thenAcceptAsync(success -> {
+            if (user.getPlayer() == null) {
+                playerLocks.remove(user.getUniqueId());
+            }
+        });
     }
 
     @EventHandler(ignoreCancelled = true)
