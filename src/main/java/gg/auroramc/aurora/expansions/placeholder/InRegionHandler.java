@@ -42,7 +42,6 @@ public class InRegionHandler implements PlaceholderHandler {
     @Override
     public List<String> getPatterns() {
         return List.of(
-                "",
                 "<region-name>"
         );
     }
