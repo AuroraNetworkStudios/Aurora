@@ -34,12 +34,13 @@ public class AuroraUser {
 
     public void initData(YamlConfiguration data, Set<Class<? extends UserDataHolder>> dataHolders) {
         synchronized (serializeLock) {
-            this.configuration = data;
+            final boolean isLoaded = loaded.get();
+            if(data != null) this.configuration = data;
             for(var holderClass : dataHolders) {
                 try {
                     var holder = holderClass.getDeclaredConstructor().newInstance();
                     holder.setUser(this);
-                    if(loaded.get() && data != null) {
+                    if(isLoaded && data != null) {
                         holder.initFrom(data.getConfigurationSection(holder.getId().toString()));
                     }
                     dataHolderMap.put(holderClass, holder);
@@ -47,6 +48,15 @@ public class AuroraUser {
                     Aurora.logger().warning("Failed to initialize data holder: " + holderClass.getSimpleName() + " error: " + e.getMessage());
                 }
             }
+        }
+    }
+
+    void loadFromUser(AuroraUser user) {
+        synchronized (serializeLock) {
+            this.configuration = user.configuration;
+            this.dataHolderMap.clear();
+            this.dataHolderMap.putAll(user.dataHolderMap);
+            this.loaded.set(true);
         }
     }
 
@@ -67,6 +77,9 @@ public class AuroraUser {
 
     public YamlConfiguration serializeData() {
         synchronized (serializeLock) {
+            if(configuration == null) {
+                Aurora.logger().debug("Configuration is null for user: " + uuid + " when calling AuroraUser#serializeData");
+            }
             for(var holder : dataHolderMap.values()) {
                 holder.serializeInto(getOrCreateSection(holder.getId().toString()));
             }

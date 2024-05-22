@@ -137,6 +137,7 @@ public class UserManager implements Listener {
             var fakeUser = new AuroraUser(uuid, false);
             fakeUser.initData(null, dataHolders);
             cache.put(uuid, fakeUser);
+            Aurora.logger().debug("Created fake user " + uuid + " in cache");
         }
         return cache.getIfPresent(uuid);
     }
@@ -155,13 +156,13 @@ public class UserManager implements Listener {
                     var maybeUser = cache.getIfPresent(uuid);
 
                     if (maybeUser != null && !maybeUser.isLoaded()) {
-                        maybeUser.setLoaded(true);
-                        maybeUser.initData(user.getConfiguration(), dataHolders);
+                        maybeUser.loadFromUser(user);
+                        Aurora.logger().debug("Updated user " + user.getUniqueId() + " in cache");
                     } else {
                         cache.put(uuid, user);
+                        Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
                     }
 
-                    Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
                     Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
                             (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
                 });
@@ -218,7 +219,9 @@ public class UserManager implements Listener {
     public void stopTasksAndSaveAllData() {
         if (autoSaveTask != null) autoSaveTask.cancel();
         for (var user : cache.asMap().values()) {
-            saveUserData(user, SaveReason.QUIT);
+            if (user.isLoaded()) {
+                saveUserData(user, SaveReason.QUIT);
+            }
         }
     }
 
