@@ -227,11 +227,14 @@ public class UserManager implements Listener {
 
     public void invalidate(Player player) {
         var user = cache.getIfPresent(player.getUniqueId());
-        cache.invalidate(player.getUniqueId());
         if (user == null) return;
         CompletableFuture.supplyAsync(() -> saveUserData(user, SaveReason.QUIT)).thenAcceptAsync(success -> {
-            if (user.getPlayer() == null) {
+            if (user.getPlayer() == null || !user.getPlayer().isOnline()) {
+                Aurora.logger().debug("Removed user " + user.getUniqueId() + " from cache");
                 playerLocks.remove(user.getUniqueId());
+                cache.invalidate(player.getUniqueId());
+            } else {
+                Aurora.logger().debug("Failed to remove user " + user.getUniqueId() + " from cache, because player is still online");
             }
         });
     }
@@ -243,6 +246,7 @@ public class UserManager implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
-        invalidate(e.getPlayer());
+        Bukkit.getGlobalRegionScheduler().runDelayed(Aurora.getInstance(),
+                (task) -> invalidate(e.getPlayer()), 1);
     }
 }

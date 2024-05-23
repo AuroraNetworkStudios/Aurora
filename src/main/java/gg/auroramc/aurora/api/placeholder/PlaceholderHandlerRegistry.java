@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.placeholder;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -18,6 +19,7 @@ public class PlaceholderHandlerRegistry {
     }
 
     public static String fillPlaceholderRequest(Player player, String params) {
+        if(!player.isOnline()) return null;
         var splitParams = params.split("_");
         if(splitParams.length == 0) return null;
 
