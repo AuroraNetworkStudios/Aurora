@@ -1,33 +1,40 @@
 package gg.auroramc.aurora.api.user;
 
+import gg.auroramc.aurora.Aurora;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class UserDataHolder implements DataHolder {
-    protected final AtomicReference<AuroraUser> user = new AtomicReference<>();
+    protected AtomicReference<UUID> uuid = new AtomicReference<>();
     protected final AtomicBoolean dirty = new AtomicBoolean(false);
 
-    public void setUser(AuroraUser user) {
-        this.user.set(user);
+    public void setUuid(UUID uuid) {
+        this.uuid.set(uuid);
+    }
+
+    public UUID getUniqueId() {
+        return uuid.get();
     }
 
     public AuroraUser getUser() {
-        return user.get();
+        return Aurora.getUserManager().getUser(uuid.get());
     }
 
     @Nullable
     public Player getPlayer() {
-        return user.get().getPlayer();
+        return Bukkit.getPlayer(uuid.get());
     }
 
     @NotNull
     public OfflinePlayer getOfflinePlayer() {
-        return user.get().getOfflinePlayer();
+        return Bukkit.getOfflinePlayer(uuid.get());
     }
 
     @Override
