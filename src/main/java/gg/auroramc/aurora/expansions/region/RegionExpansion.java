@@ -110,6 +110,11 @@ public class RegionExpansion implements AuroraExpansion {
         RegionCoordinate regionCoordinate = new RegionCoordinate(block.getWorld(), regionX, regionZ);
         Region region = regions.get(regionCoordinate);
 
+        if (region == null) {
+            region = new Region(block.getWorld(), regionX, regionZ);
+            loadRegion(region);
+        }
+
         byte regionChunkX = (byte) (chunkX - regionX * 32);
         byte regionChunkZ = (byte) (chunkZ - regionZ * 32);
 
