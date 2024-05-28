@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.expansions.economy;
 
+import com.Zrips.CMI.CMI;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
@@ -21,10 +22,10 @@ public class EconomyExpansion implements AuroraExpansion {
             defaultEconomy = Dep.VAULT.getId();
         }
 
-        if (DependencyManager.hasDep(Dep.ESSENTIALS)) {
+        if (DependencyManager.hasDep(Dep.ESSENTIALS) && DependencyManager.getEssentials().isEconomyEnabled()) {
             economies.put(Dep.ESSENTIALS.getId(), new EssentialsEconomy());
             defaultEconomy = Dep.ESSENTIALS.getId();
-        } else if (DependencyManager.hasDep(Dep.CMI)) {
+        } else if (DependencyManager.hasDep(Dep.CMI) && CMI.getInstance().getEconomyManager().isEnabled()) {
             economies.put(Dep.CMI.getId(), new CMIEconomy());
             defaultEconomy = Dep.CMI.getId();
         }

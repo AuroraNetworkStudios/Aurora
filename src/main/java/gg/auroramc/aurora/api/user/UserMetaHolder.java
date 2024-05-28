@@ -50,31 +50,40 @@ public class UserMetaHolder extends UserDataHolder {
         return (String) meta.getOrDefault(key, def);
     }
 
-    public void setMeta(String key, long value) {
+    public boolean setMeta(String key, long value) {
+        if (!getUser().isLoaded()) return false;
         meta.put(key, value);
         dirty.set(true);
+        return true;
     }
 
-    public void setMeta(String key, double value) {
+    public boolean setMeta(String key, double value) {
+        if (!getUser().isLoaded()) return false;
         meta.put(key, value);
         dirty.set(true);
+        return true;
     }
 
-    public void setMeta(String key, String value) {
+    public boolean setMeta(String key, String value) {
+        if (!getUser().isLoaded()) return false;
         meta.put(key, value);
         dirty.set(true);
+        return true;
     }
 
-    public void incrementMeta(String key, Number value) {
+    public boolean incrementMeta(String key, Number value) {
+        if (!getUser().isLoaded()) return false;
         meta.put(key, getMeta(key, 0).doubleValue() + value.doubleValue());
         dirty.set(true);
+        return true;
     }
 
-    public void decrementMeta(String key, Number value) {
-        decrementMeta(key, value, false);
+    public boolean decrementMeta(String key, Number value) {
+        return decrementMeta(key, value, false);
     }
 
-    public void decrementMeta(String key, Number value, boolean allowNegative) {
+    public boolean decrementMeta(String key, Number value, boolean allowNegative) {
+        if (!getUser().isLoaded()) return false;
         if (allowNegative) {
             meta.put(key, getMeta(key, 0).doubleValue() - value.doubleValue());
         } else {
@@ -83,5 +92,6 @@ public class UserMetaHolder extends UserDataHolder {
             meta.put(key, newValue);
         }
         dirty.set(true);
+        return true;
     }
 }

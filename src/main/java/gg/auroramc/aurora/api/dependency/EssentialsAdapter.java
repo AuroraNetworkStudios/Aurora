@@ -42,4 +42,8 @@ public class EssentialsAdapter {
         return ess.getUser(source).getMoney().doubleValue();
     }
 
+    public boolean isEconomyEnabled() {
+        return !ess.getSettings().isEcoDisabled();
+    }
+
 }
