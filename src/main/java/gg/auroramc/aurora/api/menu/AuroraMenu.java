@@ -3,6 +3,9 @@ package gg.auroramc.aurora.api.menu;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.api.util.NamespacedId;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -26,11 +29,24 @@ public class AuroraMenu implements InventoryHolder {
     private List<ItemStack> freeItems;
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
     private final Player player;
+    @Getter
+    @Setter
+    private NamespacedId id;
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder<?>... placeholders) {
         this.player = player;
         this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
         this.filler = ItemBuilder.filler();
+        if (refreshEnabled) {
+            Aurora.getMenuManager().getRefresher().add(this);
+        }
+    }
+
+    public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, NamespacedId id, Placeholder<?>... placeholders) {
+        this.player = player;
+        this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
+        this.filler = ItemBuilder.filler();
+        this.id = id;
         if (refreshEnabled) {
             Aurora.getMenuManager().getRefresher().add(this);
         }
