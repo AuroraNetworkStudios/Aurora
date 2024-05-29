@@ -64,6 +64,9 @@ dependencies {
         exclude group: "org.slf4j", module: "slf4j-api"
     }
 
+    // exp4j
+    implementation("net.objecthunter:exp4j:0.4.8")
+
     // JUnit Jupiter API and Engine dependencies
     testImplementation "io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT"
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
@@ -108,8 +111,8 @@ shadowJar {
     // Include dependency from the 'shade' configuration into the JAR
     configurations = [project.configurations.runtimeClasspath]
 
-    // Relocate the exp4j package to prevent any conflicts with other versions that might be on the classpath
     relocate "com.zaxxer.hikari", "gg.auroramc.aurora.libs.hikari"
+    relocate "net.objecthunter.exp4j", "gg.auroramc.aurora.libs.exp4j"
 }
 
 tasks {

@@ -36,7 +36,19 @@ public class Text {
         return msg;
     }
 
+    public static String fillPlaceholders(Player player, String text, List<Placeholder<?>> placeholders) {
+        var msg = Placeholder.execute(text, placeholders);
+        if(DependencyManager.hasDep(Dep.PAPI)) {
+            msg = PlaceholderAPI.setPlaceholders(player, msg);
+        }
+        return msg;
+    }
+
     public static String fillPlaceholders(String text, Placeholder<?>... placeholders) {
+        return Placeholder.execute(text, placeholders);
+    }
+
+    public static String fillPlaceholders(String text, List<Placeholder<?>> placeholders) {
         return Placeholder.execute(text, placeholders);
     }
 
