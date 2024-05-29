@@ -24,11 +24,20 @@ public class Text {
     }
 
     public static String build(Player player, String text, Placeholder<?>... placeholders) {
+        var msg = fillPlaceholders(player, text, placeholders);
+        return Chat.translateColorCodes(msg);
+    }
+
+    public static String fillPlaceholders(Player player, String text, Placeholder<?>... placeholders) {
         var msg = Placeholder.execute(text, placeholders);
         if(DependencyManager.hasDep(Dep.PAPI)) {
             msg = PlaceholderAPI.setPlaceholders(player, msg);
         }
-        return Chat.translateColorCodes(msg);
+        return msg;
+    }
+
+    public static String fillPlaceholders(String text, Placeholder<?>... placeholders) {
+        return Placeholder.execute(text, placeholders);
     }
 
     public static Component component(Player player, String text, Placeholder<?>... placeholders) {
