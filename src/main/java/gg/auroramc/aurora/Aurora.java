@@ -1,6 +1,7 @@
 package gg.auroramc.aurora;
 
 import gg.auroramc.aurora.api.AuroraLogger;
+import gg.auroramc.aurora.api.command.AuroraCommand;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.menu.MenuManager;
@@ -53,6 +54,8 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         menuManager = new MenuManager(this);
         setupExpansions();
+
+        getCommand("aurora").setExecutor(new AuroraCommand());
     }
 
     @Override

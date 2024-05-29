@@ -12,3 +12,12 @@ softdepend:
   - Essentials
   - Multiverse-Core
   - WildRegeneration
+
+permissions:
+  aurora.core.admin:
+    description: Allows the player to use all AuroraAPI commands
+    default: op
+
+commands:
+  aurora:
+    permission: aurora.core.admin

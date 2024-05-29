@@ -37,24 +37,14 @@ public class UserMetaHolder extends UserDataHolder {
         return meta.get(key);
     }
 
-    public Long getMeta(String key, long def) {
-        return (long) meta.getOrDefault(key, def);
-    }
-
     public Double getMeta(String key, double def) {
-        return (double) meta.getOrDefault(key, def);
+        var m = meta.get(key);
+        return m == null ? def : (double) m;
     }
 
     public String getMeta(String key, String def) {
-        if (def == null) return (String) meta.get(key);
-        return (String) meta.getOrDefault(key, def);
-    }
-
-    public boolean setMeta(String key, long value) {
-        if (!getUser().isLoaded()) return false;
-        meta.put(key, value);
-        dirty.set(true);
-        return true;
+        var m = meta.get(key);
+        return m == null ? def : m.toString();
     }
 
     public boolean setMeta(String key, double value) {
@@ -71,23 +61,30 @@ public class UserMetaHolder extends UserDataHolder {
         return true;
     }
 
-    public boolean incrementMeta(String key, Number value) {
+    public boolean removeMeta(String key) {
         if (!getUser().isLoaded()) return false;
-        meta.put(key, getMeta(key, 0).doubleValue() + value.doubleValue());
+        meta.remove(key);
         dirty.set(true);
         return true;
     }
 
-    public boolean decrementMeta(String key, Number value) {
+    public boolean incrementMeta(String key, Double value) {
+        if (!getUser().isLoaded()) return false;
+        meta.put(key, getMeta(key, 0) + value);
+        dirty.set(true);
+        return true;
+    }
+
+    public boolean decrementMeta(String key, Double value) {
         return decrementMeta(key, value, false);
     }
 
-    public boolean decrementMeta(String key, Number value, boolean allowNegative) {
+    public boolean decrementMeta(String key, Double value, boolean allowNegative) {
         if (!getUser().isLoaded()) return false;
         if (allowNegative) {
-            meta.put(key, getMeta(key, 0).doubleValue() - value.doubleValue());
+            meta.put(key, getMeta(key, 0) - value);
         } else {
-            double newValue = getMeta(key, 0).doubleValue() - value.doubleValue();
+            double newValue = getMeta(key, 0) - value;
             if (newValue < 0) newValue = 0;
             meta.put(key, newValue);
         }
