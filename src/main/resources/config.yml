@@ -1,9 +1,9 @@
 debug: false
 
 number-format:
-  locale: "hu-HU"
-  int-format: "#,###"
-  double-format: "#,##0.00"
+  locale: en-US
+  int-format: '#,###'
+  double-format: '#,##0.##'
 
 user-auto-save-in-minutes: 30
 # Can be yaml or mysql
