@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "Fetching commits between ${{ github.event.before }} and ${{ github.sha }}"
           commits=$(git log ${{ github.event.before }}..${{ github.sha }} --pretty=format:"- %s")
-          commits=$(echo "$commits" | sed ':a;N;$!ba;s/\n/\\n/g')
+          commits=$(echo "$commits" | base64)
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
       - name: Send Discord Notification
@@ -53,11 +53,12 @@ jobs:
           echo "Sending commit messages to Discord"
           repo_name="${GITHUB_REPOSITORY##*/}"
           current_date=$(date --iso-8601=seconds)
+          commits=$(echo $COMMITS | base64 --decode)
           payload=$(jq -n \
             --arg username "$GITHUB_ACTOR" \
             --arg repo "$repo_name" \
             --arg sha "$GITHUB_SHA" \
-            --arg commits "$COMMIT_MESSAGES" \
+            --arg commits "$commits" \
             --arg url "https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA" \
             --arg timestamp "$current_date" \
             '{
