@@ -54,6 +54,7 @@ jobs:
           repo_name="${GITHUB_REPOSITORY##*/}"
           current_date=$(date --iso-8601=seconds)
           commits=$(echo $COMMITS | base64 --decode)
+          run_number=${GITHUB_RUN_NUMBER}
           payload=$(jq -n \
             --arg username "$GITHUB_ACTOR" \
             --arg repo "$repo_name" \
@@ -61,6 +62,7 @@ jobs:
             --arg commits "$commits" \
             --arg url "https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA" \
             --arg timestamp "$current_date" \
+            --arg runNumber "$run_number" \
             '{
                 "embeds": [
                     {
@@ -81,7 +83,7 @@ jobs:
                         "url": "https://avatars.githubusercontent.com/u/133165968?s=400&u=60cb92cb0ebbac78f24c079c1d5346d1f9f62d78&v=4"
                       },
                       "footer": {
-                        "text": "Build #\($GITHUB_RUN_NUMBER) is ready for download!",
+                        "text": "Build #\($runNumber) is ready for download!",
                         "icon_url": "https://cdn-icons-png.flaticon.com/512/190/190411.png"
                       },
                       "timestamp": $timestamp
