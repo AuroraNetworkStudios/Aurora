@@ -4,7 +4,7 @@ This is the base plugin for every Aurora plugin.
 It requires **PaperMC** as the server software and **Java 17** or higher.
 In theory folia is also supported, but it is not tested yet.
 
-### [Documentation](https://docs.auroramc.gg/)
+You can view the full documentation [here](https://docs.auroramc.gg/aurora).
 
 It provides the following utilities:
 - chat/actionbar messaging, text building using every possible color formats and styles.
@@ -27,10 +27,18 @@ which integrates with Multiverse-Core and WildRegeneration for cleanup. It can e
 ### Maven
 
 ```xml
+<repository>
+    <id>auroramc</id>
+    <url>https://repo.auroramc.gg/repository/maven-public/</url>
+</repository>
+```
+
+```xml
 <dependency>
     <groupId>gg.auroramc</groupId>
     <artifactId>Aurora</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
+    <scope>provided</scope>
 </dependency>
 ```
 ### Gradle
@@ -44,7 +52,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'gg.auroramc:Aurora:1.0.0'
+    compileOnly 'gg.auroramc:Aurora:1.2.0'
 }
 ```
 
@@ -55,6 +63,6 @@ repositories {
 }
 
 dependencies { 
-    compileOnly("gg.auroramc:Aurora:1.0.0")
+    compileOnly("gg.auroramc:Aurora:1.2.0")
 }
 ```
