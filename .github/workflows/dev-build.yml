@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "Fetching commits between ${{ github.event.before }} and ${{ github.sha }}"
           commits=$(git log ${{ github.event.before }}..${{ github.sha }} --pretty=format:"- %s")
-          commits=$(echo "$commits" | base64)
+          commits=$(echo "$commits" | base64 -w 0)
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
       - name: Send Discord Notification
