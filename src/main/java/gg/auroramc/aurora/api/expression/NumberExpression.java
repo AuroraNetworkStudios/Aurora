@@ -2,6 +2,7 @@ package gg.auroramc.aurora.api.expression;
 
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 import org.bukkit.entity.Player;
 
@@ -9,43 +10,41 @@ import java.util.List;
 
 public class NumberExpression {
 
-    private final ExpressionBuilder builder;
+    private final Expression expression;
 
     public NumberExpression(String expression, String... variables) {
-        this.builder = new ExpressionBuilder(expression).variables(variables);
+        this.expression = new ExpressionBuilder(expression).variables(variables).build();
     }
 
     public NumberExpression(String expression, List<String> variables) {
-        this.builder = new ExpressionBuilder(expression).variables(variables.toArray(String[]::new));
+        this.expression = new ExpressionBuilder(expression).variables(variables.toArray(String[]::new)).build();
     }
 
     public NumberExpression(String expression) {
-        this.builder = new ExpressionBuilder(expression);
+        this.expression = new ExpressionBuilder(expression).build();
     }
 
 
     public double evaluate(Placeholder<?>... variables) {
-        var expr = builder.build();
         for (var variable : variables) {
             if(variable.getValue() instanceof Number num) {
-                expr.setVariable(variable.getKey(), num.doubleValue());
+                expression.setVariable(variable.getKey(), num.doubleValue());
             }
         }
-        return expr.evaluate();
+        return expression.evaluate();
     }
 
     public double evaluate() {
-        return builder.build().evaluate();
+        return expression.evaluate();
     }
 
     public double evaluate(List<Placeholder<?>> variables) {
-        var expr = builder.build();
         for (var variable : variables) {
             if(variable.getValue() instanceof Number num) {
-                expr.setVariable(variable.getKey(), num.doubleValue());
+                expression.setVariable(variable.getKey(), num.doubleValue());
             }
         }
-        return expr.evaluate();
+        return expression.evaluate();
     }
 
     public static double eval(String expression, Placeholder<?>... variables) {
