@@ -43,7 +43,7 @@ jobs:
           commits=$(echo "$commits" | base64 -w 0)
           echo "COMMITS=$commits" >> $GITHUB_ENV
 
-      - name: Send Discord Notification
+      - name: Send Discord Embed
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           COMMITS: ${{ env.COMMITS }}
