@@ -12,6 +12,7 @@ softdepend:
   - Essentials
   - Multiverse-Core
   - WildRegeneration
+  - LuckPerms
 
 permissions:
   aurora.core.admin:
