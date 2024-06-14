@@ -7,7 +7,7 @@ import lombok.Getter;
 import java.util.Map;
 
 @Getter
-public class IntervalMatcher extends AbstractLevelMatcher {
+public class IntervalMatcher extends LevelMatcher {
     private final IntervalMatcherConfig config;
 
     public IntervalMatcher(String key, IntervalMatcherConfig config, Map<String, Reward> rewards) {

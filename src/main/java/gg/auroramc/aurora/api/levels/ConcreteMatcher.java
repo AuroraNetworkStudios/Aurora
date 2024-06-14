@@ -7,7 +7,7 @@ import lombok.Getter;
 import java.util.Map;
 
 @Getter
-public class ConcreteMatcher extends AbstractLevelMatcher {
+public class ConcreteMatcher extends LevelMatcher {
     private final ConcreteMatcherConfig config;
 
     public ConcreteMatcher(String key, ConcreteMatcherConfig config, Map<String, Reward> rewards) {

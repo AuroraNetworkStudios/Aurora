@@ -39,23 +39,29 @@ public class MatcherManager {
         }
 
         for (var matcher : map.values()) {
-            if (matcher.getConfig().getInheritFrom() != null) {
-                var parent = map.get(matcher.getConfig().getInheritFrom());
-                if (parent != null) {
-                    matcher.setParent(parent);
+            if (!matcher.getConfig().getInheritsFrom().isEmpty()) {
+                for (var inheritKey : matcher.getConfig().getInheritsFrom()) {
+                    var parent = map.get(inheritKey);
+                    if (parent != null) {
+                        matcher.addParent(parent);
+                    }
                 }
+
             }
         }
 
         for (var matcher : cMap.values()) {
-            if (matcher.getConfig().getInheritFrom() != null) {
-                LevelMatcher parent = map.get(matcher.getConfig().getInheritFrom());
-                if (parent == null) {
-                    parent = cMap.get(matcher.getConfig().getInheritFrom());
+            if (!matcher.getConfig().getInheritsFrom().isEmpty()) {
+                for (var inheritKey : matcher.getConfig().getInheritsFrom()) {
+                    LevelMatcher parent = map.get(inheritKey);
+                    if (parent == null) {
+                        parent = cMap.get(inheritKey);
+                    }
+                    if (parent != null) {
+                        matcher.addParent(parent);
+                    }
                 }
-                if (parent != null) {
-                    matcher.setParent(parent);
-                }
+
             }
             this.customMatchers.put(matcher.getConfig().getLevel(), matcher);
         }
