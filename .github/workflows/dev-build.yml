@@ -44,6 +44,9 @@ jobs:
           commits_base64=$(echo "[$commits_json]" | base64 -w 0)
           echo "commits=$commits_base64" >> $GITHUB_OUTPUT
 
+      - name: Just wait a little
+        run: sleep 10
+
       - name: Upload to server
         run: |
           commits_json=$(echo "${{ steps.commits.outputs.commits }}" | base64 --decode)
