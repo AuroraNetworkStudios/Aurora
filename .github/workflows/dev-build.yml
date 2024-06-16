@@ -44,16 +44,14 @@ jobs:
           commits_base64=$(echo "[$commits_json]" | base64 -w 0)
           echo "commits=$commits_base64" >> $GITHUB_OUTPUT
 
-      - name: Just wait a little
-        run: sleep 10
-
       - name: Upload to server
         run: |
           commits_json=$(echo "${{ steps.commits.outputs.commits }}" | base64 --decode)
+          artifact_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.upload-jar.outputs.artifact-id }}/zip"
           json_payload=$(jq -n \
                           --arg secret "${{ secrets.SERVER_SECRET }}" \
                           --arg repo "${{ github.repository }}" \
-                          --arg artifactUrl "${{ steps.upload-jar.outputs.artifact-url }}" \
+                          --arg artifactUrl "$artifact_url" \
                           --argjson buildNumber ${{ github.run_number }} \
                           --arg branch "${{ github.ref_name }}" \
                           --argjson commits "$commits_json" \
