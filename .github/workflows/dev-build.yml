@@ -30,6 +30,7 @@ jobs:
         run: gradle clean build
 
       - name: Upload JAR Artifact
+        id: upload-jar
         uses: actions/upload-artifact@v4
         with:
           name: Aurora-${{ github.run_number }}
@@ -39,55 +40,26 @@ jobs:
         id: commits
         run: |
           echo "Fetching commits between ${{ github.event.before }} and ${{ github.sha }}"
-          commits=$(git log ${{ github.event.before }}..${{ github.sha }} --pretty=format:"- %s")
-          commits=$(echo "$commits" | base64 -w 0)
-          echo "COMMITS=$commits" >> $GITHUB_ENV
+          commits_json=$(git log ${{ github.event.before }}..${{ github.sha }} --pretty=format:'{"sha": "%H", "message": "%s"},' | sed '$ s/,$//')
+          commits_base64=$(echo "[$commits_json]" | base64 -w 0)
+          echo "commits=$commits_base64" >> $GITHUB_OUTPUT
 
-      - name: Send Discord Embed
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          COMMITS: ${{ env.COMMITS }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
+      - name: Upload to server
         run: |
-          echo "Sending commit messages to Discord"
-          repo_name="${GITHUB_REPOSITORY##*/}"
-          current_date=$(date --iso-8601=seconds)
-          commits=$(echo $COMMITS | base64 --decode)
-          run_number=${GITHUB_RUN_NUMBER}
-          payload=$(jq -n \
-            --arg username "$GITHUB_ACTOR" \
-            --arg repo "$repo_name" \
-            --arg sha "$GITHUB_SHA" \
-            --arg commits "$commits" \
-            --arg url "https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA" \
-            --arg timestamp "$current_date" \
-            --arg runNumber "$run_number" \
-            '{
-                "embeds": [
-                    {
-                      "title": "Click to download",
-                      "color": 2326507,
-                      "fields": [
-                        {
-                          "name": "Changes",
-                          "value": $commits
-                        }
-                      ],
-                      "author": {
-                        "name": "\($username) pushed an update for \($repo)",
-                        "icon_url": "https://avatars.githubusercontent.com/u/133165968?s=400&u=60cb92cb0ebbac78f24c079c1d5346d1f9f62d78&v=4"
-                      },
-                      "url": "https://auroramc.gg/downloads/\($repo|ascii_downcase)",
-                      "thumbnail": {
-                        "url": "https://avatars.githubusercontent.com/u/133165968?s=400&u=60cb92cb0ebbac78f24c079c1d5346d1f9f62d78&v=4"
-                      },
-                      "footer": {
-                        "text": "Build #\($runNumber) is ready for download!",
-                        "icon_url": "https://cdn-icons-png.flaticon.com/512/190/190411.png"
-                      },
-                      "timestamp": $timestamp
-                    }
-                ]
-            }')
-          curl -X POST -H "Content-Type: application/json" -d "$payload" $DISCORD_WEBHOOK_URL
+          commits_json=$(echo "${{ steps.commits.outputs.commits }}" | base64 --decode)
+          json_payload=$(jq -n \
+                          --arg secret "${{ secrets.SERVER_SECRET }}" \
+                          --arg repo "${{ github.repository }}" \
+                          --arg artifactUrl "${{ steps.upload-jar.outputs.artifact-url }}" \
+                          --argjson buildNumber ${{ github.run_number }} \
+                          --arg branch "${{ github.ref_name }}" \
+                          --argjson commits "$commits_json" \
+                          '{
+                            secret: $secret,
+                            repo: $repo,
+                            artifact_url: $artifactUrl,
+                            build_number: $buildNumber,
+                            branch: $branch,
+                            commits: $commits
+                          }')
+          curl -X POST ${{ secrets.SERVER_UPLOAD_URL }} -H "Content-Type: application/json" -d "$json_payload"
