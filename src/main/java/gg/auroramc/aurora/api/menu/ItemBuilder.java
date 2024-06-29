@@ -7,10 +7,12 @@ import gg.auroramc.aurora.api.config.premade.*;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.BukkitPotionType;
+import gg.auroramc.aurora.api.util.Version;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -263,7 +265,13 @@ public class ItemBuilder {
 
         if (config.getFlags() != null) {
             for (var flag : config.getFlags()) {
-                meta.addItemFlags(ItemFlag.valueOf(flag));
+                var pFlag = ItemFlag.valueOf(flag.toUpperCase(Locale.ROOT));
+
+                if(pFlag == ItemFlag.HIDE_ATTRIBUTES && Version.isAtLeastVersion(20, 5)) {
+                    meta.setAttributeModifiers(Material.IRON_SWORD.getDefaultAttributeModifiers(EquipmentSlot.HAND));
+                }
+
+                meta.addItemFlags(pFlag);
             }
         }
 
