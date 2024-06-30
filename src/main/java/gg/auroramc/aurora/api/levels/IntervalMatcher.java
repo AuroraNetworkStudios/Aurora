@@ -16,6 +16,7 @@ public class IntervalMatcher extends LevelMatcher {
     }
 
     public boolean matches(int level) {
-        return level % config.getInterval() == 0;
+        if (level < config.getStart() || level > config.getStop()) return false;
+        return (level - config.getStart()) % config.getInterval() == 0;
     }
 }
