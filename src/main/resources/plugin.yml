@@ -13,6 +13,11 @@ softdepend:
   - Multiverse-Core
   - WildRegeneration
   - LuckPerms
+  - CustomFishing
+  - MythicLib
+  - MMOItems
+  - MythicMobs
+  - Oraxen
 
 permissions:
   aurora.core.admin:

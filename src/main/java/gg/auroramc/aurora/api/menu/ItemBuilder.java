@@ -3,11 +3,14 @@ package gg.auroramc.aurora.api.menu;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.premade.*;
+import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.BukkitPotionType;
 import gg.auroramc.aurora.api.util.Version;
+import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
@@ -21,6 +24,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionType;
 import org.bukkit.profile.PlayerProfile;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URL;
 import java.util.*;
@@ -34,12 +38,13 @@ public class ItemBuilder {
     private Supplier<List<Component>> loreBuilder = null;
     private final Collection<PotionEffect> potionEffects = new ArrayList<>();
     private Color potionColor = null;
-    private ItemStack item;
+    private ItemStack item = null;
     private PlayerProfile playerProfile;
 
     private ItemBuilder(ItemConfig config) {
         this.config = new ItemConfig(config);
     }
+
     private ItemBuilder(ItemConfig config, ItemStack item) {
         this.config = new ItemConfig(config);
         this.item = item.clone();
@@ -62,7 +67,7 @@ public class ItemBuilder {
     }
 
     public static ItemStack filler(Material material, String name) {
-        if(material == Material.AIR) return new ItemStack(Material.AIR);
+        if (material == Material.AIR) return new ItemStack(Material.AIR);
         var item = new ItemStack(material);
         var meta = item.getItemMeta();
         meta.displayName(Text.component(name));
@@ -76,6 +81,10 @@ public class ItemBuilder {
 
     public static ItemStack filler() {
         return filler(Material.BLACK_STAINED_GLASS_PANE);
+    }
+
+    public static ItemStack fromType(TypeId typeId, @Nullable Player player) {
+        return Aurora.getExpansionManager().getExpansion(ItemExpansion.class).getItemManager().resolveItem(typeId, player);
     }
 
     public ItemBuilder enableRefreshing() {
@@ -160,7 +169,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder flag(ItemFlag... flags) {
-        for(var flag : flags) {
+        for (var flag : flags) {
             config.getFlags().add(flag.name());
         }
         return this;
@@ -172,7 +181,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder flag(String... flags) {
-        for(var flag : flags) {
+        for (var flag : flags) {
             config.getFlags().add(flag);
         }
         return this;
@@ -186,7 +195,7 @@ public class ItemBuilder {
 
     public ItemBuilder skullUrl(String url) {
         config.setMaterial(Material.PLAYER_HEAD.name());
-        if(config.getSkull() == null) {
+        if (config.getSkull() == null) {
             config.setSkull(new SkullConfig());
         }
         config.getSkull().setUrl(url);
@@ -195,7 +204,7 @@ public class ItemBuilder {
 
     public ItemBuilder skullBase64(String base64) {
         config.setMaterial(Material.PLAYER_HEAD.name());
-        if(config.getSkull() == null) {
+        if (config.getSkull() == null) {
             config.setSkull(new SkullConfig());
         }
         config.getSkull().setBase64(base64);
@@ -213,7 +222,7 @@ public class ItemBuilder {
     }
 
     public MenuItem build(Player player) {
-        if(item == null) {
+        if (item == null) {
             return new MenuItem(player, this, toItemStack(player), config.getSlot());
         } else {
             return new MenuItem(player, this, toItemStack(item, player), config.getSlot());
@@ -221,7 +230,10 @@ public class ItemBuilder {
     }
 
     public ItemStack toItemStack(Player player) {
-        var item = new ItemStack(Material.valueOf(config.getMaterial()));
+        var item = config.getMaterial().contains(":")
+                ? fromType(TypeId.fromDefault(config.getMaterial()), player)
+                : new ItemStack(Material.valueOf(config.getMaterial().toUpperCase()));
+
         return toItemStack(item, player);
     }
 
@@ -267,7 +279,7 @@ public class ItemBuilder {
             for (var flag : config.getFlags()) {
                 var pFlag = ItemFlag.valueOf(flag.toUpperCase(Locale.ROOT));
 
-                if(pFlag == ItemFlag.HIDE_ATTRIBUTES && Version.isAtLeastVersion(20, 5)) {
+                if (pFlag == ItemFlag.HIDE_ATTRIBUTES && Version.isAtLeastVersion(20, 5)) {
                     meta.setAttributeModifiers(Material.IRON_SWORD.getDefaultAttributeModifiers(EquipmentSlot.HAND));
                 }
 
@@ -296,7 +308,7 @@ public class ItemBuilder {
                 }
             }
 
-            if(playerProfile != null) {
+            if (playerProfile != null) {
                 skullMeta.setOwnerProfile(playerProfile);
             }
         }
@@ -312,7 +324,7 @@ public class ItemBuilder {
                     potionMeta.addCustomEffect(effect, true);
                 }
             }
-            if(potionColor != null) {
+            if (potionColor != null) {
                 potionMeta.setColor(potionColor);
             }
         }

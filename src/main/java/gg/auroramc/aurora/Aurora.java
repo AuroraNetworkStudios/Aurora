@@ -10,6 +10,7 @@ import gg.auroramc.aurora.api.user.UserMetaHolder;
 import gg.auroramc.aurora.config.Config;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
+import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
@@ -70,6 +71,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         expansionManager.loadExpansion(PlaceholderExpansion.class);
         expansionManager.loadExpansion(EconomyExpansion.class);
         expansionManager.loadExpansion(NumberFormatExpansion.class);
+        expansionManager.loadExpansion(ItemExpansion.class);
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);

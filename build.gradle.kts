@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.3.2"
+version = "1.4.0-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -38,6 +38,9 @@ repositories {
     maven("https://maven.enginehub.org/repo/")
     maven("https://repo.essentialsx.net/releases/")
     maven("https://repo.onarandombox.com/content/groups/public/")
+    maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
+    maven("https://repo.oraxen.com/snapshots")
+    maven("https://mvn.lumine.io/repository/maven-public/")
 }
 
 dependencies {
@@ -51,6 +54,11 @@ dependencies {
     compileOnly("com.onarandombox.multiversecore:multiverse-core:4.3.12")
     compileOnly("com.github.angeschossen:WildRegenerationAPI:1.5.0")
     compileOnly("net.luckperms:api:5.4")
+    compileOnly("io.lumine:Mythic-Dist:5.6.1")
+    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.1.2")
+    compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
+    compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
+    compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")

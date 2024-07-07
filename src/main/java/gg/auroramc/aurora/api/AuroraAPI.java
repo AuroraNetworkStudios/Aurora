@@ -2,12 +2,14 @@ package gg.auroramc.aurora.api;
 
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
+import gg.auroramc.aurora.api.item.ItemManager;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandler;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandlerRegistry;
 import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
+import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
 
@@ -116,5 +118,9 @@ public class AuroraAPI {
 
     public static RegionExpansion getRegionManager() {
         return Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+    }
+
+    public static ItemManager getItemManager() {
+        return Aurora.getExpansionManager().getExpansion(ItemExpansion.class).getItemManager();
     }
 }
