@@ -99,6 +99,16 @@ public class AuroraAPI {
     }
 
     /**
+     * Format a decimal number into its human-readable short format.
+     *
+     * @param number the number to format
+     * @return the formatted number
+     */
+    public static String formatNumberShort(double number) {
+        return Aurora.getExpansionManager().getExpansion(NumberFormatExpansion.class).formatNumberShort(number);
+    }
+
+    /**
      * Register a placeholder handler.
      *
      * @param handler the handler to register

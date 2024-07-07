@@ -4,6 +4,14 @@ number-format:
   locale: en-US
   int-format: '#,###'
   double-format: '#,##0.##'
+  short-number-format:
+    format: '#,##0.##'
+    suffixes:
+      thousand: "K"
+      million: "M"
+      billion: "B"
+      trillion: "T"
+      quadrillion: "Q"
 
 user-auto-save-in-minutes: 30
 # Can be yaml or mysql
@@ -26,4 +34,4 @@ block-tracker:
   # can be file or sqlite
   storage-type: "file"
 
-config-version: 1
+config-version: 2

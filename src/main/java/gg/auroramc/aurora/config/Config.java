@@ -2,12 +2,12 @@ package gg.auroramc.aurora.config;
 
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.AuroraConfig;
-import gg.auroramc.aurora.api.config.ConfigManager;
 import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -33,6 +33,12 @@ public class Config extends AuroraConfig {
                     yaml.set("block-tracker.storage-type", yaml.get("block-tracker-storage", "file"));
                     yaml.set("block-tracker-storage", null);
                     yaml.set("config-version", 1);
+                },
+                (yaml) -> {
+                    yaml.set("number-format.short-number-format.format", "#,##0.##");
+                    yaml.set("number-format.short-number-format.suffixes",
+                            Map.of("thousand", "K", "million", "M", "billion", "B", "trillion", "T", "quadrillion", "Q"));
+                    yaml.set("config-version", 2);
                 }
         );
     }

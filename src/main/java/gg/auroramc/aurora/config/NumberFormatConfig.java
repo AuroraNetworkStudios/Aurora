@@ -6,5 +6,6 @@ import lombok.Getter;
 public class NumberFormatConfig {
     private String locale = "en-US";
     private String intFormat = "#,###";
-    private String doubleFormat = "#,##0.00";
+    private String doubleFormat = "#,##0.##";
+    private ShortNumberFormatConfig shortNumberFormat;
 }
