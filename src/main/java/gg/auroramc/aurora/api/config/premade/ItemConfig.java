@@ -25,10 +25,60 @@ public class ItemConfig {
     private List<String> onLeftClick;
     private List<String> onRightClick;
 
-    public ItemConfig() {}
+    public ItemConfig() {
+    }
+
+    public ItemConfig merge(ItemConfig other) {
+        if (other == null) return this;
+        var ret = new ItemConfig(this);
+
+        ret.refresh = other.refresh;
+        if (other.name != null) ret.name = other.name;
+
+        if (other.lore != null) {
+            ret.lore = new ArrayList<>(other.lore);
+        }
+
+        if (other.material != null) ret.material = other.material;
+        if (other.customModelData != null) ret.customModelData = other.customModelData;
+        if (other.texture != null) ret.texture = other.texture;
+        if (other.slot != null) ret.slot = other.slot;
+        if (other.amount != null) ret.amount = other.amount;
+        if (other.durability != null) ret.durability = other.durability;
+
+        if (other.skull != null) {
+            ret.skull = new SkullConfig(other.skull);
+        }
+
+        if (other.flags != null) {
+            ret.flags = new HashSet<>(other.flags);
+        }
+
+        if (other.potion != null) {
+            ret.potion = new PotionConfig(other.potion);
+        }
+
+        if (other.enchantments != null) {
+            ret.enchantments = new HashMap<>(other.enchantments);
+        }
+
+        if (other.onClick != null) {
+            ret.onClick = new ArrayList<>(other.onClick);
+        }
+
+        if (other.onLeftClick != null) {
+            ret.onLeftClick = new ArrayList<>(other.onLeftClick);
+        }
+
+        if (other.onRightClick != null) {
+            ret.onRightClick = new ArrayList<>(other.onRightClick);
+        }
+
+        return ret;
+    }
 
     public ItemConfig(ItemConfig other) {
-        if(other == null) {
+        if (other == null) {
             this.enchantments = new HashMap<>();
             this.flags = new HashSet<>();
             this.lore = new ArrayList<>();
@@ -36,11 +86,11 @@ public class ItemConfig {
             this.onLeftClick = new ArrayList<>();
             this.onRightClick = new ArrayList<>();
             return;
-        };
+        }
         this.refresh = other.refresh;
         this.name = other.name;
 
-        if(other.lore != null) {
+        if (other.lore != null) {
             this.lore = new ArrayList<>(other.lore);
         } else {
             this.lore = new ArrayList<>();
@@ -53,39 +103,39 @@ public class ItemConfig {
         this.amount = other.amount;
         this.durability = other.durability;
 
-        if(skull != null) {
+        if (other.skull != null) {
             this.skull = new SkullConfig(other.skull);
         }
 
-        if(other.flags != null) {
+        if (other.flags != null) {
             this.flags = new HashSet<>(other.flags);
         } else {
             this.flags = new HashSet<>();
         }
 
-        if(other.potion != null) {
+        if (other.potion != null) {
             this.potion = new PotionConfig(other.potion);
         }
 
-        if(other.enchantments != null) {
+        if (other.enchantments != null) {
             this.enchantments = new HashMap<>(other.enchantments);
         } else {
             this.enchantments = new HashMap<>();
         }
 
-        if(other.onClick != null) {
+        if (other.onClick != null) {
             this.onClick = new ArrayList<>(other.onClick);
         } else {
             this.onClick = new ArrayList<>();
         }
 
-        if(other.onLeftClick != null) {
+        if (other.onLeftClick != null) {
             this.onLeftClick = new ArrayList<>(other.onLeftClick);
         } else {
             this.onLeftClick = new ArrayList<>();
         }
 
-        if(other.onRightClick != null) {
+        if (other.onRightClick != null) {
             this.onRightClick = new ArrayList<>(other.onRightClick);
         } else {
             this.onRightClick = new ArrayList<>();
