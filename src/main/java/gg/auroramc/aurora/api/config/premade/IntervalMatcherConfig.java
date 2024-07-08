@@ -4,6 +4,7 @@ import lombok.Getter;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 public class IntervalMatcherConfig {
@@ -13,5 +14,5 @@ public class IntervalMatcherConfig {
     private Integer priority;
     private List<String> inheritsFrom;
     private ConfigurationSection rewards;
-    private ItemConfig item;
+    private Map<String, ItemConfig> item;
 }
