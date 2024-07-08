@@ -13,4 +13,5 @@ public class IntervalMatcherConfig {
     private Integer priority;
     private List<String> inheritsFrom;
     private ConfigurationSection rewards;
+    private ItemConfig item;
 }

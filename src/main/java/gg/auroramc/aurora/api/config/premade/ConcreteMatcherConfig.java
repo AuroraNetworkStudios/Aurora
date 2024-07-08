@@ -10,4 +10,5 @@ public class ConcreteMatcherConfig {
     private List<String> inheritsFrom;
     private ConfigurationSection rewards;
     private Integer level;
+    private ItemConfig item;
 }
