@@ -35,7 +35,7 @@ public class ItemConfig {
         ret.refresh = other.refresh;
         if (other.name != null) ret.name = other.name;
 
-        if (other.lore != null) {
+        if (other.lore != null && !other.lore.isEmpty()) {
             ret.lore = new ArrayList<>(other.lore);
         }
 
@@ -50,7 +50,7 @@ public class ItemConfig {
             ret.skull = new SkullConfig(other.skull);
         }
 
-        if (other.flags != null) {
+        if (other.flags != null && !other.flags.isEmpty()) {
             ret.flags = new HashSet<>(other.flags);
         }
 
@@ -58,19 +58,19 @@ public class ItemConfig {
             ret.potion = new PotionConfig(other.potion);
         }
 
-        if (other.enchantments != null) {
+        if (other.enchantments != null && !other.enchantments.isEmpty()) {
             ret.enchantments = new HashMap<>(other.enchantments);
         }
 
-        if (other.onClick != null) {
+        if (other.onClick != null && !other.onClick.isEmpty()) {
             ret.onClick = new ArrayList<>(other.onClick);
         }
 
-        if (other.onLeftClick != null) {
+        if (other.onLeftClick != null && !other.onLeftClick.isEmpty()) {
             ret.onLeftClick = new ArrayList<>(other.onLeftClick);
         }
 
-        if (other.onRightClick != null) {
+        if (other.onRightClick != null && !other.onRightClick.isEmpty()) {
             ret.onRightClick = new ArrayList<>(other.onRightClick);
         }
 
