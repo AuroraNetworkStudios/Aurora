@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PermissionReward extends AbstractReward {
+    @Getter
     private List<String> permissions;
     private boolean value;
     private final Map<String, String> contexts = new HashMap<>();
