@@ -37,7 +37,7 @@ which integrates with Multiverse-Core and WildRegeneration for cleanup. It can e
 <dependency>
     <groupId>gg.auroramc</groupId>
     <artifactId>Aurora</artifactId>
-    <version>1.4.1</version>
+    <version>1.4.2</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -52,7 +52,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'gg.auroramc:Aurora:1.4.1'
+    compileOnly 'gg.auroramc:Aurora:1.4.2'
 }
 ```
 
@@ -63,6 +63,6 @@ repositories {
 }
 
 dependencies { 
-    compileOnly("gg.auroramc:Aurora:1.4.1")
+    compileOnly("gg.auroramc:Aurora:1.4.2")
 }
 ```

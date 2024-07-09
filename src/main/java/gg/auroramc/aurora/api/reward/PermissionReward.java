@@ -36,7 +36,7 @@ public class PermissionReward extends AbstractReward {
         if (args.isString("permission") && args.getString("permission") != null) {
             permissions = List.of(args.getString("permission"));
         } else if (args.isList("permission")) {
-            permissions = args.getStringList("permissions");
+            permissions = args.getStringList("permission");
         } else {
             permissions = List.of();
             Aurora.logger().warning("PermissionReward doesn't have the permission key");
@@ -48,10 +48,6 @@ public class PermissionReward extends AbstractReward {
             for (String key : contextSection.getKeys(false)) {
                 contexts.put(key, contextSection.getString(key));
             }
-        }
-
-        if (permissions == null) {
-            Aurora.logger().warning("PermissionReward doesn't have the permission key");
         }
     }
 

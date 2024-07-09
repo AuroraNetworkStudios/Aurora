@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.4.1"
+version = "1.4.2"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
