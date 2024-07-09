@@ -15,24 +15,31 @@ import java.util.List;
 import java.util.Map;
 
 public class PermissionReward extends AbstractReward {
-    @Getter
-    private String permission;
+    private List<String> permissions;
     private boolean value;
     private final Map<String, String> contexts = new HashMap<>();
 
     @Override
     public void execute(Player player, long level, List<Placeholder<?>> placeholders) {
-        if (permission == null) return;
-        var node = buildNode(player, placeholders);
-        LuckPermsProvider.get().getUserManager().modifyUser(player.getUniqueId(), user -> user.data().add(node));
+        if (permissions.isEmpty()) return;
+        var nodes = buildNodes(player, placeholders);
+        LuckPermsProvider.get().getUserManager().modifyUser(player.getUniqueId(), user -> {
+            for (var node : nodes) user.data().add(node);
+        });
     }
 
     @Override
     public void init(ConfigurationSection args) {
         super.init(args);
-        permission = args.getString("permission", null);
+        if (args.isString("permission") && args.getString("permission") != null) {
+            permissions = List.of(args.getString("permission"));
+        } else if (args.isList("permission")) {
+            permissions = args.getStringList("permissions");
+        } else {
+            permissions = List.of();
+            Aurora.logger().warning("PermissionReward doesn't have the permission key");
+        }
         value = args.getBoolean("value", true);
-        display = args.getString("display", "");
 
         if (args.isConfigurationSection("contexts")) {
             ConfigurationSection contextSection = args.getConfigurationSection("contexts");
@@ -41,23 +48,25 @@ public class PermissionReward extends AbstractReward {
             }
         }
 
-        if (permission == null) {
+        if (permissions == null) {
             Aurora.logger().warning("PermissionReward doesn't have the permission key");
         }
     }
 
-    public Node buildNode(Player player, List<Placeholder<?>> placeholders) {
-        var builder = Node.builder(Text.fillPlaceholders(player, permission, placeholders)).value(value);
+    public List<Node> buildNodes(Player player, List<Placeholder<?>> placeholders) {
+        return permissions.stream().map(permission -> {
+            var builder = Node.builder(Text.fillPlaceholders(player, permission, placeholders)).value(value);
 
-        if (!contexts.isEmpty()) {
-            var contextSet = MutableContextSet.create();
+            if (!contexts.isEmpty()) {
+                var contextSet = MutableContextSet.create();
 
-            for (var entry : contexts.entrySet())
-                contextSet.add(entry.getKey(), Text.fillPlaceholders(player, entry.getValue(), placeholders));
+                for (var entry : contexts.entrySet())
+                    contextSet.add(entry.getKey(), Text.fillPlaceholders(player, entry.getValue(), placeholders));
 
-            builder.withContext(contextSet);
-        }
+                builder.withContext(contextSet);
+            }
 
-        return builder.build();
+            return (Node) builder.build();
+        }).toList();
     }
 }
