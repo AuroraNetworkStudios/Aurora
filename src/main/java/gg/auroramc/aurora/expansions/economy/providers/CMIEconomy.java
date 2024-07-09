@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.expansions.economy.providers;
 
 import com.Zrips.CMI.CMI;
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import org.bukkit.entity.Player;
 
@@ -23,5 +24,10 @@ public class CMIEconomy implements AuroraEconomy {
     @Override
     public boolean hasBalance(Player player, double amount) {
         return CMI.getInstance().getPlayerManager().getUser(player).getBalance() >= amount;
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        return ThreadSafety.ANY;
     }
 }

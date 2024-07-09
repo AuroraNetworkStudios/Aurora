@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.expansions.economy.providers;
 
 import gg.auroramc.aurora.api.dependency.DependencyManager;
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import org.bukkit.entity.Player;
 
@@ -23,5 +24,10 @@ public class EssentialsEconomy implements AuroraEconomy {
     @Override
     public boolean hasBalance(Player player, double amount) {
         return getBalance(player) >= amount;
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        return ThreadSafety.ANY;
     }
 }

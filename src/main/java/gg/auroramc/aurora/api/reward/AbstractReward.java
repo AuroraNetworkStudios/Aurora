@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.api.reward;
 
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
@@ -17,5 +18,10 @@ public abstract class AbstractReward implements Reward {
     @Override
     public String getDisplay(Player player, List<Placeholder<?>> placeholders) {
         return display;
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        return ThreadSafety.SYNC_ONLY;
     }
 }

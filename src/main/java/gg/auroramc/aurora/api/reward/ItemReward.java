@@ -5,6 +5,8 @@ import gg.auroramc.aurora.api.config.ConfigManager;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ThreadSafety;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
@@ -22,7 +24,9 @@ public class ItemReward extends AbstractReward {
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
             var failed = player.getInventory().addItem(ItemBuilder.of(itemConfig).placeholder(placeholders).toItemStack(player));
             if(failed.isEmpty()) return;
-            failed.forEach((slot, item) -> player.getWorld().dropItem(player.getLocation(), item));
+            Bukkit.getRegionScheduler().run(Aurora.getInstance(), player.getLocation(), (t) -> {
+                failed.forEach((slot, item) -> player.getWorld().dropItem(player.getLocation(), item));
+            });
         }, null);
     }
 
@@ -36,5 +40,11 @@ public class ItemReward extends AbstractReward {
         }
         itemConfig = new ItemConfig();
         ConfigManager.load(itemConfig, config);
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        // Any since it will be scheduled back to the player's thread anyway
+        return ThreadSafety.ANY;
     }
 }

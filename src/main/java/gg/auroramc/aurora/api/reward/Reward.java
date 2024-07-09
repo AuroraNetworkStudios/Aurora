@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.api.reward;
 
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
@@ -31,4 +32,6 @@ public interface Reward {
      * @return  display of the reward
      */
     String getDisplay(Player player, List<Placeholder<?>> placeholders);
+
+    ThreadSafety getThreadSafety();
 }

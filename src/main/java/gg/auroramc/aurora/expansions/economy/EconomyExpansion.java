@@ -9,6 +9,7 @@ import gg.auroramc.aurora.expansions.economy.providers.EssentialsEconomy;
 import gg.auroramc.aurora.expansions.economy.providers.VaultEconomy;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EconomyExpansion implements AuroraExpansion {
@@ -48,6 +49,10 @@ public class EconomyExpansion implements AuroraExpansion {
         return economies.get(defaultEconomy);
     }
 
+    public AuroraEconomy getOrDefaultEconomy(String economyPlugin) {
+        return economies.getOrDefault(economyPlugin, getDefaultEconomy());
+    }
+
     public void addEconomy(String economyPlugin, AuroraEconomy economy) {
         economies.put(economyPlugin, economy);
     }
@@ -57,5 +62,13 @@ public class EconomyExpansion implements AuroraExpansion {
         if(isDefault) {
             defaultEconomy = economyPlugin;
         }
+    }
+
+    public String getDefaultEconomyId() {
+        return defaultEconomy;
+    }
+
+    public Set<String> getEconomyIds() {
+        return economies.keySet();
     }
 }

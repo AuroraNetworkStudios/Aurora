@@ -3,6 +3,7 @@ package gg.auroramc.aurora.api.reward;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import lombok.Getter;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.context.MutableContextSet;
@@ -69,5 +70,10 @@ public class PermissionReward extends AbstractReward {
 
             return (Node) builder.build();
         }).toList();
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        return ThreadSafety.ASYNC_ONLY;
     }
 }

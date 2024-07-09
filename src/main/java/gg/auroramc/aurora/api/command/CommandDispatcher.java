@@ -21,15 +21,19 @@ public class CommandDispatcher {
             var msg = Text.component(player, removeFirstSpace(command.replace("[message]", "")));
             player.sendMessage(msg);
         } else if(command.startsWith("[player]")) {
-            var cmd = removeFirstSpace(command.replace("[player]", ""));
-            if(DependencyManager.hasDep(Dep.PAPI)) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
-            player.performCommand(cmd);
+            player.getScheduler().run(Aurora.getInstance(), (task) -> {
+                var cmd = removeFirstSpace(command.replace("[player]", ""));
+                if(DependencyManager.hasDep(Dep.PAPI)) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
+                player.performCommand(cmd);
+            }, null);
         } else if(command.startsWith("[console]")) {
-            var cmd = removeFirstSpace(command.replace("[console]", ""));
-            if(DependencyManager.hasDep(Dep.PAPI)) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), task -> {
+                var cmd = removeFirstSpace(command.replace("[console]", ""));
+                if(DependencyManager.hasDep(Dep.PAPI)) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            });
         } else if (command.startsWith("[close]")) {
-            player.closeInventory();
+            player.getScheduler().run(Aurora.getInstance(), task -> player.closeInventory(), null);
         } else if (command.startsWith("[meta")) {
             var data = Aurora.getUserManager().getUser(player).getMetaData();
             var meta = parseMetaString(command);
@@ -53,8 +57,10 @@ public class CommandDispatcher {
         } else if (command.startsWith("[placeholder]")) {
             if(DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, command);
         } else {
-            var cmd = DependencyManager.hasDep(Dep.PAPI) ? PlaceholderAPI.setPlaceholders(player, command) : command;
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
+                var cmd = DependencyManager.hasDep(Dep.PAPI) ? PlaceholderAPI.setPlaceholders(player, command) : command;
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            });
         }
     }
 

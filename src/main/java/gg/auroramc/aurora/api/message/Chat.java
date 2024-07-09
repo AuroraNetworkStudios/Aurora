@@ -2,10 +2,9 @@ package gg.auroramc.aurora.api.message;
 
 import gg.auroramc.aurora.Aurora;
 
-import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.util.TextUtil;
-import me.clip.placeholderapi.PlaceholderAPI;
+import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -32,10 +31,14 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(Player player, String message, Placeholder<?>... placeholders) {
-        message = Placeholder.execute(message, placeholders);
-        if(DependencyManager.hasDep(Dep.PAPI))
-            message = PlaceholderAPI.setPlaceholders(player, message);
-        player.sendMessage(Aurora.getMiniMessage().deserialize(translateToMM(message)));
+        player.getScheduler().run(Aurora.getInstance(), (task) -> {
+            var finalMessage = Text.fillPlaceholders(player, message, placeholders);
+            player.sendMessage(Aurora.getMiniMessage().deserialize(translateToMM(finalMessage)));
+        }, null);
+    }
+
+    public static void sendMessage(Player player, Component component) {
+        player.getScheduler().run(Aurora.getInstance(), (task) -> player.sendMessage(component), null);
     }
 
     /**
@@ -45,9 +48,11 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(CommandSender sender, String message, Placeholder<?>... placeholders) {
+        if(sender instanceof Player player) {
+            sendMessage(player, message, placeholders);
+            return;
+        }
         message = Placeholder.execute(message, placeholders);
-        if(DependencyManager.hasDep(Dep.PAPI) && sender instanceof Player player)
-            message = PlaceholderAPI.setPlaceholders(player, message);
         sender.sendMessage(Aurora.getMiniMessage().deserialize(translateToMM(message)));
     }
 

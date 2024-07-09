@@ -3,7 +3,9 @@ package gg.auroramc.aurora.api.reward;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
+import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
@@ -26,7 +28,7 @@ public class MoneyReward extends NumberReward {
     @Override
     public void init(ConfigurationSection args) {
         super.init(args);
-        economy = args.getString("economy", "Vault");
+        economy = args.getString("economy", Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getDefaultEconomyId());
 
         if(AuroraAPI.getEconomy(economy) == null && getEconomy() != null) {
             Aurora.logger().warning("Economy provider " + economy + " is not available, please check your configuration. We will use the default economy provider.");
@@ -41,5 +43,11 @@ public class MoneyReward extends NumberReward {
         var econ = AuroraAPI.getEconomy(economy);
         if(econ == null) econ = AuroraAPI.getDefaultEconomy();
         return econ;
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        var econ = getEconomy();
+        return econ == null ? ThreadSafety.SYNC_ONLY : econ.getThreadSafety();
     }
 }

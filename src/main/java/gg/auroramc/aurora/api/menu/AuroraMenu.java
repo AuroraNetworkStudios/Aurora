@@ -171,7 +171,7 @@ public class AuroraMenu implements InventoryHolder {
             menuEntry.getItem().applyToInventory(inventory);
         }
 
-        player.openInventory(inventory);
+        player.getScheduler().run(Aurora.getInstance(), (task) -> player.openInventory(inventory), null);
     }
 
 

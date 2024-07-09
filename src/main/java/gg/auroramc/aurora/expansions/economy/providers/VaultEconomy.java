@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.expansions.economy.providers;
 
+import gg.auroramc.aurora.api.util.ThreadSafety;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -42,5 +43,10 @@ public class VaultEconomy implements AuroraEconomy {
             return null;
         }
         return rsp.getProvider();
+    }
+
+    @Override
+    public ThreadSafety getThreadSafety() {
+        return ThreadSafety.SYNC_ONLY;
     }
 }
