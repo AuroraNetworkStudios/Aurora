@@ -19,6 +19,7 @@ public class Config extends AuroraConfig {
     private String storageType = "yaml";
     private BlockTrackerConfig blockTracker;
     private MySqlConfig mysql;
+    private LeaderboardConfig leaderboards;
 
 
     public Config() {
@@ -39,6 +40,11 @@ public class Config extends AuroraConfig {
                     yaml.set("number-format.short-number-format.suffixes",
                             Map.of("thousand", "K", "million", "M", "billion", "B", "trillion", "T", "quadrillion", "Q"));
                     yaml.set("config-version", 2);
+                },
+                (yaml) -> {
+                    yaml.set("leaderboards.empty-placeholder", "---");
+                    yaml.set("config-version", null);
+                    yaml.set("config-version", 3);
                 }
         );
     }

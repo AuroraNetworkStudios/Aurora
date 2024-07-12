@@ -7,22 +7,25 @@ import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserDataHolder;
 import gg.auroramc.aurora.api.user.storage.SaveReason;
 import gg.auroramc.aurora.api.user.storage.UserStorage;
+import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
+import gg.auroramc.aurora.expansions.leaderboard.storage.LeaderboardStorage;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public class MySqlStorage implements UserStorage {
+public class MySqlStorage implements UserStorage, LeaderboardStorage {
     private final HikariDataSource dataSource;
     private final DatabaseCredentials credentials;
     private final String tableName = "aurora_user_data";
     private final String syncTableName = "aurora_sync";
+    private final String leaderboardTableName = "aurora_leaderboard";
     private final int networkLatency;
     private final int syncRetryCount;
 
@@ -33,7 +36,7 @@ public class MySqlStorage implements UserStorage {
         syncRetryCount = Aurora.getInstance().getConfig().getInt("mysql.sync-retry-count", 3);
         credentials = readCredentials();
         HikariConfig config = new HikariConfig();
-        config.setPoolName("AuroraCore-pool");
+        config.setPoolName("aurora-pool");
         config.setConnectionTimeout(5000);
         config.setJdbcUrl("jdbc:mysql://" + credentials.host() + ":" + credentials.port() + "/" + credentials.database() + "?useSSL=" + credentials.ssl());
         config.setUsername(credentials.username());
@@ -271,6 +274,187 @@ public class MySqlStorage implements UserStorage {
                 StandardCharsets.UTF_8)
                 .replaceAll("%user_table%", tableName)
                 .replaceAll("%sync_table%", syncTableName)
+                .replaceAll("%leaderboard_table%", leaderboardTableName)
                 .split(";");
+    }
+
+    @Override
+    public List<LbEntry> getTopEntries(String board, int limit) {
+        List<LbEntry> entries = new ArrayList<>();
+        String query = "SELECT player_uuid, name, board, value, " +
+                "RANK() OVER (ORDER BY value DESC) as position " +
+                "FROM " + leaderboardTableName + " WHERE board = ? " +
+                "ORDER BY value DESC LIMIT ?";
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, board);
+            ps.setInt(2, limit);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                UUID uuid = UUID.fromString(rs.getString("player_uuid"));
+                String name = rs.getString("name");
+                String boardName = rs.getString("board");
+                double value = rs.getDouble("value");
+                long position = rs.getLong("position");
+
+                entries.add(new LbEntry(uuid, name, boardName, value, position));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return entries;
+    }
+
+    @Override
+    public Map<String, LbEntry> getPlayerEntries(UUID uuid, Set<String> boards) {
+        Map<String, LbEntry> entries = new HashMap<>();
+
+        String boardNamesPlaceholders = String.join(",", Collections.nCopies(boards.size(), "?"));
+
+        String query = """
+                WITH RankedEntries AS (
+                    SELECT
+                        player_uuid,
+                        name,
+                        board,
+                        value,
+                        RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
+                    FROM aurora_leaderboard
+                    WHERE board IN (""" + boardNamesPlaceholders + """
+                ))
+                    SELECT player_uuid, name, board, value, position
+                    FROM RankedEntries
+                    WHERE player_uuid = ?
+                """;
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            int index = 1;
+
+            // Bind board names to the prepared statement
+            for (String board : boards) {
+                ps.setString(index, board);
+                index++;
+            }
+
+            // Bind the player UUID to the prepared statement
+            ps.setString(index, uuid.toString());
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String boardName = rs.getString("board");
+                String name = rs.getString("name");
+                double value = rs.getDouble("value");
+                long position = rs.getLong("position");
+
+                entries.put(boardName, new LbEntry(uuid, name, boardName, value, position));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return entries;
+    }
+
+    @Override
+    public Map<UUID, Map<String, LbEntry>> getPlayerEntries(Collection<? extends Player> players, Set<String> boards) {
+        Map<UUID, Map<String, LbEntry>> entries = new HashMap<>();
+
+        String playerUuids = String.join(",", Collections.nCopies(players.size(), "?"));
+        String boardNames = String.join(",", Collections.nCopies(boards.size(), "?"));
+
+        String query = """
+                WITH RankedEntries AS (
+                    SELECT
+                        player_uuid,
+                        name,
+                        board,
+                        value,
+                        RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
+                    FROM aurora_leaderboard
+                    WHERE board IN (""" + boardNames + """
+                ))
+                SELECT player_uuid, name, board, value, position
+                FROM RankedEntries
+                WHERE player_uuid IN (""" + playerUuids + """
+                )""";
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            int index = 1;
+            for (String board : boards) {
+                ps.setString(index++, board);
+            }
+            for (Player player : players) {
+                ps.setString(index++, player.getUniqueId().toString());
+            }
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                UUID uuid = UUID.fromString(rs.getString("player_uuid"));
+                String boardName = rs.getString("board");
+                String name = rs.getString("name");
+                double value = rs.getDouble("value");
+                long position = rs.getLong("position");
+
+                entries.computeIfAbsent(uuid, k -> new HashMap<>())
+                        .put(boardName, new LbEntry(uuid, name, boardName, value, position));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return entries;
+    }
+
+    @Override
+    public long getTotalEntryCount(String board) {
+        String query = "SELECT COUNT(*) as total FROM " + leaderboardTableName + " WHERE board = ?";
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, board);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    @Override
+    public boolean updateEntry(String board, UUID uuid, double value) {
+        String existsQuery = "SELECT player_uuid FROM " + leaderboardTableName + " WHERE player_uuid = ? AND board = ?";
+        String query = "INSERT INTO " + leaderboardTableName + " (player_uuid, name, board, value) " +
+                "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?, name = ?";
+        try (Connection conn = connection();
+             PreparedStatement psCheck = conn.prepareStatement(existsQuery);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            psCheck.setString(1, uuid.toString());
+            psCheck.setString(2, board);
+            var rs = psCheck.executeQuery();
+
+            ps.setString(1, uuid.toString());
+            ps.setString(2, Bukkit.getOfflinePlayer(uuid).getName()); // Replace with actual player name retrieval
+            ps.setString(3, board);
+            ps.setDouble(4, value);
+            ps.setDouble(5, value);
+            ps.setString(6, Bukkit.getOfflinePlayer(uuid).getName());
+
+            boolean exists = rs.next();
+            ps.executeUpdate();
+            return !exists;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

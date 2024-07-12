@@ -1,7 +1,10 @@
 package gg.auroramc.aurora.api.user;
 
+import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
@@ -22,6 +25,9 @@ public class AuroraUser {
     private final Object serializeLock = new Object();
 
     private final AtomicBoolean loaded = new AtomicBoolean(true);
+
+    @Getter
+    private final Map<String, LbEntry> leaderboardEntries = Maps.newConcurrentMap();
 
     public AuroraUser(UUID uuid) {
         this.uuid = uuid;

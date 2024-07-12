@@ -11,6 +11,7 @@ import gg.auroramc.aurora.config.Config;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
@@ -44,6 +45,12 @@ public final class Aurora extends JavaPlugin implements Listener {
     }
 
     @Override
+    public void onLoad() {
+        expansionManager = new ExpansionManager();
+        expansionManager.preloadExpansion(LeaderboardExpansion.class);
+    }
+
+    @Override
     public void onEnable() {
         saveDefaultConfig();
         instance = this;
@@ -67,11 +74,11 @@ public final class Aurora extends JavaPlugin implements Listener {
     }
 
     private void setupExpansions() {
-        expansionManager = new ExpansionManager();
         expansionManager.loadExpansion(PlaceholderExpansion.class);
         expansionManager.loadExpansion(EconomyExpansion.class);
         expansionManager.loadExpansion(NumberFormatExpansion.class);
         expansionManager.loadExpansion(ItemExpansion.class);
+        expansionManager.loadExpansion(LeaderboardExpansion.class);
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);

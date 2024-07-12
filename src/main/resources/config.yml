@@ -32,6 +32,9 @@ mysql:
 block-tracker:
   enabled: true
   # can be file or sqlite
-  storage-type: "file"
+  storage-type: "sqlite"
 
-config-version: 2
+leaderboards:
+  empty-placeholder: "---"
+
+config-version: 3

@@ -10,6 +10,7 @@ import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
 
@@ -31,9 +32,8 @@ public class AuroraAPI {
     /**
      * Creates a custom logger with you plugin name as prefix.
      *
-     * @param plugin the name of your plugin
+     * @param plugin    the name of your plugin
      * @param debugMode the supplier for the debug parameter
-     *
      * @return the newly created logger
      */
     public static AuroraLogger createLogger(String plugin, Supplier<Boolean> debugMode) {
@@ -66,6 +66,15 @@ public class AuroraAPI {
      */
     public static AuroraEconomy getEconomy(String providerPluginName) {
         return Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getEconomy(providerPluginName);
+    }
+
+    /**
+     * Get the leaderboard expansion.
+     *
+     * @return the leaderboard expansion
+     */
+    public static LeaderboardExpansion getLeaderboards() {
+        return Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
     }
 
     /**

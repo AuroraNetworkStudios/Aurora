@@ -10,6 +10,7 @@ import gg.auroramc.aurora.api.user.storage.SaveReason;
 import gg.auroramc.aurora.api.user.storage.UserStorage;
 import gg.auroramc.aurora.api.user.storage.YamlStorage;
 import gg.auroramc.aurora.api.user.storage.sql.MySqlStorage;
+import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -29,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class UserManager implements Listener {
+    @Getter
     private final UserStorage storage;
     private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
     private final Set<Class<? extends UserDataHolder>> dataHolders = new HashSet<>();
@@ -150,21 +152,30 @@ public class UserManager implements Listener {
     public void loadUser(UUID uuid) {
         CompletableFuture.runAsync(() -> {
             synchronized (getPlayerLock(uuid)) {
+                var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+
                 storage.loadUser(uuid, dataHolders, user -> {
                     if (Bukkit.getPlayer(uuid) == null) return;
 
                     var maybeUser = cache.getIfPresent(uuid);
 
                     if (maybeUser != null && !maybeUser.isLoaded()) {
+                        lbm.updateUser(user).join();
+                        maybeUser.getLeaderboardEntries().putAll(lbm.loadUser(user.getUniqueId()).join());
                         maybeUser.loadFromUser(user);
                         Aurora.logger().debug("Updated user " + user.getUniqueId() + " in cache");
+
+                        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
                     } else {
+                        lbm.updateUser(user).join();
+                        user.getLeaderboardEntries().putAll(lbm.loadUser(user.getUniqueId()).join());
                         cache.put(uuid, user);
                         Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
-                    }
 
-                    Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                            (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
+                        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
+                    }
                 });
             }
         });
