@@ -2,6 +2,7 @@ package gg.auroramc.aurora.expansions.leaderboard.storage.sqlite;
 
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
+import gg.auroramc.aurora.expansions.leaderboard.storage.BoardValue;
 import gg.auroramc.aurora.expansions.leaderboard.storage.LeaderboardStorage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -102,40 +103,29 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
     }
 
     @Override
-    public Map<String, LbEntry> getPlayerEntries(UUID uuid, Set<String> boards) {
+    public Map<String, LbEntry> getPlayerEntries(UUID uuid) {
         Map<String, LbEntry> entries = new HashMap<>();
 
-        String boardNamesPlaceholders = String.join(",", Collections.nCopies(boards.size(), "?"));
-
         String query = """
-                WITH RankedEntries AS (
-                    SELECT
-                        player_uuid,
-                        name,
-                        board,
-                        value,
-                        RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
-                    FROM aurora_leaderboard
-                    WHERE board IN (""" + boardNamesPlaceholders + """
-                ))
-                    SELECT player_uuid, name, board, value, position
-                    FROM RankedEntries
-                    WHERE player_uuid = ?
-                """;
+        WITH RankedEntries AS (
+            SELECT
+                player_uuid,
+                name,
+                board,
+                value,
+                RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
+            FROM aurora_leaderboard
+        )
+        SELECT player_uuid, name, board, value, position
+        FROM RankedEntries
+        WHERE player_uuid = ?
+    """;
 
         try (Connection conn = connection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
-            int index = 1;
-
-            // Bind board names to the prepared statement
-            for (String board : boards) {
-                ps.setString(index, board);
-                index++;
-            }
-
             // Bind the player UUID to the prepared statement
-            ps.setString(index, uuid.toString());
+            ps.setString(1, uuid.toString());
 
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -145,58 +135,6 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
                 long position = rs.getLong("position");
 
                 entries.put(boardName, new LbEntry(uuid, name, boardName, value, position));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return entries;
-    }
-
-    @Override
-    public Map<UUID, Map<String, LbEntry>> getPlayerEntries(Collection<? extends Player> players, Set<String> boards) {
-        Map<UUID, Map<String, LbEntry>> entries = new HashMap<>();
-
-        String playerUuids = String.join(",", Collections.nCopies(players.size(), "?"));
-        String boardNames = String.join(",", Collections.nCopies(boards.size(), "?"));
-
-        String query = """
-                WITH RankedEntries AS (
-                    SELECT
-                        player_uuid,
-                        name,
-                        board,
-                        value,
-                        RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
-                    FROM aurora_leaderboard
-                    WHERE board IN (""" + boardNames + """
-                ))
-                SELECT player_uuid, name, board, value, position
-                FROM RankedEntries
-                WHERE player_uuid IN (""" + playerUuids + """
-                )""";
-
-        try (Connection conn = connection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
-
-            int index = 1;
-            for (String board : boards) {
-                ps.setString(index++, board);
-            }
-            for (Player player : players) {
-                ps.setString(index++, player.getUniqueId().toString());
-            }
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                UUID uuid = UUID.fromString(rs.getString("player_uuid"));
-                String boardName = rs.getString("board");
-                String name = rs.getString("name");
-                double value = rs.getDouble("value");
-                long position = rs.getLong("position");
-
-                entries.computeIfAbsent(uuid, k -> new HashMap<>())
-                        .put(boardName, new LbEntry(uuid, name, boardName, value, position));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -224,32 +162,29 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
     }
 
     @Override
-    public boolean updateEntry(String board, UUID uuid, double value) {
-        String existsQuery = "SELECT player_uuid FROM aurora_leaderboard WHERE player_uuid = ? AND board = ?";
+    public void updateEntry(UUID uuid, Set<BoardValue> values) {
         String query = "INSERT INTO aurora_leaderboard (player_uuid, name, board, value) " +
                 "VALUES (?, ?, ?, ?) ON CONFLICT(player_uuid, board) DO UPDATE SET value = ?, name = ?";
 
         try (Connection conn = connection();
-             PreparedStatement psCheck = conn.prepareStatement(existsQuery);
              PreparedStatement ps = conn.prepareStatement(query)) {
-            psCheck.setString(1, uuid.toString());
-            psCheck.setString(2, board);
-            ResultSet rs = psCheck.executeQuery();
-            boolean exists = rs.next();
 
-            ps.setString(1, uuid.toString());
-            ps.setString(2, Bukkit.getOfflinePlayer(uuid).getName());
-            ps.setString(3, board);
-            ps.setDouble(4, value);
-            ps.setDouble(5, value);
-            ps.setString(6, Bukkit.getOfflinePlayer(uuid).getName());
+            var name = Bukkit.getOfflinePlayer(uuid).getName();
 
-            ps.executeUpdate();
+            for (BoardValue boardValue : values) {
+                ps.setString(1, uuid.toString());
+                ps.setString(2, name);
+                ps.setString(3, boardValue.board());
+                ps.setDouble(4, boardValue.value());
+                ps.setDouble(5, boardValue.value());
+                ps.setString(6, name);
+                ps.addBatch();
+            }
 
-            return !exists;
+            ps.executeBatch();
+
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
         }
     }
 }

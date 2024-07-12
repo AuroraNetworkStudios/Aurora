@@ -160,7 +160,9 @@ public class UserManager implements Listener {
                     var maybeUser = cache.getIfPresent(uuid);
 
                     if (maybeUser != null && !maybeUser.isLoaded()) {
-                        lbm.updateUser(user).join();
+                        lbm.updateUser(user).thenAcceptAsync(a ->
+                                lbm.loadUser(user.getUniqueId()).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll));
+
                         maybeUser.getLeaderboardEntries().putAll(lbm.loadUser(user.getUniqueId()).join());
                         maybeUser.loadFromUser(user);
                         Aurora.logger().debug("Updated user " + user.getUniqueId() + " in cache");
@@ -168,8 +170,9 @@ public class UserManager implements Listener {
                         Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
                                 (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
                     } else {
-                        lbm.updateUser(user).join();
-                        user.getLeaderboardEntries().putAll(lbm.loadUser(user.getUniqueId()).join());
+                        lbm.updateUser(user).thenAcceptAsync(a ->
+                                lbm.loadUser(user.getUniqueId()).thenAcceptAsync(user.getLeaderboardEntries()::putAll));
+
                         cache.put(uuid, user);
                         Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
 

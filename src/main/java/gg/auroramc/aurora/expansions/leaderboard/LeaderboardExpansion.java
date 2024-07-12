@@ -8,6 +8,7 @@ import gg.auroramc.aurora.api.placeholder.PlaceholderHandlerRegistry;
 import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.storage.sql.MySqlStorage;
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
+import gg.auroramc.aurora.expansions.leaderboard.storage.BoardValue;
 import gg.auroramc.aurora.expansions.leaderboard.storage.LeaderboardStorage;
 import gg.auroramc.aurora.expansions.leaderboard.storage.sqlite.SqliteLeaderboardStorage;
 import org.bukkit.Bukkit;
@@ -56,8 +57,11 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
                 boardSizes.put(board, storage.getTotalEntryCount(board));
             }
 
-            storage.getPlayerEntries(Bukkit.getOnlinePlayers(), valueMappers.keySet()).forEach((uuid, stringLbEntryMap) ->
-                    Aurora.getUserManager().getUser(uuid).getLeaderboardEntries().putAll(stringLbEntryMap));
+            Bukkit.getOnlinePlayers().forEach(player -> {
+                if (Bukkit.isStopping() || Aurora.isDisabling()) return;
+                var user = Aurora.getUserManager().getUser(player.getUniqueId());
+                user.getLeaderboardEntries().putAll(storage.getPlayerEntries(player.getUniqueId()));
+            });
 
             if (!Bukkit.isStopping() && !Aurora.isDisabling()) {
                 updateTask();
@@ -131,7 +135,7 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     public CompletableFuture<Map<String, LbEntry>> loadUser(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             synchronized (getUpdateLock(uuid)) {
-                return storage.getPlayerEntries(uuid, valueMappers.keySet());
+                return storage.getPlayerEntries(uuid);
             }
         });
     }
@@ -145,11 +149,14 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     public CompletableFuture<Void> updateUser(AuroraUser user, String... updateBoards) {
         return CompletableFuture.runAsync(() -> {
             synchronized (getUpdateLock(user.getUniqueId())) {
+                var toUpdate = new HashSet<BoardValue>(updateBoards.length == 0 ? valueMappers.keySet().size() : updateBoards.length);
+
                 for (var board : updateBoards.length == 0 ? valueMappers.keySet() : Arrays.asList(updateBoards)) {
                     double value = valueMappers.get(board).apply(user);
-                    boolean isNewEntry = storage.updateEntry(board, user.getUniqueId(), value);
-                    if(isNewEntry) boardSizes.put(board, boardSizes.get(board) + 1);
+                    toUpdate.add(new BoardValue(board, value));
                 }
+
+                storage.updateEntry(user.getUniqueId(), toUpdate);
             }
         });
     }

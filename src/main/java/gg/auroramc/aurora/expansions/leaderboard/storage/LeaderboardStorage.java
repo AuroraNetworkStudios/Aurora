@@ -7,8 +7,7 @@ import java.util.*;
 
 public interface LeaderboardStorage {
     List<LbEntry> getTopEntries(String board, int limit);
-    Map<String, LbEntry> getPlayerEntries(UUID uuid, Set<String> boards);
-    Map<UUID, Map<String, LbEntry>> getPlayerEntries(Collection<? extends Player> player, Set<String> boards);
+    Map<String, LbEntry> getPlayerEntries(UUID uuid);
     long getTotalEntryCount(String board);
-    boolean updateEntry(String board, UUID uuid, double value);
+    void updateEntry(UUID uuid, Set<BoardValue> values);
 }
