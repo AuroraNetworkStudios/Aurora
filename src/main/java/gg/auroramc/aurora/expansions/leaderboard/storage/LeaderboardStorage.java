@@ -1,7 +1,6 @@
 package gg.auroramc.aurora.expansions.leaderboard.storage;
 
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
-import org.bukkit.entity.Player;
 
 import java.util.*;
 

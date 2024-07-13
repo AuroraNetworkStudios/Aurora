@@ -24,12 +24,14 @@ import java.util.function.Function;
 
 public class LeaderboardExpansion implements AuroraExpansion, Listener {
     private final Map<UUID, Object> updateLocks = Maps.newConcurrentMap();
-    private final Map<String, Function<AuroraUser, Double>> valueMappers = Maps.newConcurrentMap();
-    private final Map<String, Function<LbEntry, String>> formatMappers = Maps.newConcurrentMap();
     private final Map<String, List<LbEntry>> boards = Maps.newConcurrentMap();
+    private final Map<String, LbDescriptor> descriptors = Maps.newConcurrentMap();
     private final Map<String, Long> boardSizes = Maps.newConcurrentMap();
-    private final Map<String, Integer> boardCacheSizes = Maps.newHashMap();
     private LeaderboardStorage storage;
+
+    public record LbDescriptor(String name, Function<AuroraUser, Double> valueMapper,
+                               Function<LbEntry, String> formatMapper, int cacheSize, double minValue) {
+    }
 
     @Override
     public void hook() {
@@ -41,9 +43,9 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
 
         PlaceholderHandlerRegistry.addHandler(new LbPlaceholderHandler(this));
 
-        for (var board : valueMappers.keySet()) {
+        for (var board : descriptors.keySet()) {
             boards.putIfAbsent(board, List.of());
-            boards.put(board, storage.getTopEntries(board, boardCacheSizes.get(board)));
+            boards.put(board, storage.getTopEntries(board, descriptors.get(board).cacheSize));
             boardSizes.put(board, storage.getTotalEntryCount(board));
         }
 
@@ -52,8 +54,8 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
 
     public void updateTask() {
         Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
-            for (var board : valueMappers.keySet()) {
-                boards.put(board, storage.getTopEntries(board, boardCacheSizes.get(board)));
+            for (var board : descriptors.keySet()) {
+                boards.put(board, storage.getTopEntries(board, descriptors.get(board).cacheSize));
                 boardSizes.put(board, storage.getTotalEntryCount(board));
             }
 
@@ -87,8 +89,7 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
      * @param cacheSize   the size of the cache
      */
     public void registerBoard(String board, Function<AuroraUser, Double> valueMapper, int cacheSize) {
-        valueMappers.put(board, valueMapper);
-        boardCacheSizes.put(board, cacheSize);
+        registerBoard(board, valueMapper, (e) -> AuroraAPI.formatNumber(e.getValue()), cacheSize, 0D);
     }
 
     /**
@@ -101,9 +102,21 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
      * @param cacheSize    the size of the cache
      */
     public void registerBoard(String board, Function<AuroraUser, Double> valueMapper, Function<LbEntry, String> formatMapper, int cacheSize) {
-        valueMappers.put(board, valueMapper);
-        boardCacheSizes.put(board, cacheSize);
-        formatMappers.put(board, formatMapper);
+        registerBoard(board, valueMapper, formatMapper, cacheSize, 0D);
+    }
+
+    /**
+     * Registers a new leaderboard board.
+     * Call this method in your plugin onLoad method.
+     *
+     * @param board        the name of the board
+     * @param valueMapper  a function that maps a user to a value
+     * @param formatMapper a function that maps a leaderboard entry value to a string
+     * @param cacheSize    the size of the cache
+     * @param minValue     the minimum value to be displayed on the leaderboard
+     */
+    public void registerBoard(String board, Function<AuroraUser, Double> valueMapper, Function<LbEntry, String> formatMapper, int cacheSize, double minValue) {
+        descriptors.put(board, new LbDescriptor(board, valueMapper, formatMapper, cacheSize, minValue));
     }
 
     /**
@@ -149,11 +162,13 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     public CompletableFuture<Void> updateUser(AuroraUser user, String... updateBoards) {
         return CompletableFuture.runAsync(() -> {
             synchronized (getUpdateLock(user.getUniqueId())) {
-                var toUpdate = new HashSet<BoardValue>(updateBoards.length == 0 ? valueMappers.keySet().size() : updateBoards.length);
+                var toUpdate = new HashSet<BoardValue>(updateBoards.length == 0 ? descriptors.keySet().size() : updateBoards.length);
 
-                for (var board : updateBoards.length == 0 ? valueMappers.keySet() : Arrays.asList(updateBoards)) {
-                    double value = valueMappers.get(board).apply(user);
-                    toUpdate.add(new BoardValue(board, value));
+                for (var board : updateBoards.length == 0 ? descriptors.keySet() : Arrays.asList(updateBoards)) {
+                    double value = descriptors.get(board).valueMapper.apply(user);
+                    if (value >= descriptors.get(board).minValue) {
+                        toUpdate.add(new BoardValue(board, value));
+                    }
                 }
 
                 storage.updateEntry(user.getUniqueId(), toUpdate);
@@ -162,11 +177,16 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     }
 
     public String formatValue(LbEntry entry) {
-        return formatMappers.getOrDefault(entry.getBoard(), (e) -> AuroraAPI.formatNumber(e.getValue())).apply(entry);
+        var mapper = descriptors.get(entry.getBoard()).formatMapper;
+        if (mapper != null) {
+            return mapper.apply(entry);
+        } else {
+            return AuroraAPI.formatNumber(entry.getValue());
+        }
     }
 
     public Set<String> getBoards() {
-        return valueMappers.keySet();
+        return descriptors.keySet();
     }
 
     public String getEmptyPlaceholder() {
