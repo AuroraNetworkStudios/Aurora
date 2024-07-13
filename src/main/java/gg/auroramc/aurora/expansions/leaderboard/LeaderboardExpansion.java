@@ -162,16 +162,21 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     public CompletableFuture<Void> updateUser(AuroraUser user, String... updateBoards) {
         return CompletableFuture.runAsync(() -> {
             synchronized (getUpdateLock(user.getUniqueId())) {
+                var player = user.getPlayer();
                 var toUpdate = new HashSet<BoardValue>(updateBoards.length == 0 ? descriptors.keySet().size() : updateBoards.length);
 
                 for (var board : updateBoards.length == 0 ? descriptors.keySet() : Arrays.asList(updateBoards)) {
+                    if (player != null && (player.hasPermission("aurora.leaderboard.prevent." + board) || player.hasPermission("aurora.leaderboard.prevent.*")))
+                        continue;
                     double value = descriptors.get(board).valueMapper.apply(user);
                     if (value >= descriptors.get(board).minValue) {
                         toUpdate.add(new BoardValue(board, value));
                     }
                 }
 
-                storage.updateEntry(user.getUniqueId(), toUpdate);
+                if (!toUpdate.isEmpty()) {
+                    storage.updateEntry(user.getUniqueId(), toUpdate);
+                }
             }
         });
     }
