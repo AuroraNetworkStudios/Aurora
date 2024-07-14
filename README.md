@@ -21,6 +21,7 @@ It provides the following utilities:
 which integrates with Multiverse-Core and WildRegeneration for cleanup. It can even handle manual chunk deletions.
 - WorldGuard expansion to provide events like `PlayerRegionEnterEvent` and `PlayerRegionLeaveEvent`
 - `CommandDispatcher` to easily dispatch commands from config files
+- Leaderboard expansion with APIs to handle multiple leaderboards
 
 ## Include it in your project
 
@@ -37,7 +38,7 @@ which integrates with Multiverse-Core and WildRegeneration for cleanup. It can e
 <dependency>
     <groupId>gg.auroramc</groupId>
     <artifactId>Aurora</artifactId>
-    <version>1.4.2</version>
+    <version>1.5.0</version>
     <scope>provided</scope>
 </dependency>
 ```
@@ -52,7 +53,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'gg.auroramc:Aurora:1.4.2'
+    compileOnly 'gg.auroramc:Aurora:1.5.0'
 }
 ```
 
@@ -63,6 +64,6 @@ repositories {
 }
 
 dependencies { 
-    compileOnly("gg.auroramc:Aurora:1.4.2")
+    compileOnly("gg.auroramc:Aurora:1.5.0")
 }
 ```
