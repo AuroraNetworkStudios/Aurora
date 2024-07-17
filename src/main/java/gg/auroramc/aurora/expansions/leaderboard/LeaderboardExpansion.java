@@ -15,6 +15,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -42,6 +44,17 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
         }
 
         PlaceholderHandlerRegistry.addHandler(new LbPlaceholderHandler(this));
+
+
+        var wildcard = new Permission("aurora.leaderboard.prevent.*", PermissionDefault.FALSE);
+        Bukkit.getPluginManager().addPermission(wildcard);
+
+        for (var board : descriptors.keySet()) {
+            var perm = new Permission("aurora.leaderboard.prevent." + board, PermissionDefault.FALSE);
+            Bukkit.getPluginManager().addPermission(perm);
+            perm.addParent(wildcard, true);
+        }
+
 
         for (var board : descriptors.keySet()) {
             boards.putIfAbsent(board, List.of());
@@ -166,8 +179,9 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
                 var toUpdate = new HashSet<BoardValue>(updateBoards.length == 0 ? descriptors.keySet().size() : updateBoards.length);
 
                 for (var board : updateBoards.length == 0 ? descriptors.keySet() : Arrays.asList(updateBoards)) {
-                    if (player != null && (player.hasPermission("aurora.leaderboard.prevent." + board) || player.hasPermission("aurora.leaderboard.prevent.*")))
+                    if (player != null && player.hasPermission("aurora.leaderboard.prevent." + board)) {
                         continue;
+                    }
                     double value = descriptors.get(board).valueMapper.apply(user);
                     if (value >= descriptors.get(board).minValue) {
                         toUpdate.add(new BoardValue(board, value));
