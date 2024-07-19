@@ -3,6 +3,8 @@ package gg.auroramc.aurora.api.item;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
+import java.util.Arrays;
+
 public record TypeId(String namespace, String id) {
     @Override
     public String toString() {
@@ -23,7 +25,8 @@ public record TypeId(String namespace, String id) {
         if (split.length == 1) {
             return new TypeId("minecraft", split[0].toLowerCase());
         } else if (split.length != 2) {
-            throw new IllegalArgumentException("Invalid TypeId: " + string);
+            String rest = String.join(":", Arrays.copyOfRange(split, 1, split.length));
+            return new TypeId(split[0], rest);
         } else {
             return new TypeId(split[0], split[1]);
         }
