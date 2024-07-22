@@ -58,15 +58,18 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void addItem(MenuItem item, Function<InventoryClickEvent, MenuAction> handler) {
-        this.menuItems.put(item.getSlot(), new MenuEntry(item, handler));
+        var menuEntry = new MenuEntry(item, handler);
+        item.getSlots().forEach(s -> this.menuItems.put(s, menuEntry));
     }
 
     public void addItem(MenuItem item, Consumer<InventoryClickEvent> handler) {
-        this.menuItems.put(item.getSlot(), new MenuEntry(item, handler));
+        var menuEntry = new MenuEntry(item, handler);
+        item.getSlots().forEach(s -> this.menuItems.put(s, menuEntry));
     }
 
     public void addItem(MenuItem item) {
-        this.menuItems.put(item.getSlot(), new MenuEntry(item));
+        var menuEntry = new MenuEntry(item);
+        item.getSlots().forEach(s -> this.menuItems.put(s, menuEntry));
     }
 
     public void freeSlotHandler(int slot, Consumer<InventoryClickEvent> handler) {

@@ -15,6 +15,7 @@ public class ItemConfig {
     private Integer customModelData;
     private String texture;
     private Integer slot;
+    private List<Integer> slots;
     private Integer amount = 1;
     private Integer durability;
     private SkullConfig skull;
@@ -43,6 +44,9 @@ public class ItemConfig {
         if (other.customModelData != null) ret.customModelData = other.customModelData;
         if (other.texture != null) ret.texture = other.texture;
         if (other.slot != null) ret.slot = other.slot;
+        if (other.slots != null && !other.slots.isEmpty()) {
+            ret.slots = new ArrayList<>(other.slots);
+        }
         if (other.amount != null) ret.amount = other.amount;
         if (other.durability != null) ret.durability = other.durability;
 
@@ -100,6 +104,11 @@ public class ItemConfig {
         this.customModelData = other.customModelData;
         this.texture = other.texture;
         this.slot = other.slot;
+        if (other.slots != null) {
+            this.slots = new ArrayList<>(other.slots);
+        } else {
+            this.slots = new ArrayList<>();
+        }
         this.amount = other.amount;
         this.durability = other.durability;
 

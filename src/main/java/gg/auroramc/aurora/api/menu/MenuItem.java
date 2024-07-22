@@ -6,24 +6,27 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
+
 public class MenuItem {
     private final ItemBuilder itemBuilder;
     @Getter
     private ItemStack itemStack;
     @Getter
-    private final int slot;
-    @Getter
     private final Player player;
 
-    public MenuItem(Player player, ItemBuilder builder, ItemStack itemStack, int slot) {
+    public MenuItem(Player player, ItemBuilder builder, ItemStack itemStack) {
         this.itemBuilder = builder;
         this.itemStack = itemStack;
         this.player = player;
-        this.slot = slot;
     }
 
     public void applyToInventory(Inventory inventory) {
-        inventory.setItem(slot, itemStack);
+        if(itemBuilder.getConfig().getSlot() != null) {
+            inventory.setItem(itemBuilder.getConfig().getSlot(), itemStack);
+        } else if(itemBuilder.getConfig().getSlots() != null && !itemBuilder.getConfig().getSlots().isEmpty()) {
+            itemBuilder.getConfig().getSlots().forEach(s -> inventory.setItem(s, itemStack));
+        }
     }
 
     public void runOnClickCommands(Player player) {
@@ -50,5 +53,9 @@ public class MenuItem {
 
     public boolean isRefreshEnabled() {
         return itemBuilder.getConfig().isRefresh();
+    }
+
+    public List<Integer> getSlots() {
+        return itemBuilder.getConfig().getSlot() != null ? List.of(itemBuilder.getConfig().getSlot()) : itemBuilder.getConfig().getSlots();
     }
 }

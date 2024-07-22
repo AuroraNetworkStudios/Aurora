@@ -223,9 +223,9 @@ public class ItemBuilder {
 
     public MenuItem build(Player player) {
         if (item == null) {
-            return new MenuItem(player, this, toItemStack(player), config.getSlot());
+            return new MenuItem(player, this, toItemStack(player));
         } else {
-            return new MenuItem(player, this, toItemStack(item, player), config.getSlot());
+            return new MenuItem(player, this, toItemStack(item, player));
         }
     }
 
