@@ -41,6 +41,7 @@ repositories {
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
     maven("https://repo.oraxen.com/snapshots")
     maven("https://mvn.lumine.io/repository/maven-public/")
+    maven("https://repo.auxilor.io/repository/maven-public/")
 }
 
 dependencies {
@@ -59,6 +60,7 @@ dependencies {
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
+    compileOnly("com.willfp:eco:6.73.0")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")

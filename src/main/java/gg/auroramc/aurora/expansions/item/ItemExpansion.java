@@ -5,10 +5,8 @@ import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
 import gg.auroramc.aurora.api.item.ItemManager;
-import gg.auroramc.aurora.expansions.item.resolvers.CustomFishingItemResolver;
-import gg.auroramc.aurora.expansions.item.resolvers.MMOItemResolver;
-import gg.auroramc.aurora.expansions.item.resolvers.MythicItemResolver;
-import gg.auroramc.aurora.expansions.item.resolvers.OraxenItemResolver;
+import gg.auroramc.aurora.expansions.item.resolvers.*;
+import gg.auroramc.aurora.expansions.item.resolvers.EcoItemsResolver;
 import lombok.Getter;
 
 @Getter
@@ -37,6 +35,11 @@ public class ItemExpansion implements AuroraExpansion {
         if(DependencyManager.hasDep(Dep.ORAXEN)) {
             itemManager.registerResolver(Dep.ORAXEN, new OraxenItemResolver());
             Aurora.logger().debug("Hooked into Oraxen for item resolvers.");
+        }
+
+        if(DependencyManager.hasDep(Dep.ECO)) {
+            itemManager.registerResolver(Dep.ECO, new EcoItemsResolver());
+            Aurora.logger().debug("Hooked into EcoItems for item resolvers.");
         }
     }
 

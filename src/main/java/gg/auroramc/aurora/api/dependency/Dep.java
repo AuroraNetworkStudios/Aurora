@@ -26,7 +26,8 @@ public enum Dep {
     PROTCOLLIB("ProtocolLib"),
     MULTIVERSECORE("Multiverse-Core"),
     WILDREGENERATION("WildRegeneration"),
-    ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium");
+    ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium"),
+    ECO("Eco");
 
     private String id;
 
