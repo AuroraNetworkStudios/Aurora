@@ -230,9 +230,16 @@ public class ItemBuilder {
     }
 
     public ItemStack toItemStack(Player player) {
-        var item = config.getMaterial().contains(":")
-                ? fromType(TypeId.fromDefault(config.getMaterial()), player)
-                : new ItemStack(Material.valueOf(config.getMaterial().toUpperCase()));
+        ItemStack item;
+
+        if(config.getMaterial().contains(":")) {
+            item = fromType(TypeId.fromDefault(config.getMaterial()), player);
+        } else if(config.getMaterial().equalsIgnoreCase("self_head")) {
+            setPlayerHead(player);
+            item = new ItemStack(Material.PLAYER_HEAD);
+        } else {
+            item = new ItemStack(Material.valueOf(config.getMaterial().toUpperCase()));
+        }
 
         return toItemStack(item, player);
     }
