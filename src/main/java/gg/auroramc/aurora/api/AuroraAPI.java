@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.api;
 
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.entity.EntityManager;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
 import gg.auroramc.aurora.api.item.ItemManager;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandler;
@@ -9,6 +10,7 @@ import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
+import gg.auroramc.aurora.expansions.entity.EntityExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
@@ -141,5 +143,9 @@ public class AuroraAPI {
 
     public static ItemManager getItemManager() {
         return Aurora.getExpansionManager().getExpansion(ItemExpansion.class).getItemManager();
+    }
+
+    public static EntityManager getEntityManager() {
+        return Aurora.getExpansionManager().getExpansion(EntityExpansion.class).getEntityManager();
     }
 }
