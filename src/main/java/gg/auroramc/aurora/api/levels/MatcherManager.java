@@ -13,6 +13,7 @@ import java.util.*;
 
 @Getter
 public class MatcherManager {
+    private final IntervalMatcher dummyMatcher = new IntervalMatcher("dummy", new IntervalMatcherConfig(), Collections.emptyMap());
     private final List<IntervalMatcher> intervalMatchers = Lists.newCopyOnWriteArrayList();
     private final Map<Integer, ConcreteMatcher> customMatchers = Maps.newConcurrentMap();
     private final RewardFactory rewardFactory;
@@ -90,7 +91,7 @@ public class MatcherManager {
      * Get the best matcher for the given level
      *
      * @param level level to get the matcher for
-     * @return the best matcher for the given level
+     * @return the best matcher for the given level or a dummy matcher if none are found
      */
     public LevelMatcher getBestMatcher(int level) {
         if (customMatchers.containsKey(level)) {
@@ -103,6 +104,6 @@ public class MatcherManager {
             }
         }
 
-        return null;
+        return dummyMatcher;
     }
 }
