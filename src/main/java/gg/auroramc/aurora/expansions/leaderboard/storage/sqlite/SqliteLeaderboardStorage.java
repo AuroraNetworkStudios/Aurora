@@ -1,16 +1,19 @@
 package gg.auroramc.aurora.expansions.leaderboard.storage.sqlite;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
 import gg.auroramc.aurora.expansions.leaderboard.storage.BoardValue;
 import gg.auroramc.aurora.expansions.leaderboard.storage.LeaderboardStorage;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 import java.sql.*;
 import java.util.*;
 
 public class SqliteLeaderboardStorage implements LeaderboardStorage {
+    private HikariDataSource dataSource;
+
     private final static String table = """
                     CREATE TABLE IF NOT EXISTS aurora_leaderboard
                     (
@@ -30,6 +33,13 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
 
 
     public SqliteLeaderboardStorage() {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:sqlite:" + Aurora.getInstance().getDataFolder() + "/leaderboards.db");
+        config.setConnectionTestQuery("SELECT 1");
+        config.setMaximumPoolSize(10);
+        config.setDriverClassName("org.sqlite.JDBC");
+        this.dataSource = new HikariDataSource(config);
+
         try (Connection conn = connection(); Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(table);
             for (String index : indexes) {
@@ -63,9 +73,7 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
 
     private Connection connection() {
         try {
-            // Replace with the path to your SQLite database file
-            String url = "jdbc:sqlite:" + Aurora.getInstance().getDataFolder() + "/leaderboards.db";
-            return DriverManager.getConnection(url);
+            return dataSource.getConnection();
         } catch (SQLException e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to connect to the database", e);
@@ -107,19 +115,19 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
         Map<String, LbEntry> entries = new HashMap<>();
 
         String query = """
-        WITH RankedEntries AS (
-            SELECT
-                player_uuid,
-                name,
-                board,
-                value,
-                RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
-            FROM aurora_leaderboard
-        )
-        SELECT player_uuid, name, board, value, position
-        FROM RankedEntries
-        WHERE player_uuid = ?
-    """;
+                    WITH RankedEntries AS (
+                        SELECT
+                            player_uuid,
+                            name,
+                            board,
+                            value,
+                            RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
+                        FROM aurora_leaderboard
+                    )
+                    SELECT player_uuid, name, board, value, position
+                    FROM RankedEntries
+                    WHERE player_uuid = ?
+                """;
 
         try (Connection conn = connection();
              PreparedStatement ps = conn.prepareStatement(query)) {
