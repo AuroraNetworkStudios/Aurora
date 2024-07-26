@@ -32,8 +32,8 @@ public class UserManager implements Listener {
     private final UserStorage storage;
     private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
     private final Set<Class<? extends UserDataHolder>> dataHolders = new HashSet<>();
-    private final ScheduledTask autoSaveTask;
-    private final ScheduledTask leaderboardUpdateTask;
+    private ScheduledTask autoSaveTask;
+    private ScheduledTask leaderboardUpdateTask;
     @Getter
     private final LatencyMeasure loadLatencyMeasure = new LatencyMeasure();
     @Getter
@@ -58,35 +58,8 @@ public class UserManager implements Listener {
             storage = new YamlStorage();
         }
 
-        this.autoSaveTask = Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(), (task) -> {
-            var values = cache.asMap().values();
-            var successCount = 0;
-            var all = values.size();
-            for (var user : values) {
-                if (!user.isLoaded() || !user.isDirty()) {
-                    successCount++;
-                    continue;
-                }
-                var success = saveUserData(user, SaveReason.AUTO_SAVE);
-                if (success) successCount++;
-            }
-            if (!Bukkit.getOnlinePlayers().isEmpty() && !values.isEmpty()) {
-                Aurora.logger().info("Auto background saved user data for " + successCount + "/" + all + " online players");
-            }
-        }, Aurora.getLibConfig().getUserAutoSaveInMinutes(), Aurora.getLibConfig().getUserAutoSaveInMinutes(), TimeUnit.MINUTES);
-
-        this.leaderboardUpdateTask = Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(), (task) -> {
-            var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
-            var values = cache.asMap().values();
-            for (var user : values) {
-                var dirtyBoards = user.getDirtyLeaderboards();
-                if (!user.isLoaded() || dirtyBoards.isEmpty()) {
-                    continue;
-                }
-                user.updateOriginalLeaderboardDataFromCurrent();
-                lbm.updateUser(user, dirtyBoards.keySet());
-            }
-        }, 5, 5, TimeUnit.MINUTES);
+        autoSaveTask();
+        leaderboardUpdateTask();
     }
 
     public boolean saveUserData(AuroraUser user, SaveReason reason) {
@@ -99,6 +72,42 @@ public class UserManager implements Listener {
             }
             return result;
         }
+    }
+
+    private void autoSaveTask() {
+        this.autoSaveTask = Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
+            var values = cache.asMap().values();
+            var toSave = values.stream().filter(u -> u.isLoaded() && u.isDirty()).toList();
+            if (toSave.isEmpty()) return;
+            var successCount = storage.bulkSaveUsers(toSave, SaveReason.AUTO_SAVE);
+            var all = toSave.size();
+            if (!Bukkit.getOnlinePlayers().isEmpty() && !values.isEmpty()) {
+                Aurora.logger().info("Auto background saved user data for " + successCount + "/" + all + " online players");
+            }
+            autoSaveTask();
+        }, Aurora.getLibConfig().getUserAutoSaveInMinutes(), TimeUnit.MINUTES);
+    }
+
+    private void leaderboardUpdateTask() {
+        this.leaderboardUpdateTask = Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
+            var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+            var values = cache.asMap().values();
+            var toUpdate = new HashMap<UUID, Collection<String>>();
+            for (var user : values) {
+                var dirtyBoards = user.getDirtyLeaderboards();
+                if (!user.isLoaded() || dirtyBoards.isEmpty()) {
+                    continue;
+                }
+                user.updateOriginalLeaderboardDataFromCurrent();
+                toUpdate.put(user.getUniqueId(), dirtyBoards.keySet());
+            }
+            if (toUpdate.isEmpty()) {
+                lbm.updateLeaderBoards();
+                leaderboardUpdateTask();
+                return;
+            }
+            lbm.bulkUpdateUsers(toUpdate).thenRunAsync(lbm::updateLeaderBoards).thenRun(this::leaderboardUpdateTask);
+        }, 5, TimeUnit.MINUTES);
     }
 
     private Object getPlayerLock(UUID playerId) {
@@ -245,11 +254,9 @@ public class UserManager implements Listener {
     public void stopTasksAndSaveAllData() {
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
-        for (var user : cache.asMap().values()) {
-            if (user.isLoaded()) {
-                saveUserData(user, SaveReason.QUIT);
-            }
-        }
+        storage.bulkSaveUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).toList(), SaveReason.QUIT);
+        var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+        lbm.bulkUpdateUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).collect(HashMap::new, (m, u) -> m.put(u.getUniqueId(), u.getDirtyLeaderboards().keySet()), HashMap::putAll)).join();
         storage.dispose();
     }
 

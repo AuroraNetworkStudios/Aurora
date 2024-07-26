@@ -39,7 +39,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         HikariConfig config = new HikariConfig();
         config.setPoolName("aurora-pool");
         config.setConnectionTimeout(5000);
-        config.setJdbcUrl("jdbc:mysql://" + credentials.host() + ":" + credentials.port() + "/" + credentials.database() + "?useSSL=" + credentials.ssl());
+        config.setJdbcUrl("jdbc:mysql://" + credentials.host() + ":" + credentials.port() + "/" + credentials.database() + "?useSSL=" + credentials.ssl() + "&rewriteBatchedStatements=true");
         config.setUsername(credentials.username());
         config.setPassword(credentials.password());
         config.setMaximumPoolSize(poolSize);
@@ -172,6 +172,68 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 Aurora.logger().severe("Failed to save user data for player: " + uuid);
                 return false;
             }
+        }
+    }
+
+    @Override
+    public int bulkSaveUsers(List<AuroraUser> users, SaveReason reason) {
+        String saveQuery = "INSERT INTO " + tableName + " (player_uuid, holder, data) VALUES (?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE data=?;";
+
+        try (Connection connection = connection()) {
+            connection.setAutoCommit(false);
+
+            final int BATCH_SIZE = 100;
+            int batchCount = 0;
+
+            try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
+                for (var user : users) {
+                    var uuid = user.getUniqueId();
+                    synchronized (user.getSerializeLock()) {
+                        for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
+                            var data = new YamlConfiguration();
+                            holder.serializeInto(data);
+                            var serializedData = data.saveToString();
+
+                            statement.setString(1, uuid.toString());
+                            statement.setString(2, holder.getId().toString());
+                            statement.setString(3, serializedData);
+                            statement.setString(4, serializedData);
+                            statement.addBatch();
+
+                            batchCount++;
+
+                            if (batchCount >= BATCH_SIZE) {
+                                statement.executeBatch();
+                                statement.clearBatch();
+                                batchCount = 0;
+                            }
+                        }
+                    }
+                }
+
+                if (batchCount > 0) {
+                    statement.executeBatch();
+                }
+            }
+
+            if (reason == SaveReason.QUIT) {
+                String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=? OR created < NOW() - INTERVAL 2 DAY;";
+
+                try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+                    for (var user : users) {
+                        statement.setString(1, user.getUniqueId().toString());
+                        statement.addBatch();
+                    }
+                    statement.executeBatch();
+                }
+            }
+
+            connection.commit();
+            return users.size();
+        } catch (Exception e) {
+            Aurora.logger().severe("Failed to save user data for players.");
+            return 0;
         }
     }
 
@@ -389,6 +451,49 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
             }
 
             ps.executeBatch();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void bulkUpdateEntries(Map<UUID, Set<BoardValue>> values) {
+        String query = "INSERT INTO " + leaderboardTableName + " (player_uuid, name, board, value) " +
+                "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?, name = ?";
+
+        final int BATCH_SIZE = 100;
+        int batchCount = 0;
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            for (var entry : values.entrySet()) {
+                var uuid = entry.getKey();
+                var name = Bukkit.getOfflinePlayer(uuid).getName();
+
+                for (var boardValue : entry.getValue()) {
+                    ps.setString(1, uuid.toString());
+                    ps.setString(2, name);
+                    ps.setString(3, boardValue.board());
+                    ps.setDouble(4, boardValue.value());
+                    ps.setDouble(5, boardValue.value());
+                    ps.setString(6, name);
+                    ps.addBatch();
+
+                    batchCount++;
+
+                    // Execute and clear the batch if the batch size limit is reached
+                    if (batchCount >= BATCH_SIZE) {
+                        ps.executeBatch();
+                        ps.clearBatch();
+                        batchCount = 0;
+                    }
+                }
+            }
+
+            if (batchCount > 0) {
+                ps.executeBatch();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }

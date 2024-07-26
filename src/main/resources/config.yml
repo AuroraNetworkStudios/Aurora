@@ -13,8 +13,10 @@ number-format:
       trillion: "T"
       quadrillion: "Q"
 
-user-auto-save-in-minutes: 30
+user-auto-save-in-minutes: 10
 # Can be yaml or mysql
+# If you use mysql, your leaderboard data will be stored in mysql as well
+# otherwise, it will be stored in a local sqlite database
 storage-type: "yaml"
 
 mysql:

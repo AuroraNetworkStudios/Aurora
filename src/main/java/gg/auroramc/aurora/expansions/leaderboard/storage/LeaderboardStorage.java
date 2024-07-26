@@ -9,5 +9,6 @@ public interface LeaderboardStorage {
     Map<String, LbEntry> getPlayerEntries(UUID uuid);
     long getTotalEntryCount(String board);
     void updateEntry(UUID uuid, Set<BoardValue> values);
+    void bulkUpdateEntries(Map<UUID, Set<BoardValue>> values);
     void dispose();
 }

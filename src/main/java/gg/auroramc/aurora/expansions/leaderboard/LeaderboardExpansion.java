@@ -12,6 +12,7 @@ import gg.auroramc.aurora.expansions.leaderboard.storage.BoardValue;
 import gg.auroramc.aurora.expansions.leaderboard.storage.LeaderboardStorage;
 import gg.auroramc.aurora.expansions.leaderboard.storage.sqlite.SqliteLeaderboardStorage;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -20,7 +21,6 @@ import org.bukkit.permissions.PermissionDefault;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 
@@ -61,27 +61,21 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
             boards.put(board, storage.getTopEntries(board, descriptors.get(board).cacheSize));
             boardSizes.put(board, storage.getTotalEntryCount(board));
         }
-
-        updateTask();
     }
 
-    public void updateTask() {
-        Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
-            for (var board : descriptors.keySet()) {
-                boards.put(board, storage.getTopEntries(board, descriptors.get(board).cacheSize));
-                boardSizes.put(board, storage.getTotalEntryCount(board));
-            }
+    public void updateLeaderBoards() {
+        for (var board : descriptors.keySet()) {
+            boards.put(board, storage.getTopEntries(board, descriptors.get(board).cacheSize));
+            boardSizes.put(board, storage.getTotalEntryCount(board));
+        }
 
-            Bukkit.getOnlinePlayers().forEach(player -> {
-                if (Bukkit.isStopping() || Aurora.isDisabling()) return;
-                var user = Aurora.getUserManager().getUser(player.getUniqueId());
-                user.getLeaderboardEntries().putAll(storage.getPlayerEntries(player.getUniqueId()));
-            });
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            if (Bukkit.isStopping() || Aurora.isDisabling()) return;
+            var user = Aurora.getUserManager().getUser(player.getUniqueId());
+            user.getLeaderboardEntries().putAll(storage.getPlayerEntries(player.getUniqueId()));
+        });
 
-            if (!Bukkit.isStopping() && !Aurora.isDisabling()) {
-                updateTask();
-            }
-        }, 5, TimeUnit.MINUTES);
+        Aurora.logger().debug("Leaderboards updated.");
     }
 
     @Override
@@ -166,6 +160,42 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
         });
     }
 
+    public CompletableFuture<Void> bulkUpdateUsers(Map<UUID, Collection<String>> data) {
+        return CompletableFuture.runAsync(() -> {
+            var toUpdate = new HashMap<UUID, Set<BoardValue>>(data.size());
+            for (var entry : data.entrySet()) {
+                var user = Aurora.getUserManager().getUser(entry.getKey());
+                if (user == null || !user.isLoaded()) {
+                    continue;
+                }
+                var player = user.getPlayer();
+
+                var values = new HashSet<BoardValue>(entry.getValue().size());
+
+                for (var board : entry.getValue()) {
+                    populateBoardValues(user, player, values, board);
+                }
+
+                if (!values.isEmpty()) {
+                    toUpdate.put(entry.getKey(), values);
+                }
+            }
+            if (!toUpdate.isEmpty()) {
+                storage.bulkUpdateEntries(toUpdate);
+            }
+        });
+    }
+
+    private void populateBoardValues(AuroraUser user, Player player, HashSet<BoardValue> values, String board) {
+        if (player != null && player.hasPermission("aurora.leaderboard.prevent." + board)) {
+            return;
+        }
+        double value = descriptors.get(board).valueMapper.apply(user);
+        if (value >= descriptors.get(board).minValue) {
+            values.add(new BoardValue(board, value));
+        }
+    }
+
     /**
      * Updates the player on the leaderboard in the storage.
      *
@@ -179,13 +209,7 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
                 var toUpdate = new HashSet<BoardValue>(updateBoards.isEmpty() ? descriptors.keySet().size() : updateBoards.size());
 
                 for (var board : updateBoards.isEmpty() ? descriptors.keySet() : updateBoards) {
-                    if (player != null && player.hasPermission("aurora.leaderboard.prevent." + board)) {
-                        continue;
-                    }
-                    double value = descriptors.get(board).valueMapper.apply(user);
-                    if (value >= descriptors.get(board).minValue) {
-                        toUpdate.add(new BoardValue(board, value));
-                    }
+                    populateBoardValues(user, player, toUpdate, board);
                 }
 
                 if (!toUpdate.isEmpty()) {

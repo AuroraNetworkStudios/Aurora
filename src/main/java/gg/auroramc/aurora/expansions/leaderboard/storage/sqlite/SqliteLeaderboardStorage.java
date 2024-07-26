@@ -202,6 +202,48 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
     }
 
     @Override
+    public void bulkUpdateEntries(Map<UUID, Set<BoardValue>> values) {
+        String query = "INSERT INTO aurora_leaderboard (player_uuid, name, board, value) " +
+                "VALUES (?, ?, ?, ?) ON CONFLICT(player_uuid, board) DO UPDATE SET value = ?, name = ?";
+
+        final int BATCH_SIZE = 50;
+        int batchCount = 0;
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            for (Map.Entry<UUID, Set<BoardValue>> entry : values.entrySet()) {
+                var name = Bukkit.getOfflinePlayer(entry.getKey()).getName();
+
+                for (BoardValue boardValue : entry.getValue()) {
+                    ps.setString(1, entry.getKey().toString());
+                    ps.setString(2, name);
+                    ps.setString(3, boardValue.board());
+                    ps.setDouble(4, boardValue.value());
+                    ps.setDouble(5, boardValue.value());
+                    ps.setString(6, name);
+                    ps.addBatch();
+
+                    batchCount++;
+
+                    // Execute and clear the batch if the batch size limit is reached
+                    if (batchCount >= BATCH_SIZE) {
+                        ps.executeBatch();
+                        ps.clearBatch();
+                        batchCount = 0;
+                    }
+                }
+            }
+
+            if (batchCount > 0) {
+                ps.executeBatch();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void dispose() {
         dataSource.close();
     }

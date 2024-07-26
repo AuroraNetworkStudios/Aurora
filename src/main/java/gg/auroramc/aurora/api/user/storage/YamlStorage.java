@@ -7,6 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -50,7 +51,7 @@ public class YamlStorage implements UserStorage {
     }
 
     @Override
-    public boolean saveUser(AuroraUser user, SaveReason reason) {
+    public synchronized boolean saveUser(AuroraUser user, SaveReason reason) {
         var file = new File(Aurora.getInstance().getDataFolder() + "/userdata", user.getUniqueId() + ".yml");
 
         try {
@@ -62,6 +63,16 @@ public class YamlStorage implements UserStorage {
         } catch (IOException ignored) {
             return false;
         }
+    }
+
+    @Override
+    public int bulkSaveUsers(List<AuroraUser> users, SaveReason reason) {
+        int saved = 0;
+        for(var user : users) {
+            var success = saveUser(user, reason);
+            if(success) saved++;
+        }
+        return saved;
     }
 
     @Override
