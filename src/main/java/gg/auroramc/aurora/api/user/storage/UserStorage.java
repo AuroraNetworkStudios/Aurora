@@ -12,4 +12,5 @@ public interface UserStorage {
     AuroraUser loadUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders);
     boolean saveUser(AuroraUser user, SaveReason reason);
     void purgeUser(UUID uuid);
+    void dispose();
 }

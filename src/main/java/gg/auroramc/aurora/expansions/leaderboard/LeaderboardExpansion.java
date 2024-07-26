@@ -243,4 +243,8 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         updateLocks.remove(event.getPlayer().getUniqueId());
     }
+
+    public void dispose() {
+        storage.dispose();
+    }
 }

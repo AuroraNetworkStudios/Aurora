@@ -38,9 +38,14 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
         config.setConnectionTestQuery("SELECT 1");
         config.setMaximumPoolSize(10);
         config.setDriverClassName("org.sqlite.JDBC");
+
         this.dataSource = new HikariDataSource(config);
 
         try (Connection conn = connection(); Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("PRAGMA busy_timeout = 5000;");
+            stmt.executeUpdate("PRAGMA journal_mode = WAL;");
+            stmt.executeUpdate("PRAGMA synchronous = NORMAL;");
+            stmt.executeUpdate("PRAGMA journal_size_limit = 6144000;");
             stmt.executeUpdate(table);
             for (String index : indexes) {
                 createIndexIfNotExists(conn, index);
@@ -194,5 +199,10 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void dispose() {
+        dataSource.close();
     }
 }

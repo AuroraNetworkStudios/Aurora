@@ -71,4 +71,9 @@ public class YamlStorage implements UserStorage {
             file.delete();
         }
     }
+
+    @Override
+    public void dispose() {
+        // nothing to dispose
+    }
 }

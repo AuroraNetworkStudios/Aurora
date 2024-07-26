@@ -314,19 +314,19 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         Map<String, LbEntry> entries = new HashMap<>();
 
         String query = """
-        WITH RankedEntries AS (
-            SELECT
-                player_uuid,
-                name,
-                board,
-                value,
-                RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
-            FROM aurora_leaderboard
-        )
-        SELECT player_uuid, name, board, value, position
-        FROM RankedEntries
-        WHERE player_uuid = ?
-    """;
+                    WITH RankedEntries AS (
+                        SELECT
+                            player_uuid,
+                            name,
+                            board,
+                            value,
+                            RANK() OVER (PARTITION BY board ORDER BY value DESC) as position
+                        FROM aurora_leaderboard
+                    )
+                    SELECT player_uuid, name, board, value, position
+                    FROM RankedEntries
+                    WHERE player_uuid = ?
+                """;
 
         try (Connection conn = connection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -392,5 +392,11 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void dispose() {
+        if (dataSource.isClosed()) return;
+        dataSource.close();
     }
 }

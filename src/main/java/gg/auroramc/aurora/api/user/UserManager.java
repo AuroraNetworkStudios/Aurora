@@ -250,6 +250,7 @@ public class UserManager implements Listener {
                 saveUserData(user, SaveReason.QUIT);
             }
         }
+        storage.dispose();
     }
 
     public void invalidate(Player player) {
