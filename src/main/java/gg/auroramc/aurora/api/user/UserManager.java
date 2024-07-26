@@ -5,12 +5,15 @@ import com.google.common.cache.CacheBuilder;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.events.user.AuroraUserLoadedEvent;
 import gg.auroramc.aurora.api.events.user.AuroraUserUnloadedEvent;
+import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.api.user.migration.StorageMigrator;
 import gg.auroramc.aurora.api.user.storage.LatencyMeasure;
 import gg.auroramc.aurora.api.user.storage.SaveReason;
 import gg.auroramc.aurora.api.user.storage.UserStorage;
 import gg.auroramc.aurora.api.user.storage.YamlStorage;
 import gg.auroramc.aurora.api.user.storage.sql.MySqlStorage;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
+import gg.auroramc.aurora.expansions.leaderboard.storage.sqlite.SqliteLeaderboardStorage;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -19,6 +22,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -29,8 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 public class UserManager implements Listener {
     @Getter
-    private final UserStorage storage;
+    private volatile UserStorage storage;
     private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
+    @Getter
     private final Set<Class<? extends UserDataHolder>> dataHolders = new HashSet<>();
     private ScheduledTask autoSaveTask;
     private ScheduledTask leaderboardUpdateTask;
@@ -40,6 +45,7 @@ public class UserManager implements Listener {
     private final LatencyMeasure saveLatencyMeasure = new LatencyMeasure();
     @Getter
     private final LatencyMeasure syncFlagLatencyMeasure = new LatencyMeasure();
+    private StorageMigrator migrator = new StorageMigrator(this);
 
     // Stores actual online users data
     private final Cache<UUID, AuroraUser> cache = CacheBuilder.newBuilder().build();
@@ -60,6 +66,50 @@ public class UserManager implements Listener {
 
         autoSaveTask();
         leaderboardUpdateTask();
+    }
+
+    public CompletableFuture<Boolean> attemptMigration() {
+        migrator.markMigrating();
+
+        return CompletableFuture.supplyAsync(() -> {
+            stopTasksAndSaveAllData(false);
+            cache.invalidateAll();
+            offlineCache.invalidateAll();
+
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
+                Bukkit.getOnlinePlayers().forEach(player -> player.kick(Text.component("&cUnder maintenance, please try again later.")));
+            });
+
+            UserStorage newStorage = this.storage;
+            String newStorageId = storage instanceof MySqlStorage ? "yaml" : "mysql";
+            boolean success = false;
+
+            if (storage instanceof MySqlStorage mySqlStorage) {
+                newStorage = new YamlStorage();
+                success = migrator.migrateUserData(mySqlStorage, (YamlStorage) newStorage, 5);
+            } else if (storage instanceof YamlStorage yamlStorage) {
+                newStorage = new MySqlStorage();
+                success = migrator.migrateUserData(yamlStorage, (MySqlStorage) newStorage, 5);
+            }
+
+            if(success) {
+                storage.dispose();
+                storage = newStorage;
+                if(newStorage instanceof MySqlStorage mySqlStorage) {
+                    Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(mySqlStorage);
+                } else {
+                    Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(new SqliteLeaderboardStorage());
+                }
+                Aurora.getLibConfig().setStorageType(newStorageId);
+                Aurora.getLibConfig().saveChanges();
+                autoSaveTask();
+                leaderboardUpdateTask();
+            }
+
+            migrator.markFinished();
+
+            return success;
+        });
     }
 
     public boolean saveUserData(AuroraUser user, SaveReason reason) {
@@ -251,13 +301,13 @@ public class UserManager implements Listener {
      * Saves all cached data sync.
      * Should be used only in onDisable()
      */
-    public void stopTasksAndSaveAllData() {
+    public void stopTasksAndSaveAllData(boolean dispose) {
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
         storage.bulkSaveUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).toList(), SaveReason.QUIT);
         var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
         lbm.bulkUpdateUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).collect(HashMap::new, (m, u) -> m.put(u.getUniqueId(), u.getDirtyLeaderboards().keySet()), HashMap::putAll)).join();
-        storage.dispose();
+        if (dispose) storage.dispose();
     }
 
     public void invalidate(Player player) {
@@ -284,7 +334,16 @@ public class UserManager implements Listener {
     }
 
     @EventHandler
+    public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
+        if (migrator.isMigrating()) {
+            e.kickMessage(Text.component("&cUnder maintenance, please try again later."));
+            e.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
+        }
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
+        if (migrator.isMigrating()) return;
         Bukkit.getGlobalRegionScheduler().runDelayed(Aurora.getInstance(),
                 (task) -> invalidate(e.getPlayer()), 1);
     }

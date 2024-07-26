@@ -24,6 +24,11 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if(args[0].equalsIgnoreCase("dbmigrate")) {
+            sender.sendMessage("Attempting to migrate data...");
+            Aurora.getUserManager().attemptMigration();
+        }
+
         if (args[0].equalsIgnoreCase("meta")) {
             if (args.length < 4) {
                 Chat.sendMessage(sender, "&cUsage: /aurora meta <get/set/remove/increment/decrement> <player> <key> [value]");
@@ -117,7 +122,7 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return Stream.of("meta", "dispatch").filter(s -> s.startsWith(args[0])).toList();
+            return Stream.of("meta", "dispatch", "dbmigrate").filter(s -> s.startsWith(args[0])).toList();
         }
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("meta")) {

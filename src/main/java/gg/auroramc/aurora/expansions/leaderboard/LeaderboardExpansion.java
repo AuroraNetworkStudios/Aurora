@@ -29,10 +29,15 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     private final Map<String, List<LbEntry>> boards = Maps.newConcurrentMap();
     private final Map<String, LbDescriptor> descriptors = Maps.newConcurrentMap();
     private final Map<String, Long> boardSizes = Maps.newConcurrentMap();
-    private LeaderboardStorage storage;
+    private volatile LeaderboardStorage storage;
 
     public record LbDescriptor(String name, Function<AuroraUser, Double> valueMapper,
                                Function<LbEntry, String> formatMapper, int cacheSize, double minValue) {
+    }
+
+    public void setStorage(LeaderboardStorage storage) {
+        this.storage.dispose();
+        this.storage = storage;
     }
 
     @Override

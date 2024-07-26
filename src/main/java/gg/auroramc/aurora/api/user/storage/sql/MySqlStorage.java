@@ -47,6 +47,26 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         createTable();
     }
 
+    public Set<String> getUserIds(int limit, int offset) {
+        Set<String> ids = new HashSet<>();
+        String query = "SELECT DISTINCT player_uuid FROM " + tableName + " ORDER BY id LIMIT ? OFFSET ?";
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, limit);
+            ps.setInt(2, offset);
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                ids.add(rs.getString("player_uuid"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return ids;
+    }
+
     @Override
     public void loadUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders, Consumer<AuroraUser> handler) {
         loadUser(uuid, dataHolders, syncRetryCount, handler);

@@ -37,6 +37,7 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
         config.setJdbcUrl("jdbc:sqlite:" + Aurora.getInstance().getDataFolder() + "/leaderboards.db");
         config.setConnectionTestQuery("SELECT 1");
         config.setMaximumPoolSize(10);
+        config.setPoolName("aurora-leaderboard-pool");
         config.setDriverClassName("org.sqlite.JDBC");
 
         this.dataSource = new HikariDataSource(config);

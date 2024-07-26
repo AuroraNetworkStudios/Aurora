@@ -70,7 +70,7 @@ public final class Aurora extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         disabling = true;
-        userManager.stopTasksAndSaveAllData();
+        userManager.stopTasksAndSaveAllData(true);
         expansionManager.getExpansion(RegionExpansion.class).saveAllRegions(false);
         expansionManager.getExpansion(LeaderboardExpansion.class).dispose();
     }

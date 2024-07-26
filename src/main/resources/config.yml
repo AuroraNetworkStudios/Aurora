@@ -21,7 +21,7 @@ storage-type: "yaml"
 
 mysql:
   host: "127.0.0.1"
-  port: "3306"
+  port: 3306
   ssl: false
   database: "db name"
   username: "username"

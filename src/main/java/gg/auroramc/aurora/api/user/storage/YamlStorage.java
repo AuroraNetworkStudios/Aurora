@@ -7,12 +7,21 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 public class YamlStorage implements UserStorage {
+    public DirectoryStream<Path> getFileStream() throws IOException {
+        var file = new File(Aurora.getInstance().getDataFolder() + "/userdata");
+        return Files.newDirectoryStream(file.toPath(), "*.yml");
+    }
+
+
     @Override
     public void loadUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders, Consumer<AuroraUser> handler) {
         final var start = System.nanoTime();
@@ -68,9 +77,9 @@ public class YamlStorage implements UserStorage {
     @Override
     public int bulkSaveUsers(List<AuroraUser> users, SaveReason reason) {
         int saved = 0;
-        for(var user : users) {
+        for (var user : users) {
             var success = saveUser(user, reason);
-            if(success) saved++;
+            if (success) saved++;
         }
         return saved;
     }
@@ -78,7 +87,7 @@ public class YamlStorage implements UserStorage {
     @Override
     public void purgeUser(UUID uuid) {
         var file = new File(Aurora.getInstance().getDataFolder() + "/userdata", uuid + ".yml");
-        if(file.exists()) {
+        if (file.exists()) {
             file.delete();
         }
     }

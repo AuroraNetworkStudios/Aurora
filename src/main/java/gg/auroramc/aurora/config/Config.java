@@ -3,6 +3,7 @@ package gg.auroramc.aurora.config;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.AuroraConfig;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -16,6 +17,7 @@ public class Config extends AuroraConfig {
     private Boolean debug = false;
     private NumberFormatConfig numberFormat;
     private Integer userAutoSaveInMinutes = 30;
+    @Setter
     private String storageType = "yaml";
     private BlockTrackerConfig blockTracker;
     private MySqlConfig mysql;

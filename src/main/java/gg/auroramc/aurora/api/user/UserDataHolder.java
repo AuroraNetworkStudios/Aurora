@@ -41,4 +41,8 @@ public abstract class UserDataHolder implements DataHolder {
     public boolean isDirty() {
         return dirty.get();
     }
+
+    public void setDirty(boolean dirty) {
+        this.dirty.set(dirty);
+    }
 }
