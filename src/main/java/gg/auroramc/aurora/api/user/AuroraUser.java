@@ -26,8 +26,31 @@ public class AuroraUser {
 
     private final AtomicBoolean loaded = new AtomicBoolean(true);
 
+    private final Map<String, Double> originalLeaderboardValues = Maps.newConcurrentMap();
+
     @Getter
     private final Map<String, LbEntry> leaderboardEntries = Maps.newConcurrentMap();
+
+    public void updateOriginalLeaderboardDataFromCurrent() {
+        originalLeaderboardValues.clear();
+        for (var entry : leaderboardEntries.entrySet()) {
+            originalLeaderboardValues.put(entry.getKey(), entry.getValue().getValue());
+        }
+    }
+
+    public Map<String, Double> getDirtyLeaderboards() {
+        Map<String, Double> dirty = Maps.newHashMap();
+        for (var entry : leaderboardEntries.entrySet()) {
+            if (originalLeaderboardValues.containsKey(entry.getKey())) {
+                if(!originalLeaderboardValues.get(entry.getKey()).equals(entry.getValue().getValue())) {
+                    dirty.put(entry.getKey(), entry.getValue().getValue());
+                }
+            } else {
+                dirty.put(entry.getKey(), entry.getValue().getValue());
+            }
+        }
+        return dirty;
+    }
 
     public AuroraUser(UUID uuid) {
         this.uuid = uuid;

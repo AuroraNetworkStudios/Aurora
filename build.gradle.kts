@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.5.4"
+version = "1.5.5-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -41,7 +41,7 @@ repositories {
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
     maven("https://repo.oraxen.com/snapshots")
     maven("https://mvn.lumine.io/repository/maven-public/")
-    maven("https://repo.auxilor.io/repository/maven-public/")
+    //maven("https://repo.auxilor.io/repository/maven-public/")
 }
 
 dependencies {
@@ -56,14 +56,15 @@ dependencies {
     compileOnly("com.github.angeschossen:WildRegenerationAPI:1.5.0")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.lumine:Mythic-Dist:5.6.1")
-    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.0")
+    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.4")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
-    compileOnly("com.willfp:eco:6.73.0")
+    //compileOnly("com.willfp:eco:6.73.0")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
+    compileOnly(name = "eco-6.73.1-all", group = "com.willfp", version = "6.73.1")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")

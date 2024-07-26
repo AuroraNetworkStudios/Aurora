@@ -22,9 +22,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +33,7 @@ public class UserManager implements Listener {
     private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
     private final Set<Class<? extends UserDataHolder>> dataHolders = new HashSet<>();
     private final ScheduledTask autoSaveTask;
+    private final ScheduledTask leaderboardUpdateTask;
     @Getter
     private final LatencyMeasure loadLatencyMeasure = new LatencyMeasure();
     @Getter
@@ -75,6 +74,19 @@ public class UserManager implements Listener {
                 Aurora.logger().info("Auto background saved user data for " + successCount + "/" + all + " online players");
             }
         }, Aurora.getLibConfig().getUserAutoSaveInMinutes(), Aurora.getLibConfig().getUserAutoSaveInMinutes(), TimeUnit.MINUTES);
+
+        this.leaderboardUpdateTask = Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(), (task) -> {
+            var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+            var values = cache.asMap().values();
+            for (var user : values) {
+                var dirtyBoards = user.getDirtyLeaderboards();
+                if (!user.isLoaded() || dirtyBoards.isEmpty()) {
+                    continue;
+                }
+                user.updateOriginalLeaderboardDataFromCurrent();
+                lbm.updateUser(user, dirtyBoards.keySet());
+            }
+        }, 5, 5, TimeUnit.MINUTES);
     }
 
     public boolean saveUserData(AuroraUser user, SaveReason reason) {
@@ -160,7 +172,7 @@ public class UserManager implements Listener {
                     var maybeUser = cache.getIfPresent(uuid);
 
                     if (maybeUser != null && !maybeUser.isLoaded()) {
-                        lbm.updateUser(user).thenAcceptAsync(a ->
+                        lbm.updateUser(user, Collections.emptyList()).thenAcceptAsync(a ->
                                 lbm.loadUser(user.getUniqueId()).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll));
 
                         maybeUser.getLeaderboardEntries().putAll(lbm.loadUser(user.getUniqueId()).join());
@@ -170,7 +182,7 @@ public class UserManager implements Listener {
                         Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
                                 (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
                     } else {
-                        lbm.updateUser(user).thenAcceptAsync(a ->
+                        lbm.updateUser(user, Collections.emptyList()).thenAcceptAsync(a ->
                                 lbm.loadUser(user.getUniqueId()).thenAcceptAsync(user.getLeaderboardEntries()::putAll));
 
                         cache.put(uuid, user);
@@ -232,6 +244,7 @@ public class UserManager implements Listener {
      */
     public void stopTasksAndSaveAllData() {
         if (autoSaveTask != null) autoSaveTask.cancel();
+        if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
         for (var user : cache.asMap().values()) {
             if (user.isLoaded()) {
                 saveUserData(user, SaveReason.QUIT);
@@ -242,7 +255,11 @@ public class UserManager implements Listener {
     public void invalidate(Player player) {
         var user = cache.getIfPresent(player.getUniqueId());
         if (user == null) return;
-        CompletableFuture.supplyAsync(() -> saveUserData(user, SaveReason.QUIT)).thenAcceptAsync(success -> {
+        CompletableFuture.supplyAsync(() -> {
+            var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+            lbm.updateUser(user, Collections.emptyList()).join();
+            return saveUserData(user, SaveReason.QUIT);
+        }).thenAcceptAsync(success -> {
             if (user.getPlayer() == null || !user.getPlayer().isOnline()) {
                 Aurora.logger().debug("Removed user " + user.getUniqueId() + " from cache");
                 playerLocks.remove(user.getUniqueId());

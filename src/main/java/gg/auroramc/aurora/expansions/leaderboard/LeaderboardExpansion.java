@@ -172,13 +172,13 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
      * @param updateBoards name of the boards to update
      * @param user         user to update
      */
-    public CompletableFuture<Void> updateUser(AuroraUser user, String... updateBoards) {
+    public CompletableFuture<Void> updateUser(AuroraUser user, Collection<String> updateBoards) {
         return CompletableFuture.runAsync(() -> {
             synchronized (getUpdateLock(user.getUniqueId())) {
                 var player = user.getPlayer();
-                var toUpdate = new HashSet<BoardValue>(updateBoards.length == 0 ? descriptors.keySet().size() : updateBoards.length);
+                var toUpdate = new HashSet<BoardValue>(updateBoards.isEmpty() ? descriptors.keySet().size() : updateBoards.size());
 
-                for (var board : updateBoards.length == 0 ? descriptors.keySet() : Arrays.asList(updateBoards)) {
+                for (var board : updateBoards.isEmpty() ? descriptors.keySet() : updateBoards) {
                     if (player != null && player.hasPermission("aurora.leaderboard.prevent." + board)) {
                         continue;
                     }
@@ -193,6 +193,33 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
                 }
             }
         });
+    }
+
+    /**
+     * Updates the player cached values in the leaderboard.
+     *
+     * @param updateBoards name of the boards to update
+     * @param user         user to update
+     */
+    public CompletableFuture<Void> updateUser(AuroraUser user, String... updateBoards) {
+        var player = user.getPlayer();
+
+        for (var board : updateBoards.length == 0 ? descriptors.keySet() : Arrays.asList(updateBoards)) {
+            if (player != null && player.hasPermission("aurora.leaderboard.prevent." + board)) {
+                continue;
+            }
+            double value = descriptors.get(board).valueMapper.apply(user);
+            if (value >= descriptors.get(board).minValue) {
+                var entries = user.getLeaderboardEntries();
+                if (entries.containsKey(board)) {
+                    entries.get(board).setValue(value);
+                } else {
+                    entries.put(board, new LbEntry(user.getUniqueId(), player.getName(), board, value, 0));
+                }
+            }
+        }
+        // Didn't change the method signature because it's used in a lot of places
+        return CompletableFuture.completedFuture(null);
     }
 
     public String formatValue(LbEntry entry) {
