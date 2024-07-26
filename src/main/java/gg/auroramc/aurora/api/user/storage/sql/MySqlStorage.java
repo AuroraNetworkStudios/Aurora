@@ -13,7 +13,6 @@ import gg.auroramc.aurora.expansions.leaderboard.storage.LeaderboardStorage;
 import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
@@ -39,7 +38,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         HikariConfig config = new HikariConfig();
         config.setPoolName("aurora-pool");
         config.setConnectionTimeout(5000);
-        config.setJdbcUrl("jdbc:mysql://" + credentials.host() + ":" + credentials.port() + "/" + credentials.database() + "?useSSL=" + credentials.ssl() + "&rewriteBatchedStatements=true");
+        // config.setJdbcUrl("jdbc:mysql://" + credentials.host() + ":" + credentials.port() + "/" + credentials.database() + "?useSSL=" + credentials.ssl() + "&rewriteBatchedStatements=true");
+        config.setJdbcUrl("jdbc:mysql://" + credentials.host() + ":" + credentials.port() + "/" + credentials.database() + "?useSSL=" + credentials.ssl());
         config.setUsername(credentials.username());
         config.setPassword(credentials.password());
         config.setMaximumPoolSize(poolSize);
@@ -253,6 +253,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
             return users.size();
         } catch (Exception e) {
             Aurora.logger().severe("Failed to save user data for players.");
+            e.printStackTrace();
             return 0;
         }
     }
