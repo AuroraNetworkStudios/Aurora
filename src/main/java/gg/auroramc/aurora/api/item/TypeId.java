@@ -37,6 +37,6 @@ public record TypeId(String namespace, String id) {
     }
 
     public static TypeId from(EntityType entityType) {
-        return new TypeId("minecraft", entityType.name().toUpperCase());
+        return new TypeId("minecraft", entityType.name().toLowerCase());
     }
 }
