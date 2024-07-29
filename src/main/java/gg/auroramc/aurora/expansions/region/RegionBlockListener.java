@@ -18,7 +18,6 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.world.StructureGrowEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -26,7 +25,7 @@ import java.util.function.Predicate;
 public class RegionBlockListener implements Listener {
     private final Aurora plugin;
     private final RegionExpansion regionExpansion;
-    private final BlockFace[] blockFaces = new BlockFace[] {BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.UP, BlockFace.DOWN};
+    private final BlockFace[] blockFaces = new BlockFace[]{BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.UP, BlockFace.DOWN};
 
     public RegionBlockListener(Aurora plugin, RegionExpansion regionExpansion) {
         this.plugin = plugin;
@@ -45,30 +44,27 @@ public class RegionBlockListener implements Listener {
         Block block = event.getBlock();
         if (!regionExpansion.isPlacedBlock(block)) return;
         Material type = block.getType();
-        if (type == Material.SAND || type.toString().equals("RED_SAND") || type == Material.GRAVEL) {
+        if (type == Material.SAND || type == Material.RED_SAND || type == Material.GRAVEL) {
             Block below = block.getRelative(BlockFace.DOWN);
-            if (below.getType() == Material.AIR || below.getType().toString().equals("CAVE_AIR") || below.getType().toString().equals("VOID_AIR")
-                    || below.getType() == Material.WATER || below.getType().toString().equals("BUBBLE_COLUMN") || below.getType() == Material.LAVA) {
+            if (below.getType() == Material.AIR || below.getType() == Material.CAVE_AIR || below.getType() == Material.VOID_AIR
+                    || below.getType() == Material.WATER || below.getType() == Material.BUBBLE_COLUMN || below.getType() == Material.LAVA) {
                 BlockData blockData = regionExpansion.getPlacedBlockData(block);
                 regionExpansion.removePlacedBlock(block);
                 Entity entity = event.getEntity();
                 AtomicInteger counter = new AtomicInteger();
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        Block currentBlock = entity.getLocation().getBlock();
-                        if (entity.isDead() || !entity.isValid()) {
-                            if (currentBlock.getType() == type) {
-                                regionExpansion.addPlacedBlock(entity.getLocation().getBlock(), blockData.playerId());
-                            }
-                            cancel();
-                        } else if (currentBlock.getType().toString().contains("WEB")) {
-                            cancel();
-                        } else if (counter.incrementAndGet() >= 200) {
-                            cancel();
+                Bukkit.getRegionScheduler().runAtFixedRate(plugin, entity.getLocation(), (task) -> {
+                    Block currentBlock = entity.getLocation().getBlock();
+                    if (entity.isDead() || !entity.isValid()) {
+                        if (currentBlock.getType() == type) {
+                            regionExpansion.addPlacedBlock(entity.getLocation().getBlock(), blockData.playerId());
                         }
+                        task.cancel();
+                    } else if (currentBlock.getType().toString().contains("WEB")) {
+                        task.cancel();
+                    } else if (counter.incrementAndGet() >= 200) {
+                        task.cancel();
                     }
-                }.runTaskTimer(plugin, 1L, 1L);
+                }, 1, 1);
             }
         }
     }
@@ -76,14 +72,9 @@ public class RegionBlockListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void checkBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
+        Player player = event.getPlayer();
 
-        if(regionExpansion.isPlacedBlock(block)) {
-            var whoPlaced = regionExpansion.getPlacedBlockData(block).playerId();
-            regionExpansion.removePlacedBlock(block);
-            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(event.getPlayer(), Bukkit.getOfflinePlayer(whoPlaced), block, false));
-        } else {
-            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(event.getPlayer(), null, block, true));
-        }
+        removeBlockWithEvent(player, block);
         checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.SUGAR_CANE);
         checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.BAMBOO);
         checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.CACTUS);
@@ -94,7 +85,7 @@ public class RegionBlockListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPistonExtend(BlockPistonExtendEvent event) {
         for (Block block : event.getBlocks()) {
-            if(regionExpansion.isPlacedBlock(block)) {
+            if (regionExpansion.isPlacedBlock(block)) {
                 BlockData blockData = regionExpansion.getPlacedBlockData(block);
                 regionExpansion.addPlacedBlock(block.getRelative(event.getDirection()), blockData.playerId());
             }
@@ -115,7 +106,7 @@ public class RegionBlockListener implements Listener {
             }
         }
 
-        if(lastBlock != event.getBlock()) {
+        if (lastBlock != event.getBlock()) {
             regionExpansion.removePlacedBlock(lastBlock);
         }
     }
@@ -135,16 +126,8 @@ public class RegionBlockListener implements Listener {
         if (num < 20) {
             Block above = block.getRelative(BlockFace.UP);
             if (isMaterial.test(above.getType())) {
-                if (regionExpansion.isPlacedBlock(above)) {
-
-                    if(regionExpansion.isPlacedBlock(block)) {
-                        Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, Bukkit.getOfflinePlayer(regionExpansion.getPlacedBlockData(block).playerId()), block, false));
-                        regionExpansion.removePlacedBlock(above);
-                    }
-                    checkTallPlant(player, above, num + 1, isMaterial);
-                } else {
-                    Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, null, block, true));
-                }
+                removeBlockWithEvent(player, above);
+                checkTallPlant(player, above, num + 1, isMaterial);
             }
         }
     }
@@ -154,20 +137,7 @@ public class RegionBlockListener implements Listener {
         Block above = block.getRelative(BlockFace.UP);
         Material source = above.getType();
         if ((source == Material.MOSS_CARPET || source == Material.AZALEA || source == Material.FLOWERING_AZALEA || source == Material.PINK_PETALS)) {
-            if(regionExpansion.isPlacedBlock(above)) {
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        // Remove if block was destroyed
-                        if (source == block.getType()) {
-                            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, Bukkit.getOfflinePlayer(regionExpansion.getPlacedBlockData(block).playerId()), block, false));
-                            regionExpansion.removePlacedBlock(above);
-                        }
-                    }
-                }.runTaskLater(plugin, 1);
-            } else {
-                Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, null, block, true));
-            }
+            removeBlockWithEvent(player, above);
         }
     }
 
@@ -175,22 +145,21 @@ public class RegionBlockListener implements Listener {
         // Check each side
         for (BlockFace face : blockFaces) {
             Block checkedBlock = block.getRelative(face);
-            if (Material.AMETHYST_CLUSTER == block.getType()) {
-                if(regionExpansion.isPlacedBlock(checkedBlock)) {
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            // Remove if block was destroyed
-                            if (Material.AMETHYST_CLUSTER != block.getType()) {
-                                Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, Bukkit.getOfflinePlayer(regionExpansion.getPlacedBlockData(block).playerId()), block, false));
-                                regionExpansion.removePlacedBlock(block);
-                            }
-                        }
-                    }.runTaskLater(plugin, 1);
-                } else {
-                    Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, null, block, true));
-                }
+            if (Material.AMETHYST_CLUSTER == checkedBlock.getType()) {
+                removeBlockWithEvent(player, checkedBlock);
             }
+        }
+    }
+
+    private void removeBlockWithEvent(Player player, Block checkedBlock) {
+        if (regionExpansion.isPlacedBlock(checkedBlock)) {
+            var data = regionExpansion.getPlacedBlockData(checkedBlock);
+            if (data != null) {
+                Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, Bukkit.getOfflinePlayer(data.playerId()), checkedBlock, false));
+            }
+            regionExpansion.removePlacedBlock(checkedBlock);
+        } else {
+            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, null, checkedBlock, true));
         }
     }
 }
