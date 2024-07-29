@@ -153,6 +153,10 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void open() {
+        open(player);
+    }
+
+    public void open(Player player) {
         if(player.isSleeping()) return;
         if(!player.isOnline()) return;
         Aurora.getMenuManager().getDupeFixer().getMarker().mark(filler);
