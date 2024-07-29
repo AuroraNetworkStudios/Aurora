@@ -92,10 +92,10 @@ public class UserManager implements Listener {
                 success = migrator.migrateUserData(yamlStorage, (MySqlStorage) newStorage, 5);
             }
 
-            if(success) {
+            if (success) {
                 storage.dispose();
                 storage = newStorage;
-                if(newStorage instanceof MySqlStorage mySqlStorage) {
+                if (newStorage instanceof MySqlStorage mySqlStorage) {
                     Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(mySqlStorage);
                 } else {
                     Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(new SqliteLeaderboardStorage());
@@ -231,18 +231,15 @@ public class UserManager implements Listener {
                     var maybeUser = cache.getIfPresent(uuid);
 
                     if (maybeUser != null && !maybeUser.isLoaded()) {
-                        lbm.updateUser(user, Collections.emptyList()).thenAcceptAsync(a ->
-                                lbm.loadUser(user.getUniqueId()).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll));
+                        lbm.loadUser(user.getUniqueId()).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll);
 
-                        maybeUser.getLeaderboardEntries().putAll(lbm.loadUser(user.getUniqueId()).join());
                         maybeUser.loadFromUser(user);
                         Aurora.logger().debug("Updated user " + user.getUniqueId() + " in cache");
 
                         Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
                                 (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
                     } else {
-                        lbm.updateUser(user, Collections.emptyList()).thenAcceptAsync(a ->
-                                lbm.loadUser(user.getUniqueId()).thenAcceptAsync(user.getLeaderboardEntries()::putAll));
+                        lbm.loadUser(user.getUniqueId()).thenAcceptAsync(user.getLeaderboardEntries()::putAll);
 
                         cache.put(uuid, user);
                         Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
