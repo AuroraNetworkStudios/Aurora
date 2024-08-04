@@ -8,4 +8,8 @@ public interface PlaceholderHandler {
     String getIdentifier();
     String onPlaceholderRequest(Player player, String[] args);
     List<String> getPatterns();
+
+    default boolean handleNullPlayer() {
+        return false;
+    }
 }

@@ -33,8 +33,19 @@ public class LbPlaceholderHandler implements PlaceholderHandler {
 
             var list = lbm.getBoard(boardName);
 
-            if (list == null) return serializer.serialize(Text.component(player, lbm.getEmptyPlaceholder()));
-            if (list.size() - 1 < index) return serializer.serialize(Text.component(player, lbm.getEmptyPlaceholder()));
+            if (list == null) {
+                if(player == null) {
+                    return serializer.serialize(Text.component(lbm.getEmptyPlaceholder()));
+                }
+                return serializer.serialize(Text.component(player, lbm.getEmptyPlaceholder()));
+            }
+
+            if (list.size() - 1 < index) {
+                if(player == null) {
+                    return serializer.serialize(Text.component(lbm.getEmptyPlaceholder()));
+                }
+                return serializer.serialize(Text.component(player, lbm.getEmptyPlaceholder()));
+            }
 
             var entry = list.get(index);
 
@@ -48,6 +59,11 @@ public class LbPlaceholderHandler implements PlaceholderHandler {
         } catch (Exception ignored) {
             return "Invalid format, try: %aurora_lb_[board]_[name|value|fvalue|cvalue]_[number]%";
         }
+    }
+
+    @Override
+    public boolean handleNullPlayer() {
+        return true;
     }
 
     @Override
