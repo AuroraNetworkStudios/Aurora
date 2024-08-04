@@ -1,7 +1,7 @@
 name: Aurora
 version: '${version}'
 main: gg.auroramc.aurora.Aurora
-api-version: 1.19
+api-version: 1.20
 authors: [ "erik_sz" ]
 folia-supported: true
 softdepend:
