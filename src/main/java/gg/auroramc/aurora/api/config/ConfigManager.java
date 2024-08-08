@@ -3,6 +3,7 @@ package gg.auroramc.aurora.api.config;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.decorators.IgnoreField;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -120,6 +121,18 @@ public final class ConfigManager {
         }
     }
 
+    private static ConfigurationSection deepMapToConfigurationSection(Map<?, ?> map) {
+        ConfigurationSection section = new MemoryConfiguration();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getValue() instanceof Map) {
+                section.set(entry.getKey().toString(), deepMapToConfigurationSection((Map<?, ?>) entry.getValue()));
+            } else {
+                section.set(entry.getKey().toString(), entry.getValue());
+            }
+        }
+        return section;
+    }
+
     private static void handleListLoading(Field field, Object config, ConfigurationSection section, String key) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         List<?> listSection = section.getList(key);
         if (listSection == null) {
@@ -141,19 +154,10 @@ public final class ConfigManager {
                 // Handle complex object types
                 Map<?, ?> subSection = (Map<?, ?>) elem;
                 Object item = itemType.getDeclaredConstructor().newInstance();
+                var ss = deepMapToConfigurationSection(subSection);
 
-                for (var innerField : itemType.getDeclaredFields()) {
-                    var ifKey = serializeKey(innerField.getName());
-                    innerField.setAccessible(true);
-                    var sec = subSection.get(ifKey);
-                    if (sec instanceof ConfigurationSection) {
-                        load(item, ((ConfigurationSection) sec).getConfigurationSection(ifKey));
-                    }
+                load(item, ss);
 
-                    innerField.set(item, sec);
-                }
-
-                // Assuming there's a load method that handles loading an object of Class<?> from a ConfigurationSection
                 list.add(item);
             } else if (isPrimitiveOrWrapper(itemType)) {
                 // Directly add primitives or their wrappers if elem matches expected type
@@ -184,19 +188,10 @@ public final class ConfigManager {
                 // Handle complex object types
                 Map<?, ?> subSection = (Map<?, ?>) elem;
                 Object item = itemType.getDeclaredConstructor().newInstance();
+                var ss = deepMapToConfigurationSection(subSection);
 
-                for (var innerField : itemType.getDeclaredFields()) {
-                    var ifKey = serializeKey(innerField.getName());
-                    innerField.setAccessible(true);
-                    var sec = subSection.get(ifKey);
-                    if (sec instanceof ConfigurationSection) {
-                        load(item, ((ConfigurationSection) sec).getConfigurationSection(ifKey));
-                    }
+                load(item, ss);
 
-                    innerField.set(item, sec);
-                }
-
-                // Assuming there's a load method that handles loading an object of Class<?> from a ConfigurationSection
                 list.add(item);
             } else if (isPrimitiveOrWrapper(itemType)) {
                 // Directly add primitives or their wrappers if elem matches expected type

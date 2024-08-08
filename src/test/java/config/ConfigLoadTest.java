@@ -17,7 +17,8 @@ public class ConfigLoadTest {
     public static class NestedClass {
         public String longNestedName;
 
-        public NestedClass() {}
+        public NestedClass() {
+        }
 
         public NestedClass(String longNestedName) {
             this.longNestedName = longNestedName;
@@ -42,7 +43,8 @@ public class ConfigLoadTest {
         public String key2;
         public NestedClass key3;
 
-        public MapClass() {}
+        public MapClass() {
+        }
 
         public MapClass(String key1, String key2) {
             this.key1 = key1;
@@ -97,6 +99,7 @@ public class ConfigLoadTest {
         private Map<Integer, NestedClass> nestedObjectMapInt;
         private Map<String, ItemConfig> tags;
         private Set<String> set;
+        private List<ItemConfig> items;
     }
 
     @BeforeEach
@@ -112,13 +115,31 @@ public class ConfigLoadTest {
         yaml.set("list-string", List.of("one", "two", "three"));
         yaml.set("list-integer", List.of(1, 2, 3));
         yaml.set("list-double", List.of(1.5, 2.5, 3.5));
-        yaml.set("map-class-list", List.of(Map.of("key1", "value1", "key2", "value2", "key3", new NestedClass("longname"))));
+        yaml.set("map-class-list", List.of(Map.of("key1", "value1", "key2", "value2", "key3", Map.of("long-nested-name", "longname"))));
         yaml.set("nested-object-map.key1.long-nested-name", "longname");
         yaml.set("nested-object-map.key2.long-nested-name", "longname2");
         yaml.set("nested-object-map-int.1.long-nested-name", "longname");
         yaml.set("nested-object-map-int.2.long-nested-name", "longname2");
         yaml.set("tags.test-tag.name", "hello");
         yaml.set("set", List.of("a", "b", "c"));
+
+        List<Map<String, Object>> items = new ArrayList<>();
+        items.add(Map.of("material", "diamond", "potion", Map.of("type", "SPEED"), "enchantments", Map.of("protection", 1)));
+        items.add(Map.of("material", "emerald", "potion", Map.of("type", "INVISIBILITY"), "enchantments", Map.of("sharpness", 1)));
+        yaml.set("items", items);
+
+    }
+
+    @Test
+    public void testComplexList() {
+        var config = ConfigManager.load(new Config(), yaml);
+        assertEquals(2, config.items.size());
+        assertEquals("diamond", config.items.get(0).getMaterial());
+        assertEquals("emerald", config.items.get(1).getMaterial());
+        assertEquals("SPEED", config.items.get(0).getPotion().getType());
+        assertEquals("INVISIBILITY", config.items.get(1).getPotion().getType());
+        assertEquals(1, config.items.get(0).getEnchantments().get("protection"));
+        assertEquals(1, config.items.get(1).getEnchantments().get("sharpness"));
     }
 
     @Test
@@ -161,10 +182,10 @@ public class ConfigLoadTest {
     public void testMapClasses() {
         var config = ConfigManager.load(new Config(), yaml);
 
-        assertEquals(
-                new MapClass("value1", "value2", new NestedClass("longname")),
-                config.mapClassList.get(0)
-        );
+        assertEquals("value1", config.mapClassList.get(0).key1);
+        assertEquals("value2", config.mapClassList.get(0).key2);
+        assertEquals("longname", config.mapClassList.get(0).key3.longNestedName);
+
         assertEquals(new ArrayList<>(), config.nullMapClassList);
     }
 
