@@ -259,6 +259,72 @@ public final class ConfigManager {
         return null; // Extend as needed
     }
 
+    private static Map<String, Object> deepMapObjectToMap(Object object) {
+        Map<String, Object> map = new HashMap<>();
+        Field[] fields = object.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            var key = serializeKey(field.getName());
+            try {
+                if (isPrimitiveOrWrapper(field.getType())) {
+                    map.put(key, field.get(object));
+                } else if (Set.class.isAssignableFrom(field.getType())) {
+                    Set<?> list = (Set<?>) field.get(object);
+                    if (!(field.getGenericType() instanceof ParameterizedType parameterizedType)) continue;
+
+                    Type typeArgument = parameterizedType.getActualTypeArguments()[0];
+                    if (!(typeArgument instanceof Class<?>)) continue;
+                    Class<?> itemType = (Class<?>) typeArgument;
+                    if (isPrimitiveOrWrapper(itemType)) {
+                        map.put(key, list);
+                    } else {
+                        List<Map<String, Object>> complexList = new ArrayList<>();
+                        for (Object elem : list) {
+                            if (elem != null) {
+                                complexList.add(deepMapObjectToMap(elem));
+                            }
+                        }
+                        map.put(key, complexList);
+                    }
+                } else if (List.class.isAssignableFrom(field.getType())) {
+                    List<?> list = (List<?>) field.get(object);
+                    if (!(field.getGenericType() instanceof ParameterizedType parameterizedType)) continue;
+
+                    Type typeArgument = parameterizedType.getActualTypeArguments()[0];
+                    if (!(typeArgument instanceof Class<?>)) continue;
+                    Class<?> itemType = (Class<?>) typeArgument;
+                    if (isPrimitiveOrWrapper(itemType)) {
+                        map.put(key, list);
+                    } else {
+                        List<Map<String, Object>> complexList = new ArrayList<>();
+                        for (Object elem : list) {
+                            if (elem != null) {
+                                complexList.add(deepMapObjectToMap(elem));
+                            }
+                        }
+                        map.put(key, complexList);
+                    }
+                } else if (Map.class.isAssignableFrom(field.getType())) {
+                    Map<?, ?> mapObject = (Map<?, ?>) field.get(object);
+                    Map<String, Object> serializedMap = new HashMap<>();
+                    for (Map.Entry<?, ?> entry : mapObject.entrySet()) {
+                        if (isPrimitiveOrWrapper(entry.getValue().getClass())) {
+                            serializedMap.put(entry.getKey().toString(), entry.getValue());
+                        } else {
+                            serializedMap.put(entry.getKey().toString(), deepMapObjectToMap(entry.getValue()));
+                        }
+                    }
+                    map.put(key, serializedMap);
+                } else {
+                    map.put(key, deepMapObjectToMap(field.get(object)));
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return map;
+    }
+
     /**
      * Recursively saves the values of the provided object into a ConfigurationSection.
      *
@@ -294,9 +360,7 @@ public final class ConfigManager {
                         List<Map<String, Object>> complexList = new ArrayList<>();
                         for (Object elem : list) {
                             if (elem != null) {
-                                Map<String, Object> elemMap = new HashMap<>();
-                                saveObject(elem, section.createSection(key)); // Recursively save complex object into a map
-                                complexList.add(elemMap);
+                                complexList.add(deepMapObjectToMap(elem));
                             }
                         }
                         section.set(key, complexList); // Set the serialized list of maps
@@ -311,9 +375,7 @@ public final class ConfigManager {
                         List<Map<String, Object>> complexList = new ArrayList<>();
                         for (Object elem : set) {
                             if (elem != null) {
-                                Map<String, Object> elemMap = new HashMap<>();
-                                saveObject(elem, section.createSection(key)); // Recursively save complex object into a map
-                                complexList.add(elemMap);
+                                complexList.add(deepMapObjectToMap(elem));
                             }
                         }
                         section.set(key, complexList); // Set the serialized list of maps
