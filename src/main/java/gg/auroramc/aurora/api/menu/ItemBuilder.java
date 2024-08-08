@@ -232,9 +232,9 @@ public class ItemBuilder {
     public ItemStack toItemStack(Player player) {
         ItemStack item;
 
-        if(config.getMaterial().contains(":")) {
+        if (config.getMaterial().contains(":")) {
             item = fromType(TypeId.fromDefault(config.getMaterial()), player);
-        } else if(config.getMaterial().equalsIgnoreCase("self_head")) {
+        } else if (config.getMaterial().equalsIgnoreCase("self_head")) {
             setPlayerHead(player);
             item = new ItemStack(Material.PLAYER_HEAD);
         } else {
@@ -322,7 +322,7 @@ public class ItemBuilder {
 
         if (meta instanceof PotionMeta potionMeta) {
             if (config.getPotion() != null) {
-                var potion = new BukkitPotionType(PotionType.valueOf(config.getPotion().getType()), config.getPotion().getExtended(), config.getPotion().getUpgraded());
+                var potion = new BukkitPotionType(PotionType.valueOf(config.getPotion().getType().toUpperCase()), config.getPotion().getExtended(), config.getPotion().getUpgraded());
                 potion.applyToMeta(potionMeta);
             }
             if (!potionEffects.isEmpty()) {
