@@ -9,6 +9,7 @@ import java.util.*;
 @Getter
 public class ItemConfig {
     private boolean refresh = false;
+    private Boolean hideTooltip;
     private String name;
     private List<String> lore;
     private String material;
@@ -39,6 +40,8 @@ public class ItemConfig {
         if (other.lore != null && !other.lore.isEmpty()) {
             ret.lore = new ArrayList<>(other.lore);
         }
+
+        if (other.hideTooltip != null) ret.hideTooltip = other.hideTooltip;
 
         if (other.material != null) ret.material = other.material;
         if (other.customModelData != null) ret.customModelData = other.customModelData;
@@ -99,6 +102,8 @@ public class ItemConfig {
         } else {
             this.lore = new ArrayList<>();
         }
+
+        this.hideTooltip = other.hideTooltip;
 
         this.material = other.material;
         this.customModelData = other.customModelData;

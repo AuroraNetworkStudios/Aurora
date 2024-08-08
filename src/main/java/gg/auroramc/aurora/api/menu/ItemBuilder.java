@@ -249,6 +249,12 @@ public class ItemBuilder {
 
         var meta = item.getItemMeta();
 
+        if (Version.isAtLeastVersion(20, 5)) {
+            if (config.getHideTooltip() != null && config.getHideTooltip()) {
+                meta.setHideTooltip(true);
+            }
+        }
+
         var placeholders = this.placeholders.toArray(Placeholder[]::new);
 
         if (config.getName() != null) {
