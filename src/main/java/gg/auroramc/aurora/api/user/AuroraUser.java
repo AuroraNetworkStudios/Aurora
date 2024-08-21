@@ -2,6 +2,7 @@ package gg.auroramc.aurora.api.user;
 
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
 import lombok.Getter;
 import lombok.Setter;
@@ -152,5 +153,9 @@ public class AuroraUser {
 
     public boolean isDirty() {
         return dataHolderMap.values().stream().anyMatch(UserDataHolder::isDirty);
+    }
+
+    public static AuroraUser get(UUID uuid) {
+        return Aurora.getUserManager().getUser(uuid);
     }
 }
