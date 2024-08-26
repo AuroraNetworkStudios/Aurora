@@ -65,6 +65,7 @@ dependencies {
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
     compileOnly(name = "eco-6.73.1-all", group = "com.willfp", version = "6.73.1")
+    compileOnly(name = "SCore-5.24.8.25", group = "com.ssomar.score", version = "5.24.8.25")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")

@@ -18,6 +18,8 @@ softdepend:
   - MMOItems
   - MythicMobs
   - Oraxen
+  - ExecutableItems
+  - SCore
 
 permissions:
   aurora.core.admin:

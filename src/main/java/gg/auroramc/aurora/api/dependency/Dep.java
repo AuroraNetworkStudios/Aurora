@@ -27,6 +27,7 @@ public enum Dep {
     MULTIVERSECORE("Multiverse-Core"),
     WILDREGENERATION("WildRegeneration"),
     ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium"),
+    EXECUTABLE_ITEMS("ExecutableItems"),
     ECO("Eco");
 
     private String id;
