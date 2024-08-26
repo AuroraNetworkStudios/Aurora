@@ -73,6 +73,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         userManager.stopTasksAndSaveAllData(true);
         if (libConfig.getBlockTracker().getEnabled()) {
             expansionManager.getExpansion(RegionExpansion.class).saveAllRegions(false);
+            expansionManager.getExpansion(RegionExpansion.class).dispose();
         }
         expansionManager.getExpansion(LeaderboardExpansion.class).dispose();
     }

@@ -1,5 +1,7 @@
 package gg.auroramc.aurora.expansions.region.storage;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.expansions.region.BlockPosition;
 import gg.auroramc.aurora.expansions.region.ChunkCoordinate;
@@ -14,23 +16,41 @@ import java.util.UUID;
 
 public class SqliteRegionStorage implements RegionStorage {
     private final String DB_URL = "jdbc:sqlite:" + Aurora.getInstance().getDataFolder() + "/regiondata.db";
+    private HikariDataSource dataSource;
 
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DB_URL);
+        try {
+            return dataSource.getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to connect to the database", e);
+        }
     }
 
     @SneakyThrows
     public SqliteRegionStorage() {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(DB_URL);
+        config.setConnectionTestQuery("SELECT 1");
+        config.setMaximumPoolSize(10);
+        config.setPoolName("aurora-region-tracker-pool");
+        config.setDriverClassName("org.sqlite.JDBC");
+
+        this.dataSource = new HikariDataSource(config);
+
         var tables = new String(Aurora.getInstance().getResource("database/region_schema.sql").readAllBytes(), StandardCharsets.UTF_8).split(";");
         try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
             try (Statement stmt = conn.createStatement()) {
-                for(String table : tables) {
+                stmt.executeUpdate("PRAGMA busy_timeout = 5000;");
+                stmt.executeUpdate("PRAGMA journal_mode = WAL;");
+                stmt.executeUpdate("PRAGMA synchronous = NORMAL;");
+                stmt.executeUpdate("PRAGMA journal_size_limit = 6144000;");
+
+                for (String table : tables) {
                     stmt.addBatch(table);
                 }
                 stmt.executeBatch();
             }
-            conn.commit();
         }
     }
 
@@ -59,7 +79,7 @@ public class SqliteRegionStorage implements RegionStorage {
                         chunks.computeIfAbsent(chunkCoord, k -> new ChunkData(region, chunkCoord.x(), chunkCoord.z()))
                                 .addPlacedBlock(blockPos, playerId);
                     }
-                    for(var chunk : chunks.entrySet()) {
+                    for (var chunk : chunks.entrySet()) {
                         region.setChunkData(chunk.getKey(), chunk.getValue());
                     }
                 }
@@ -190,6 +210,10 @@ public class SqliteRegionStorage implements RegionStorage {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public void dispose() {
+        dataSource.close();
     }
 }
 

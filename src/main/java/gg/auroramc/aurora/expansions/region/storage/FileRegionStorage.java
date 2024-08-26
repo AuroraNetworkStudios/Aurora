@@ -133,4 +133,9 @@ public class FileRegionStorage implements RegionStorage {
         }
         writer.write("end_chunk\n");
     }
+
+    @Override
+    public void dispose() {
+
+    }
 }

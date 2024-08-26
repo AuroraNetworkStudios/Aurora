@@ -188,4 +188,8 @@ public class RegionExpansion implements AuroraExpansion {
                     Aurora.logger().debug("All regions have been auto saved.");
                 }, 300, 300, TimeUnit.SECONDS);
     }
+
+    public void dispose() {
+        storage.dispose();
+    }
 }

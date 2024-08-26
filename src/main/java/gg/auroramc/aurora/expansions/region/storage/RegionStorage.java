@@ -7,4 +7,5 @@ public interface RegionStorage {
     void saveRegion(Region region);
     void deleteRegionsInWorld(String worldName);
     void deleteChunkData(String worldName, int regionX, int regionZ, byte chunkX, byte chunkZ);
+    void dispose();
 }
