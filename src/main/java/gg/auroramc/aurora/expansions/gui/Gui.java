@@ -4,6 +4,7 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.menu.AuroraMenu;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
+import gg.auroramc.aurora.api.menu.MenuAction;
 import gg.auroramc.aurora.api.menu.Requirement;
 import gg.auroramc.aurora.api.message.Placeholder;
 import org.bukkit.Material;
@@ -43,7 +44,19 @@ public class Gui implements AuroraGui {
             menu.addFiller(ItemBuilder.filler(Material.AIR));
         }
 
-        config.getItems().forEach((id, itemConfig) -> menu.addItem(ItemBuilder.of(itemConfig).build(player)));
+        config.getItems().forEach((id, itemConfig) ->
+                menu.addItem(ItemBuilder.of(itemConfig).build(player), (e) -> {
+                    if (itemConfig.getOnClick() != null && !itemConfig.getOnClick().isEmpty() && !itemConfig.getOnClick().contains("[close]")) {
+                        return MenuAction.REFRESH_MENU;
+                    }
+                    if (e.isLeftClick() && itemConfig.getOnLeftClick() != null && !itemConfig.getOnLeftClick().isEmpty() && !itemConfig.getOnLeftClick().contains("[close]")) {
+                        return MenuAction.REFRESH_MENU;
+                    }
+                    if (e.isRightClick() && itemConfig.getOnRightClick() != null && !itemConfig.getOnRightClick().isEmpty() && !itemConfig.getOnRightClick().contains("[close]")) {
+                        return MenuAction.REFRESH_MENU;
+                    }
+                    return MenuAction.NONE;
+                }));
 
         if (config.getCloseActions() != null) {
             menu.onClose((m, e) -> {
