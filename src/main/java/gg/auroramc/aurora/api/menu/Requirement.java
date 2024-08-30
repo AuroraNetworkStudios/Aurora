@@ -77,10 +77,10 @@ public class Requirement {
             };
         }
 
-        for (var entry : resolvers.entrySet()) {
-            if (requirement.equals(entry.getKey())) {
-                return entry.getValue().apply(args);
-            }
+        var customResolver = resolvers.get(args[0]);
+
+        if (customResolver != null) {
+            return customResolver.apply(args);
         }
 
         return false;

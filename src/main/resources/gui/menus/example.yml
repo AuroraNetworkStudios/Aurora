@@ -31,6 +31,8 @@ items:
       - "[console] say Hello world!"
     view-requirements:
       - "[permission] example.permission"
+      - "[money] 1000"
+      - "[exp-level] 30"
       - "[placeholder] %my_placeholder% == 10"
       - "[placeholder] %my_placeholder% > 10"
       - "[placeholder] %my_placeholder% >= 10"
