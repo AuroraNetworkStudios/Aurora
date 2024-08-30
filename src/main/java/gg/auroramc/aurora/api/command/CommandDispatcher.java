@@ -6,6 +6,7 @@ import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -38,6 +39,9 @@ public class CommandDispatcher {
             });
         } else if (command.startsWith("[close]")) {
             player.getScheduler().run(Aurora.getInstance(), task -> player.closeInventory(), null);
+        } else if (command.startsWith("[open-gui]")) {
+            Aurora.getExpansionManager().getExpansion(GuiExpansion.class)
+                    .openGui(removeFirstSpace(command.replace("[open]", "")), player);
         } else if (command.startsWith("[meta")) {
             var data = Aurora.getUserManager().getUser(player).getMetaData();
             var meta = parseMetaString(command);
@@ -64,7 +68,7 @@ public class CommandDispatcher {
             if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, command);
         } else if (command.startsWith("[sound]")) {
             playSound(player, removeFirstSpace(command.replace("[sound]", "")));
-        } else if(command.startsWith("[actionbar]")) {
+        } else if (command.startsWith("[actionbar]")) {
             var msg = removeFirstSpace(command.replace("[actionbar]", ""));
             ActionBar.send(player, msg);
         } else {

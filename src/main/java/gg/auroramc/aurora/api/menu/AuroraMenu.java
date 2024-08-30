@@ -129,6 +129,25 @@ public class AuroraMenu implements InventoryHolder {
         return this;
     }
 
+    private void recalcSlotItem(List<MenuEntry> menuEntries, int slot) {
+        boolean found = false;
+        for (var menuEntry : menuEntries) {
+            if (found) {
+                menuEntry.setActive(false);
+                continue;
+            }
+            if (Requirement.isAllMet(player, menuEntry.getItem().getItemBuilder().getConfig().getViewRequirements())) {
+                found = true;
+                menuEntry.setActive(true);
+                Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
+                menuEntry.getItem().refresh();
+                inventory.setItem(slot, menuEntry.getItem().getItemStack());
+            } else {
+                menuEntry.setActive(false);
+            }
+        }
+    }
+
     public boolean handleEvent(InventoryClickEvent e) {
         if (freeSlots != null && freeSlots.contains(e.getSlot())) {
             e.setCancelled(false);
@@ -149,7 +168,7 @@ public class AuroraMenu implements InventoryHolder {
                     var result = menuEntry.handleEvent(e);
 
                     if (result == MenuAction.REFRESH_SLOT) {
-                        menuEntry.getItem().refresh();
+                        recalcSlotItem(menuEntries, e.getSlot());
                         player.updateInventory();
                     } else if (result == MenuAction.CLOSE) {
                         player.closeInventory();
@@ -177,12 +196,20 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void open(Player player) {
+        open(player, true);
+    }
+
+    public void open(Player player, boolean useScheduler) {
         if (player.isSleeping()) return;
         if (!player.isOnline()) return;
 
         populateInventory(player);
 
-        player.getScheduler().run(Aurora.getInstance(), (task) -> player.openInventory(inventory), null);
+        if (useScheduler) {
+            player.getScheduler().run(Aurora.getInstance(), (task) -> player.openInventory(inventory), null);
+        } else {
+            player.openInventory(inventory);
+        }
     }
 
     private void populateInventory(Player player) {
@@ -201,9 +228,9 @@ public class AuroraMenu implements InventoryHolder {
             }
         }
 
-        for (var menuEntries : menuItems.values()) {
+        for (var menuEntries : menuItems.entrySet()) {
             boolean found = false;
-            for (var menuEntry : menuEntries) {
+            for (var menuEntry : menuEntries.getValue()) {
                 if (found) {
                     menuEntry.setActive(false);
                     continue;
@@ -212,7 +239,7 @@ public class AuroraMenu implements InventoryHolder {
                     found = true;
                     menuEntry.setActive(true);
                     Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
-                    menuEntry.getItem().applyToInventory(inventory);
+                    inventory.setItem(menuEntries.getKey(), menuEntry.getItem().getItemStack());
                 } else {
                     menuEntry.setActive(false);
                 }

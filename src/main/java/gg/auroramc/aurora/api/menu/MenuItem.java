@@ -20,6 +20,7 @@ public class MenuItem {
         this.player = player;
     }
 
+    @Deprecated(forRemoval = true)
     public void applyToInventory(Inventory inventory) {
         if(itemBuilder.getConfig().getSlot() != null) {
             inventory.setItem(itemBuilder.getConfig().getSlot(), itemStack);
@@ -45,9 +46,6 @@ public class MenuItem {
 
     public void refresh() {
         itemStack = itemBuilder.build(player).getItemStack();
-        if(player.getOpenInventory().getTopInventory() instanceof AuroraMenu menu) {
-            applyToInventory(menu.getInventory());
-        }
     }
 
     public boolean isRefreshEnabled() {
