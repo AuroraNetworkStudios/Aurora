@@ -4,12 +4,10 @@ package gg.auroramc.aurora.api.config.premade;
 import lombok.Getter;
 import lombok.Setter;
 
+@Setter
+@Getter
 public class SkullConfig {
-    @Getter
-    @Setter
     private String base64;
-    @Getter
-    @Setter
     private String url;
 
     public SkullConfig() {

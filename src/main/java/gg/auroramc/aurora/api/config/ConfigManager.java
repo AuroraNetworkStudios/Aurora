@@ -95,6 +95,8 @@ public final class ConfigManager {
             Object mapValue;
             if (isPrimitiveOrWrapper(valueType)) {
                 mapValue = getPrimitive(valueType, section, keyString);
+            } else if(ConfigurationSection.class.isAssignableFrom(valueType)) {
+                mapValue = section.getConfigurationSection(keyString);
             } else {
                 // If it's a custom class, we assume it has a no-arg constructor and use reflection to instantiate it.
                 ConfigurationSection subSection = section.getConfigurationSection(keyString);

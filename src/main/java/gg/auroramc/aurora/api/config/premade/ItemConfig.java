@@ -2,6 +2,7 @@ package gg.auroramc.aurora.api.config.premade;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
@@ -9,6 +10,7 @@ import java.util.*;
 @Getter
 public class ItemConfig {
     private boolean refresh = false;
+    private int priority = -1;
     private Boolean hideTooltip;
     private String name;
     private List<String> lore;
@@ -26,6 +28,10 @@ public class ItemConfig {
     private List<String> onClick;
     private List<String> onLeftClick;
     private List<String> onRightClick;
+    private List<String> viewRequirements;
+    private List<RequirementConfig> clickRequirements;
+    private List<RequirementConfig> leftClickRequirements;
+    private List<RequirementConfig> rightClickRequirements;
 
     public ItemConfig() {
     }
@@ -36,6 +42,7 @@ public class ItemConfig {
 
         ret.refresh = other.refresh;
         if (other.name != null) ret.name = other.name;
+        if (other.priority != -1) ret.priority = other.priority;
 
         if (other.lore != null && !other.lore.isEmpty()) {
             ret.lore = new ArrayList<>(other.lore);
@@ -69,6 +76,22 @@ public class ItemConfig {
             ret.enchantments = new HashMap<>(other.enchantments);
         }
 
+        if(other.viewRequirements != null && !other.viewRequirements.isEmpty()) {
+            ret.viewRequirements = new ArrayList<>(other.viewRequirements);
+        }
+
+        if(other.clickRequirements != null && !other.clickRequirements.isEmpty()) {
+            ret.clickRequirements = new ArrayList<>(other.clickRequirements);
+        }
+
+        if(other.leftClickRequirements != null && !other.leftClickRequirements.isEmpty()) {
+            ret.leftClickRequirements = new ArrayList<>(other.leftClickRequirements);
+        }
+
+        if(other.rightClickRequirements != null && !other.rightClickRequirements.isEmpty()) {
+            ret.rightClickRequirements = new ArrayList<>(other.rightClickRequirements);
+        }
+
         if (other.onClick != null && !other.onClick.isEmpty()) {
             ret.onClick = new ArrayList<>(other.onClick);
         }
@@ -95,6 +118,7 @@ public class ItemConfig {
             return;
         }
         this.refresh = other.refresh;
+        this.priority = other.priority;
         this.name = other.name;
 
         if (other.lore != null) {
@@ -135,6 +159,30 @@ public class ItemConfig {
             this.enchantments = new HashMap<>(other.enchantments);
         } else {
             this.enchantments = new HashMap<>();
+        }
+
+        if(other.viewRequirements != null) {
+            this.viewRequirements = new ArrayList<>(other.viewRequirements);
+        } else {
+            this.viewRequirements = new ArrayList<>();
+        }
+
+        if(other.clickRequirements != null) {
+            this.clickRequirements = new ArrayList<>(other.clickRequirements);
+        } else {
+            this.clickRequirements = new ArrayList<>();
+        }
+
+        if(other.leftClickRequirements != null) {
+            this.leftClickRequirements = new ArrayList<>(other.leftClickRequirements);
+        } else {
+            this.leftClickRequirements = new ArrayList<>();
+        }
+
+        if(other.rightClickRequirements != null) {
+            this.rightClickRequirements = new ArrayList<>(other.rightClickRequirements);
+        } else {
+            this.rightClickRequirements = new ArrayList<>();
         }
 
         if (other.onClick != null) {

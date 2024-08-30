@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.api.menu;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.util.function.Consumer;
@@ -11,6 +12,9 @@ public class MenuEntry {
     private final MenuItem item;
     private final Consumer<InventoryClickEvent> consumer;
     private final Function<InventoryClickEvent, MenuAction> smartConsumer;
+    @Getter
+    @Setter
+    private boolean active = false;
 
     public MenuEntry(MenuItem item, Function<InventoryClickEvent, MenuAction> smartConsumer) {
         this.item = item;
@@ -30,7 +34,25 @@ public class MenuEntry {
         this.smartConsumer = null;
     }
 
+    public int getPriority() {
+        return item.getItemBuilder().getConfig().getPriority();
+    }
+
     public MenuAction handleEvent(InventoryClickEvent event) {
+        if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getClickRequirements())) {
+            return MenuAction.NONE;
+        }
+
+        if (event.isLeftClick()) {
+            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getLeftClickRequirements())) {
+                return MenuAction.NONE;
+            }
+        } else if(event.isRightClick()) {
+            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getRightClickRequirements())) {
+                return MenuAction.NONE;
+            }
+        }
+
         var action = MenuAction.NONE;
 
         if (smartConsumer != null) {

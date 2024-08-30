@@ -8,11 +8,10 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 
+@Getter
 public class MenuItem {
     private final ItemBuilder itemBuilder;
-    @Getter
     private ItemStack itemStack;
-    @Getter
     private final Player player;
 
     public MenuItem(Player player, ItemBuilder builder, ItemStack itemStack) {

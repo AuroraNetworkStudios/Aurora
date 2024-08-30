@@ -3,17 +3,13 @@ package gg.auroramc.aurora.api.config.premade;
 import lombok.Getter;
 import lombok.Setter;
 
+@Setter
+@Getter
 public class PotionConfig {
-    @Getter
-    @Setter
     private String type = "WATER";
 
-    @Getter
-    @Setter
     private Boolean extended = false;
 
-    @Getter
-    @Setter
     private Boolean upgraded = false;
 
     public PotionConfig() {}

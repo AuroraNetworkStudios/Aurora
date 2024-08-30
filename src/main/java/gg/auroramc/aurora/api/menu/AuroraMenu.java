@@ -23,7 +23,7 @@ import java.util.function.Function;
 public class AuroraMenu implements InventoryHolder {
     private final Inventory inventory;
     private ItemStack filler;
-    private final Map<Integer, MenuEntry> menuItems = new HashMap<>();
+    private final Map<Integer, List<MenuEntry>> menuItems = new HashMap<>();
     private final Map<Integer, Consumer<InventoryClickEvent>> freeSlotHandlers = new HashMap<>();
     private Set<Integer> freeSlots;
     private List<ItemStack> freeItems;
@@ -59,17 +59,35 @@ public class AuroraMenu implements InventoryHolder {
 
     public void addItem(MenuItem item, Function<InventoryClickEvent, MenuAction> handler) {
         var menuEntry = new MenuEntry(item, handler);
-        item.getSlots().forEach(s -> this.menuItems.put(s, menuEntry));
+        for (var slot : item.getSlots()) {
+            if (!menuItems.containsKey(slot)) {
+                menuItems.put(slot, new ArrayList<>());
+            }
+            menuItems.get(slot).add(menuEntry);
+            menuItems.get(slot).sort((entry1, entry2) -> Integer.compare(entry2.getPriority(), entry1.getPriority()));
+        }
     }
 
     public void addItem(MenuItem item, Consumer<InventoryClickEvent> handler) {
         var menuEntry = new MenuEntry(item, handler);
-        item.getSlots().forEach(s -> this.menuItems.put(s, menuEntry));
+        for (var slot : item.getSlots()) {
+            if (!menuItems.containsKey(slot)) {
+                menuItems.put(slot, new ArrayList<>());
+            }
+            menuItems.get(slot).add(menuEntry);
+            menuItems.get(slot).sort((entry1, entry2) -> Integer.compare(entry2.getPriority(), entry1.getPriority()));
+        }
     }
 
     public void addItem(MenuItem item) {
         var menuEntry = new MenuEntry(item);
-        item.getSlots().forEach(s -> this.menuItems.put(s, menuEntry));
+        for (var slot : item.getSlots()) {
+            if (!menuItems.containsKey(slot)) {
+                menuItems.put(slot, new ArrayList<>());
+            }
+            menuItems.get(slot).add(menuEntry);
+            menuItems.get(slot).sort((entry1, entry2) -> Integer.compare(entry2.getPriority(), entry1.getPriority()));
+        }
     }
 
     public void freeSlotHandler(int slot, Consumer<InventoryClickEvent> handler) {
@@ -125,21 +143,23 @@ public class AuroraMenu implements InventoryHolder {
         if (!(e.getWhoClicked() instanceof Player player)) return false;
 
         if (menuItems.containsKey(e.getSlot())) {
-            var menuEntry = menuItems.get(e.getSlot());
-            var result = menuEntry.handleEvent(e);
+            var menuEntries = menuItems.get(e.getSlot());
+            for (var menuEntry : menuEntries) {
+                if (menuEntry.isActive()) {
+                    var result = menuEntry.handleEvent(e);
 
-            if (result == MenuAction.REFRESH_SLOT) {
-                menuEntry.getItem().refresh();
-                player.updateInventory();
-            } else if (result == MenuAction.CLOSE) {
-                player.closeInventory();
-            } else if (result == MenuAction.REFRESH_MENU) {
-                for (var menuItem : menuItems.values()) {
-                    menuItem.getItem().refresh();
+                    if (result == MenuAction.REFRESH_SLOT) {
+                        menuEntry.getItem().refresh();
+                        player.updateInventory();
+                    } else if (result == MenuAction.CLOSE) {
+                        player.closeInventory();
+                    } else if (result == MenuAction.REFRESH_MENU) {
+                        refresh();
+                    }
+
+                    return true;
                 }
-                player.updateInventory();
             }
-            return true;
         }
 
         return false;
@@ -157,8 +177,16 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void open(Player player) {
-        if(player.isSleeping()) return;
-        if(!player.isOnline()) return;
+        if (player.isSleeping()) return;
+        if (!player.isOnline()) return;
+
+        populateInventory(player);
+
+        player.getScheduler().run(Aurora.getInstance(), (task) -> player.openInventory(inventory), null);
+    }
+
+    private void populateInventory(Player player) {
+        inventory.clear();
         Aurora.getMenuManager().getDupeFixer().getMarker().mark(filler);
 
         int j = 0;
@@ -173,12 +201,23 @@ public class AuroraMenu implements InventoryHolder {
             }
         }
 
-        for (var menuEntry : menuItems.values()) {
-            Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
-            menuEntry.getItem().applyToInventory(inventory);
+        for (var menuEntries : menuItems.values()) {
+            boolean found = false;
+            for (var menuEntry : menuEntries) {
+                if (found) {
+                    menuEntry.setActive(false);
+                    continue;
+                }
+                if (Requirement.isAllMet(player, menuEntry.getItem().getItemBuilder().getConfig().getViewRequirements())) {
+                    found = true;
+                    menuEntry.setActive(true);
+                    Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
+                    menuEntry.getItem().applyToInventory(inventory);
+                } else {
+                    menuEntry.setActive(false);
+                }
+            }
         }
-
-        player.getScheduler().run(Aurora.getInstance(), (task) -> player.openInventory(inventory), null);
     }
 
 
@@ -189,11 +228,8 @@ public class AuroraMenu implements InventoryHolder {
 
     public void refresh() {
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
-            for (var menuEntry : menuItems.values()) {
-                if (menuEntry.getItem().isRefreshEnabled()) {
-                    menuEntry.getItem().refresh();
-                }
-            }
+            populateInventory(player);
+            player.updateInventory();
         }, null);
     }
 }

@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.5.11"
+version = "1.6.0-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -56,7 +56,7 @@ dependencies {
     compileOnly("com.github.angeschossen:WildRegenerationAPI:1.5.0")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.lumine:Mythic-Dist:5.6.1")
-    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.4")
+    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.15")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
