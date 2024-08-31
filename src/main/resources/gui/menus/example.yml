@@ -5,9 +5,9 @@ rows: 6
 update: false
 
 open-requirements:
-  - requirement: "[permission] example.permission"
+  - requirement: "[permission] examplemenu.open"
     deny-actions:
-      - "[message] You do not have permission to open this menu."
+      - "[message] &cYou do not have permission to open this menu."
 
 open-actions:
   - "[sound] entity.villager.yes"
@@ -21,23 +21,32 @@ filler:
 
 items:
   test:
-    priority: 0
+    priority: 1
     material: diamond
     name: "&6Test Item"
     lore:
       - "&7This is a test item."
     slot: 13
     on-click:
-      - "[console] say Hello world!"
+      - "[console] say Hello test!"
     view-requirements:
       - "[permission] example.permission"
-      - "[money] 1000"
-      - "[exp-level] 30"
-      - "[placeholder] %my_placeholder% == 10"
-      - "[placeholder] %my_placeholder% > 10"
-      - "[placeholder] %my_placeholder% >= 10"
-      - "[placeholder] %my_placeholder% <= 10"
+      #- "[money] 1000"
+      #- "[exp-level] 30"
+      #- "[placeholder] %my_placeholder% == 10"
+      #- "[placeholder] %my_placeholder% > 10"
+      #- "[placeholder] %my_placeholder% >= 10"
+      #- "[placeholder] %my_placeholder% <= 10"
     click-requirements:
-      - requirement: "[permission] example.permission"
+      - requirement: "[permission] example.permission.2"
         deny-actions:
-          - "[message] You do not have permission to use this item."
+          - "[message] &cYou do not have permission to use this item."
+  test2:
+    priority: 0
+    material: emerald
+    name: "&6Test Item"
+    lore:
+      - "&7This is a test item."
+    slot: 13
+    on-click:
+      - "[console] lp user {player} permission set example.permission"

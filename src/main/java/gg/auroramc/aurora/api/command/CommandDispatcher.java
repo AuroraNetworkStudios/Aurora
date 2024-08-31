@@ -41,7 +41,7 @@ public class CommandDispatcher {
             player.getScheduler().run(Aurora.getInstance(), task -> player.closeInventory(), null);
         } else if (command.startsWith("[open-gui]")) {
             Aurora.getExpansionManager().getExpansion(GuiExpansion.class)
-                    .openGui(removeFirstSpace(command.replace("[open]", "")), player);
+                    .openGui(removeFirstSpace(command.replace("[open-gui]", "")), player);
         } else if (command.startsWith("[meta")) {
             var data = Aurora.getUserManager().getUser(player).getMetaData();
             var meta = parseMetaString(command);
