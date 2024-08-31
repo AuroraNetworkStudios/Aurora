@@ -25,7 +25,10 @@ public class Gui implements AuroraGui {
 
     @Override
     public void dispose() {
-        if (command != null) command.unregister(Aurora.getInstance().getServer().getCommandMap());
+        if (command != null) {
+            command.unregister(Aurora.getInstance().getServer().getCommandMap());
+            Aurora.getInstance().getServer().getCommandMap().getKnownCommands().remove(config.getRegisterCommand());
+        }
     }
 
     @Override

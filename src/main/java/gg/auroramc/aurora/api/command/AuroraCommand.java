@@ -2,6 +2,7 @@ package gg.auroramc.aurora.api.command;
 
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.message.Chat;
+import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -24,7 +25,7 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if(args[0].equalsIgnoreCase("dbmigrate")) {
+        if (args[0].equalsIgnoreCase("dbmigrate")) {
             sender.sendMessage("Attempting to migrate data...");
             Aurora.getUserManager().attemptMigration();
         }
@@ -113,6 +114,37 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (args[0].equalsIgnoreCase("gui")) {
+            if (args.length < 2) {
+                Chat.sendMessage(sender, "&cUsage: /aurora gui <open/reload> <player> <id>");
+                return true;
+            }
+
+            var guiExpansion = Aurora.getExpansionManager().getExpansion(GuiExpansion.class);
+
+            if (args[1].equalsIgnoreCase("open")) {
+                var player = Bukkit.getPlayer(args[2]);
+
+                if (player == null) {
+                    Chat.sendMessage(sender, "&cPlayer not found: " + args[2]);
+                    return true;
+                }
+
+                if (args.length < 4) {
+                    Chat.sendMessage(sender, "&cUsage: /aurora gui open <player> <id>");
+                    return true;
+                }
+
+                var id = args[3];
+                guiExpansion.openGui(id, player);
+            } else if (args[1].equalsIgnoreCase("reload")) {
+                guiExpansion.reload();
+                Chat.sendMessage(sender, "&aSuccessfully reloaded &2" + guiExpansion.getGuiIds().size() + " &aguis");
+            }
+
+            return true;
+        }
+
         return true;
     }
 
@@ -122,7 +154,7 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return Stream.of("meta", "dispatch", "dbmigrate").filter(s -> s.startsWith(args[0])).toList();
+            return Stream.of("meta", "dispatch", "dbmigrate", "gui").filter(s -> s.startsWith(args[0])).toList();
         }
         if (args.length == 2) {
             if (args[0].equalsIgnoreCase("meta")) {
@@ -131,17 +163,23 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
             if (args[0].equalsIgnoreCase("dispatch")) {
                 return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
             }
+            if (args[0].equalsIgnoreCase("gui")) {
+                return Stream.of("open", "reload").filter(s -> s.startsWith(args[1])).toList();
+            }
         }
 
         if (args.length == 3) {
-            if (args[0].equalsIgnoreCase("meta")) {
-                return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+            if (args[0].equalsIgnoreCase("meta") || args[0].equalsIgnoreCase("gui")) {
+                return Bukkit.getOnlinePlayers().stream().map(Player::getName).filter(s -> s.startsWith(args[2])).toList();
             }
         }
 
         if (args.length == 4) {
             if (args[0].equalsIgnoreCase("meta")) {
                 return List.of("<key>");
+            }
+            if (args[0].equalsIgnoreCase("gui")) {
+                return Aurora.getExpansionManager().getExpansion(GuiExpansion.class).getGuiIds().stream().filter(s -> s.startsWith(args[3])).toList();
             }
         }
 

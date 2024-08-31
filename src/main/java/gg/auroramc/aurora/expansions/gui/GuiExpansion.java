@@ -6,6 +6,7 @@ import gg.auroramc.aurora.api.expansions.AuroraExpansion;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -33,6 +34,10 @@ public class GuiExpansion implements AuroraExpansion {
         } else {
             gui.open(player);
         }
+    }
+
+    public Collection<String> getGuiIds() {
+        return guiMap.keySet();
     }
 
     public void reload() {
