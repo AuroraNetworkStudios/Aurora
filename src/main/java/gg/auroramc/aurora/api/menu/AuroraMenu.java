@@ -175,7 +175,6 @@ public class AuroraMenu implements InventoryHolder {
                     } else if (result == MenuAction.REFRESH_MENU) {
                         refresh();
                     } else if (result == MenuAction.REFRESH_MENU_DELAYED) {
-                        Aurora.logger().warning("Attempt to refresh menu delayed: " + player.hasPermission("example.permission"));
                         refreshDelayed(2);
                     }
 
@@ -265,7 +264,6 @@ public class AuroraMenu implements InventoryHolder {
 
     public void refreshDelayed(int delayTicks) {
         player.getScheduler().runDelayed(Aurora.getInstance(), (task) -> {
-            Aurora.logger().warning("Refreshing menu: " + player.hasPermission("example.permission"));
             populateInventory(player);
             player.updateInventory();
         }, null, delayTicks);
