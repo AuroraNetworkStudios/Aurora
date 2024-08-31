@@ -2,7 +2,7 @@ register-command: "examplemenu"
 
 title: "&6Example Menu"
 rows: 6
-update: false
+refresh: false
 
 open-requirements:
   - requirement: "[permission] examplemenu.open"

@@ -15,7 +15,8 @@ public class GuiConfig extends AuroraConfig {
     private String registerCommand;
     private String title;
     private Integer rows = 6;
-    private boolean update = false;
+    private boolean refresh = false;
+    private Integer refreshInterval = 1;
     private List<RequirementConfig> openRequirements;
     private List<String> openActions;
     private List<String> closeActions;

@@ -68,7 +68,7 @@ public class GuiExpansion implements AuroraExpansion {
                         Aurora.getInstance().getLogger().warning("Duplicate gui id: " + id + ", Skipping...");
                         continue;
                     }
-                    guiMap.put(id, new Gui(config));
+                    guiMap.put(id, new Gui(config, id));
                     Aurora.logger().debug("Loaded gui: " + id);
                 } else if (file.isDirectory()) {
                     loadFolder(file);

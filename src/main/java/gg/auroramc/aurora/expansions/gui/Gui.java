@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.expansions.gui;
 
+import com.google.common.collect.Sets;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.menu.AuroraMenu;
@@ -7,19 +8,36 @@ import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.menu.MenuAction;
 import gg.auroramc.aurora.api.menu.Requirement;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.NamespacedId;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
 
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 public class Gui implements AuroraGui {
     private Command command;
     private final GuiConfig config;
+    private final Set<AuroraMenu> menus = Sets.newConcurrentHashSet();
+    private ScheduledTask refreshTask = null;
+    private final String id;
 
-    public Gui(GuiConfig config) {
+    public Gui(GuiConfig config, String id) {
         this.config = config;
+        this.id = id;
         if (config.getRegisterCommand() != null) {
             this.command = new GuiOpenCommand(config.getRegisterCommand(), this);
             Aurora.getInstance().getServer().getCommandMap().register("aurora", this.command);
+        }
+        if (config.isRefresh()) {
+            refreshTask = Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(), (task) -> {
+                for (AuroraMenu m : menus) {
+                    m.refresh();
+                }
+            }, config.getRefreshInterval(), config.getRefreshInterval(), TimeUnit.SECONDS);
         }
     }
 
@@ -28,6 +46,12 @@ public class Gui implements AuroraGui {
         if (command != null) {
             command.unregister(Aurora.getInstance().getServer().getCommandMap());
             Aurora.getInstance().getServer().getCommandMap().getKnownCommands().remove(config.getRegisterCommand());
+        }
+        if (refreshTask != null && !refreshTask.isCancelled()) {
+            refreshTask.cancel();
+        }
+        for (var menu : menus) {
+            menu.getPlayer().closeInventory();
         }
     }
 
@@ -39,7 +63,7 @@ public class Gui implements AuroraGui {
             }
         }
 
-        var menu = new AuroraMenu(player, config.getTitle(), config.getRows() * 9, config.isUpdate(), Placeholder.of("{player}", player.getName()));
+        var menu = new AuroraMenu(player, config.getTitle(), config.getRows() * 9, false, NamespacedId.fromDefault(id), Placeholder.of("{player}", player.getName()));
 
         if (config.getFiller() != null) {
             menu.addFiller(ItemBuilder.of(config.getFiller()).toItemStack(player));
@@ -63,6 +87,7 @@ public class Gui implements AuroraGui {
 
         if (config.getCloseActions() != null) {
             menu.onClose((m, e) -> {
+                menus.remove(m);
                 for (var cmd : config.getCloseActions()) {
                     CommandDispatcher.dispatch(player, cmd, Placeholder.of("{player}", player.getName()));
                 }
@@ -70,7 +95,8 @@ public class Gui implements AuroraGui {
         }
 
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
-            menu.open(player, false);
+            menu.open(player, false, menus::add);
+
             if (config.getOpenActions() != null) {
                 for (var cmd : config.getOpenActions()) {
                     CommandDispatcher.dispatch(player, cmd, Placeholder.of("{player}", player.getName()));

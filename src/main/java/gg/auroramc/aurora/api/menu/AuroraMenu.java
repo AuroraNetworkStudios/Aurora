@@ -28,6 +28,7 @@ public class AuroraMenu implements InventoryHolder {
     private Set<Integer> freeSlots;
     private List<ItemStack> freeItems;
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
+    @Getter
     private final Player player;
     @Getter
     @Setter
@@ -198,23 +199,31 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public void open(Player player) {
-        open(player, true);
+        open(player, true, null);
     }
 
-    public void open(Player player, boolean useScheduler) {
+    public void open(Player player, boolean useScheduler, Consumer<AuroraMenu> onOpen) {
         if (player.isSleeping()) return;
         if (!player.isOnline()) return;
 
-        populateInventory(player);
+        populateInventory(player, false);
 
         if (useScheduler) {
-            player.getScheduler().run(Aurora.getInstance(), (task) -> player.openInventory(inventory), null);
+            player.getScheduler().run(Aurora.getInstance(), (task) -> {
+                player.openInventory(inventory);
+                if (onOpen != null) {
+                    onOpen.accept(this);
+                }
+            }, null);
         } else {
             player.openInventory(inventory);
+            if (onOpen != null) {
+                onOpen.accept(this);
+            }
         }
     }
 
-    private void populateInventory(Player player) {
+    private void populateInventory(Player player, boolean isRefresh) {
         inventory.clear();
         Aurora.getMenuManager().getDupeFixer().getMarker().mark(filler);
 
@@ -241,6 +250,9 @@ public class AuroraMenu implements InventoryHolder {
                     found = true;
                     menuEntry.setActive(true);
                     Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
+                    if(isRefresh && menuEntry.getItem().isRefreshEnabled()) {
+                        menuEntry.getItem().refresh();
+                    }
                     inventory.setItem(menuEntries.getKey(), menuEntry.getItem().getItemStack());
                 } else {
                     menuEntry.setActive(false);
@@ -257,14 +269,14 @@ public class AuroraMenu implements InventoryHolder {
 
     public void refresh() {
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
-            populateInventory(player);
+            populateInventory(player, true);
             player.updateInventory();
         }, null);
     }
 
     public void refreshDelayed(int delayTicks) {
         player.getScheduler().runDelayed(Aurora.getInstance(), (task) -> {
-            populateInventory(player);
+            populateInventory(player, true);
             player.updateInventory();
         }, null, delayTicks);
     }
