@@ -174,6 +174,9 @@ public class AuroraMenu implements InventoryHolder {
                         player.closeInventory();
                     } else if (result == MenuAction.REFRESH_MENU) {
                         refresh();
+                    } else if (result == MenuAction.REFRESH_MENU_DELAYED) {
+                        Aurora.logger().warning("Attempt to refresh menu delayed: " + player.hasPermission("example.permission"));
+                        refreshDelayed(2);
                     }
 
                     return true;
@@ -258,5 +261,13 @@ public class AuroraMenu implements InventoryHolder {
             populateInventory(player);
             player.updateInventory();
         }, null);
+    }
+
+    public void refreshDelayed(int delayTicks) {
+        player.getScheduler().runDelayed(Aurora.getInstance(), (task) -> {
+            Aurora.logger().warning("Refreshing menu: " + player.hasPermission("example.permission"));
+            populateInventory(player);
+            player.updateInventory();
+        }, null, delayTicks);
     }
 }

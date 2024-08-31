@@ -50,13 +50,13 @@ public class Gui implements AuroraGui {
         config.getItems().forEach((id, itemConfig) ->
                 menu.addItem(ItemBuilder.of(itemConfig).build(player), (e) -> {
                     if (itemConfig.getOnClick() != null && !itemConfig.getOnClick().isEmpty() && !itemConfig.getOnClick().contains("[close]")) {
-                        return MenuAction.REFRESH_MENU;
+                        return MenuAction.REFRESH_MENU_DELAYED;
                     }
                     if (e.isLeftClick() && itemConfig.getOnLeftClick() != null && !itemConfig.getOnLeftClick().isEmpty() && !itemConfig.getOnLeftClick().contains("[close]")) {
-                        return MenuAction.REFRESH_MENU;
+                        return MenuAction.REFRESH_MENU_DELAYED;
                     }
                     if (e.isRightClick() && itemConfig.getOnRightClick() != null && !itemConfig.getOnRightClick().isEmpty() && !itemConfig.getOnRightClick().contains("[close]")) {
-                        return MenuAction.REFRESH_MENU;
+                        return MenuAction.REFRESH_MENU_DELAYED;
                     }
                     return MenuAction.NONE;
                 }));
