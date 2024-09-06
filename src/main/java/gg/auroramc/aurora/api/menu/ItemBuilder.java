@@ -26,6 +26,7 @@ import org.bukkit.potion.PotionType;
 import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Supplier;
@@ -40,6 +41,7 @@ public class ItemBuilder {
     private Color potionColor = null;
     private ItemStack item = null;
     private PlayerProfile playerProfile;
+    private static final Map<String, String> skinCache = new HashMap<>();
 
     private ItemBuilder(ItemConfig config) {
         this.config = new ItemConfig(config);
@@ -312,11 +314,13 @@ public class ItemBuilder {
             }
 
             if (url != null) {
-                // If you don't use these profile methods, than it won't work for some reason
-                var profile = Bukkit.createPlayerProfile(UUID.randomUUID());
+                // If you don't use these profile methods, then it won't work for some reason
+                var profile = Bukkit.createProfile(UUID.randomUUID());
                 try {
-                    profile.getTextures().setSkin(new URL(url));
-                    skullMeta.setOwnerProfile(profile);
+                    var textures = profile.getTextures();
+                    textures.setSkin(URI.create(url).toURL());
+                    profile.setTextures(textures);
+                    skullMeta.setPlayerProfile(profile);
                 } catch (Exception ignored) {
                 }
             }
@@ -347,6 +351,9 @@ public class ItemBuilder {
     }
 
     public static String decodeSkinUrl(String base64Texture) {
+        if (skinCache.containsKey(base64Texture)) {
+            return skinCache.get(base64Texture);
+        }
         String decoded = new String(Base64.getDecoder().decode(base64Texture));
         JsonObject object = JsonParser.parseString(decoded).getAsJsonObject();
         JsonElement textures = object.get("textures");
@@ -355,7 +362,14 @@ public class ItemBuilder {
         JsonElement skin = textures.getAsJsonObject().get("SKIN");
         if (skin == null)
             return null;
+
         JsonElement url = skin.getAsJsonObject().get("url");
-        return (url == null) ? null : url.getAsString();
+
+        if (url != null) {
+            skinCache.put(base64Texture, url.getAsString());
+            return url.getAsString();
+        }
+
+        return null;
     }
 }
