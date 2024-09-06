@@ -46,6 +46,10 @@ public class Requirement {
     public static boolean isMet(Player player, String requirement) {
         if (requirement == null || requirement.isEmpty()) return true;
 
+        if (requirement.startsWith("!")) {
+            return !isMet(player, requirement.substring(1));
+        }
+
         if (requirement.startsWith("[permission]")) {
             return player.hasPermission(requirement.substring(13));
         }
