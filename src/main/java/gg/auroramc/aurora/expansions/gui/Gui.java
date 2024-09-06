@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.expansions.gui;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
@@ -15,11 +16,12 @@ import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class Gui implements AuroraGui {
-    private Command command;
+    private Map<String, Command> commands = Maps.newConcurrentMap();
     private final GuiConfig config;
     private final Set<AuroraMenu> menus = Sets.newConcurrentHashSet();
     private ScheduledTask refreshTask = null;
@@ -28,9 +30,13 @@ public class Gui implements AuroraGui {
     public Gui(GuiConfig config, String id) {
         this.config = config;
         this.id = id;
-        if (config.getRegisterCommand() != null) {
-            this.command = new GuiOpenCommand(config.getRegisterCommand(), this);
-            Aurora.getInstance().getServer().getCommandMap().register("aurora", this.command);
+        if (config.getRegisterCommands() != null && !config.getRegisterCommands().isEmpty()) {
+            for (var cmd : config.getRegisterCommands()) {
+                var command = new GuiOpenCommand(cmd, this);
+                this.commands.put(cmd, command);
+                Aurora.getInstance().getServer().getCommandMap().register("aurora", command);
+            }
+
         }
         if (config.isRefresh()) {
             refreshTask = Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(), (task) -> {
@@ -43,9 +49,11 @@ public class Gui implements AuroraGui {
 
     @Override
     public void dispose() {
-        if (command != null) {
-            command.unregister(Aurora.getInstance().getServer().getCommandMap());
-            Aurora.getInstance().getServer().getCommandMap().getKnownCommands().remove(config.getRegisterCommand());
+        if (!commands.isEmpty()) {
+            for (var command : commands.entrySet()) {
+                command.getValue().unregister(Aurora.getInstance().getServer().getCommandMap());
+                Aurora.getInstance().getServer().getCommandMap().getKnownCommands().remove(command.getKey());
+            }
         }
         if (refreshTask != null && !refreshTask.isCancelled()) {
             refreshTask.cancel();

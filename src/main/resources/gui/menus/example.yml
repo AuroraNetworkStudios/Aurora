@@ -1,4 +1,5 @@
-register-command: "examplemenu"
+register-commands:
+  - "examplemenu"
 
 title: "&6Example Menu"
 rows: 6

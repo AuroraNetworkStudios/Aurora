@@ -12,7 +12,7 @@ import java.util.Map;
 
 @Getter
 public class GuiConfig extends AuroraConfig {
-    private String registerCommand;
+    private List<String> registerCommands;
     private String title;
     private Integer rows = 6;
     private boolean refresh = false;
