@@ -56,10 +56,11 @@ dependencies {
     compileOnly("com.github.angeschossen:WildRegenerationAPI:1.5.0")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.lumine:Mythic-Dist:5.6.1")
-    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.15")
+    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.26")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
+    compileOnly("com.github.LoneDev6:api-itemsadder:3.6.1")
     //compileOnly("com.willfp:eco:6.73.0")
 
     // 3rd party local
