@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.command;
 
+import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
@@ -13,36 +14,61 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Player;
 
+import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 public class CommandDispatcher {
+    private static final Map<String, BiConsumer<Player, String>> actions = Maps.newConcurrentMap();
+
+    static {
+        registerActionHandler("default", CommandDispatcher::runConsoleCommand);
+        registerActionHandler("console", CommandDispatcher::runConsoleCommand);
+        registerActionHandler("player", CommandDispatcher::runPlayerCommand);
+
+        registerActionHandler("message", (player, message) -> player.sendMessage(Text.component(player, message)));
+        registerActionHandler("actionbar", ActionBar::send);
+        registerActionHandler("sound", CommandDispatcher::playSound);
+
+        registerActionHandler("close", (player, command) -> player.getScheduler().run(Aurora.getInstance(), task -> player.closeInventory(), null));
+        registerActionHandler("open-gui", (player, gui) -> Aurora.getExpansionManager().getExpansion(GuiExpansion.class).openGui(gui, player));
+
+        registerActionHandler("placeholder", (player, placeholder) -> {
+            if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, placeholder);
+        });
+    }
+
+    public static void registerActionHandler(String id, BiConsumer<Player, String> handler) {
+        actions.put(id, handler);
+    }
+
+    public static Collection<String> getActions() {
+        return actions.keySet();
+    }
+
+    private static Map.Entry<String, String> extractActionAndContent(String input) {
+        if (input.charAt(0) == '[') {
+            int end = input.indexOf(']');
+            if (end != -1) {
+                String action = input.substring(1, end);
+                String content = removeFirstSpace(input.substring(end + 1));
+
+                return new AbstractMap.SimpleEntry<>(action, content);
+            }
+        }
+        return new AbstractMap.SimpleEntry<>("default", input);
+    }
+
     public record MetaRecord(String action, String key, String value) {
     }
 
     public static void dispatch(Player player, String command) {
-        if (command.startsWith("[message]")) {
-            var msg = Text.component(player, removeFirstSpace(command.replace("[message]", "")));
-            player.sendMessage(msg);
-        } else if (command.startsWith("[player]")) {
-            player.getScheduler().run(Aurora.getInstance(), (task) -> {
-                var cmd = removeFirstSpace(command.replace("[player]", ""));
-                if (DependencyManager.hasDep(Dep.PAPI)) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
-                player.performCommand(cmd);
-            }, null);
-        } else if (command.startsWith("[console]")) {
-            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), task -> {
-                var cmd = removeFirstSpace(command.replace("[console]", ""));
-                if (DependencyManager.hasDep(Dep.PAPI)) cmd = PlaceholderAPI.setPlaceholders(player, cmd);
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-            });
-        } else if (command.startsWith("[close]")) {
-            player.getScheduler().run(Aurora.getInstance(), task -> player.closeInventory(), null);
-        } else if (command.startsWith("[open-gui]")) {
-            Aurora.getExpansionManager().getExpansion(GuiExpansion.class)
-                    .openGui(removeFirstSpace(command.replace("[open-gui]", "")), player);
-        } else if (command.startsWith("[meta")) {
+        if (command.startsWith("[meta")) {
             var data = Aurora.getUserManager().getUser(player).getMetaData();
             var meta = parseMetaString(command);
 
@@ -64,18 +90,21 @@ public class CommandDispatcher {
                 case "decrement" ->
                         data.decrementMeta(meta.key, meta.value == null ? 1 : Double.parseDouble(meta.value));
             }
-        } else if (command.startsWith("[placeholder]")) {
-            if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, command);
-        } else if (command.startsWith("[sound]")) {
-            playSound(player, removeFirstSpace(command.replace("[sound]", "")));
-        } else if (command.startsWith("[actionbar]")) {
-            var msg = removeFirstSpace(command.replace("[actionbar]", ""));
-            ActionBar.send(player, msg);
+            return;
+        }
+
+        var action = extractActionAndContent(command);
+        var handler = actions.get(action.getKey());
+
+        if (handler != null) {
+            try {
+                handler.accept(player, action.getValue());
+            } catch (Exception e) {
+                Aurora.logger().severe("Failed to execute action: " + action.getKey() + " with content: " + action.getValue() + " for player: " + player.getName() + " with error: " + e.getMessage());
+                e.printStackTrace();
+            }
         } else {
-            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                var cmd = DependencyManager.hasDep(Dep.PAPI) ? PlaceholderAPI.setPlaceholders(player, command) : command;
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-            });
+            Aurora.logger().warning("Invalid dispatcher action: " + action.getKey());
         }
     }
 
@@ -85,6 +114,20 @@ public class CommandDispatcher {
 
     public static void dispatch(Player player, String command, Placeholder<?>... placeholders) {
         dispatch(player, Placeholder.execute(command, placeholders));
+    }
+
+    private static void runConsoleCommand(Player player, String command) {
+        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
+            var cmd = DependencyManager.hasDep(Dep.PAPI) ? PlaceholderAPI.setPlaceholders(player, command) : command;
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+        });
+    }
+
+    private static void runPlayerCommand(Player player, String command) {
+        player.getScheduler().run(Aurora.getInstance(), (task) -> {
+            var cmd = DependencyManager.hasDep(Dep.PAPI) ? PlaceholderAPI.setPlaceholders(player, command) : command;
+            player.performCommand(cmd);
+        }, null);
     }
 
     private static void playSound(Player player, String cmd) {

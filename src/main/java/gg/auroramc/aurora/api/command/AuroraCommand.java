@@ -4,6 +4,7 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import org.bukkit.Bukkit;
+import org.bukkit.Registry;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -171,6 +172,9 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
         if (args.length == 3) {
             if (args[0].equalsIgnoreCase("meta") || args[0].equalsIgnoreCase("gui")) {
                 return Bukkit.getOnlinePlayers().stream().map(Player::getName).filter(s -> s.startsWith(args[2])).toList();
+            }
+            if (args[0].equalsIgnoreCase("dispatch")) {
+                return CommandDispatcher.getActions().stream().map(id -> "[" + id + "]").filter(s -> s.startsWith(args[2])).toList();
             }
         }
 
