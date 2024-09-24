@@ -34,7 +34,7 @@ repositories {
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://oss.sonatype.org/content/groups/public/")
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    maven("https://repo.helpch.at/releases/")
     maven("https://maven.enginehub.org/repo/")
     maven("https://repo.essentialsx.net/releases/")
     maven("https://repo.onarandombox.com/content/groups/public/")
@@ -48,7 +48,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
 
     // 3rd party
-    compileOnly("me.clip:placeholderapi:2.11.3")
+    compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly("net.essentialsx:EssentialsX:2.19.0")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7")
