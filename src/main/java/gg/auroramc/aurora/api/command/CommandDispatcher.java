@@ -7,6 +7,8 @@ import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
+import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.hooks.LuckPermsHook;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -37,7 +39,7 @@ public class CommandDispatcher {
         registerActionHandler("sound", CommandDispatcher::playSound);
 
         registerActionHandler("permission", (player, input) -> {
-            if(DependencyManager.hasDep("LuckPerms")) {
+            if (DependencyManager.hasDep("LuckPerms")) {
                 var args = ArgumentParser.parseString(input);
                 LuckPermsHook.grantPermission(player, args.get("prefix"), args);
             }
@@ -52,6 +54,9 @@ public class CommandDispatcher {
         registerActionHandler("placeholder", (player, placeholder) -> {
             if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, placeholder);
         });
+
+        registerActionHandler("give-money", (player, input) -> useEconomy(input, (econ, amount) -> econ.deposit(player, amount)));
+        registerActionHandler("take-money", (player, input) -> useEconomy(input, (econ, amount) -> econ.withdraw(player, amount)));
     }
 
     public static void registerActionHandler(String id, BiConsumer<Player, String> handler) {
@@ -178,5 +183,19 @@ public class CommandDispatcher {
             return text.substring(1);
         }
         return text;
+    }
+
+    private static void useEconomy(String input, BiConsumer<AuroraEconomy, Double> action) {
+        var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
+        var econ = expansion.getDefaultEconomy();
+        var args = ArgumentParser.parseString(input);
+        if (args.containsKey("economy")) {
+            econ = expansion.getEconomy(args.get("economy"));
+        }
+        if (econ == null) {
+            Aurora.logger().warning("Invalid economy provider: " + args.get("economy"));
+            return;
+        }
+        action.accept(econ, Double.parseDouble(args.get("prefix")));
     }
 }

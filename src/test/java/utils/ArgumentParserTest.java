@@ -8,14 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ArgumentParserTest {
     @Test
     public void testComplexParsing() {
-        var args = ArgumentParser.parseString("my little prefix        key1={value1} key2={value2 abc} key3={abc  value3  abc}");
+        var args = ArgumentParser.parseString("1000        economy={Vault} key2={value2 abc} key3={abc  value3  abc}");
 
         // 4 because the first key-value pair is the prefix
         assertEquals(4, args.size());
-        assertEquals("value1", args.get("key1"));
+        assertEquals("Vault", args.get("economy"));
         assertEquals("value2 abc", args.get("key2"));
         assertEquals("abc  value3  abc", args.get("key3"));
-        assertEquals("my little prefix", args.get("prefix"));
+        assertEquals("1000", args.get("prefix"));
     }
 
     public void testArgumentOnlyParsing() {
