@@ -27,7 +27,7 @@ public class MenuDupeFixer implements Listener {
         if (!this.marker.isMarked(event.getItem().getItemStack()))
             return;
 
-        plugin.getLogger().warning(event.getEntity().getName() + " picked up a DeluxeMenus item. Removing it.");
+        plugin.getLogger().warning(event.getEntity().getName() + " picked up an AuroraMenu item. Removing it.");
         event.getItem().remove();
     }
 
@@ -35,7 +35,7 @@ public class MenuDupeFixer implements Listener {
     private void onDrop(PlayerDropItemEvent event) {
         if (!this.marker.isMarked(event.getItemDrop().getItemStack()))
             return;
-        Aurora.logger().warning("An AuroraCore menu item was dropped in the world by "+ event.getPlayer().getName() +". Removing it.");
+        Aurora.logger().warning("An AuroraMenu item was dropped in the world by "+ event.getPlayer().getName() +". Removing it.");
         event.getItemDrop().remove();
     }
 
