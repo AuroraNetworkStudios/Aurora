@@ -1,9 +1,11 @@
 package gg.auroramc.aurora.api;
 
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.entity.EntityManager;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
 import gg.auroramc.aurora.api.item.ItemManager;
+import gg.auroramc.aurora.api.menu.Requirement;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandler;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandlerRegistry;
 import gg.auroramc.aurora.api.user.AuroraUser;
@@ -15,8 +17,11 @@ import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class AuroraAPI {
@@ -147,5 +152,13 @@ public class AuroraAPI {
 
     public static EntityManager getEntityManager() {
         return Aurora.getExpansionManager().getExpansion(EntityExpansion.class).getEntityManager();
+    }
+
+    public static void registerRequirementHandler(String name, Function<String[], Boolean> resolver) {
+        Requirement.register(name, resolver);
+    }
+
+    public static void registerCommandDispatcherActionHandler(String id, BiConsumer<Player, String> handler) {
+        CommandDispatcher.registerActionHandler(id, handler);
     }
 }
