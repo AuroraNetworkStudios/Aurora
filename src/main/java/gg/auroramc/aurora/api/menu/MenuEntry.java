@@ -39,16 +39,16 @@ public class MenuEntry {
     }
 
     public MenuAction handleEvent(InventoryClickEvent event) {
-        if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getClickRequirements())) {
+        if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getClickRequirements(), item.getPlaceholders())) {
             return MenuAction.NONE;
         }
 
         if (event.isLeftClick()) {
-            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getLeftClickRequirements())) {
+            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getLeftClickRequirements(), item.getPlaceholders())) {
                 return MenuAction.NONE;
             }
-        } else if(event.isRightClick()) {
-            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getRightClickRequirements())) {
+        } else if (event.isRightClick()) {
+            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getRightClickRequirements(), item.getPlaceholders())) {
                 return MenuAction.NONE;
             }
         }

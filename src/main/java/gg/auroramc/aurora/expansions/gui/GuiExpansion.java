@@ -4,10 +4,12 @@ import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -24,16 +26,24 @@ public class GuiExpansion implements AuroraExpansion {
         customGuiMap.put(id, supplier);
     }
 
-    public void openGui(String id, Player player) {
+    public void openGui(String id, Player player, @Nullable Map<String, String> args) {
         var gui = guiMap.get(id);
         if(gui == null) {
             var customGui = customGuiMap.get(id);
             if(customGui != null) {
-                customGui.apply(player).open(player);
+                customGui.apply(player).open(player, args);
             }
         } else {
-            gui.open(player);
+            gui.open(player, args);
         }
+    }
+
+    public void refreshPlayerGuis(UUID uuid) {
+        guiMap.forEach((id, gui) -> gui.refreshForPlayer(uuid));
+    }
+
+    public void refreshPlayerGuis(Player player) {
+        refreshPlayerGuis(player.getUniqueId());
     }
 
     public Collection<String> getGuiIds() {

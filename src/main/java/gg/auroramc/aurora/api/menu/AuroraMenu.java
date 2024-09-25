@@ -137,7 +137,8 @@ public class AuroraMenu implements InventoryHolder {
                 menuEntry.setActive(false);
                 continue;
             }
-            if (Requirement.isAllMet(player, menuEntry.getItem().getItemBuilder().getConfig().getViewRequirements())) {
+            var builder = menuEntry.getItem().getItemBuilder();
+            if (Requirement.isAllMet(player, builder.getConfig().getViewRequirements(), builder.getPlaceholders())) {
                 found = true;
                 menuEntry.setActive(true);
                 Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
@@ -246,11 +247,12 @@ public class AuroraMenu implements InventoryHolder {
                     menuEntry.setActive(false);
                     continue;
                 }
-                if (Requirement.isAllMet(player, menuEntry.getItem().getItemBuilder().getConfig().getViewRequirements())) {
+                var builder = menuEntry.getItem().getItemBuilder();
+                if (Requirement.isAllMet(player, builder.getConfig().getViewRequirements(), builder.getPlaceholders())) {
                     found = true;
                     menuEntry.setActive(true);
                     Aurora.getMenuManager().getDupeFixer().getMarker().mark(menuEntry.getItem().getItemStack());
-                    if(isRefresh && menuEntry.getItem().isRefreshEnabled()) {
+                    if (isRefresh && menuEntry.getItem().isRefreshEnabled()) {
                         menuEntry.getItem().refresh();
                     }
                     inventory.setItem(menuEntries.getKey(), menuEntry.getItem().getItemStack());

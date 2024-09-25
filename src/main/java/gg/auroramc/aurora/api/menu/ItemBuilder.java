@@ -35,6 +35,7 @@ public class ItemBuilder {
     @Getter
     private final ItemConfig config;
 
+    @Getter
     private final List<Placeholder<?>> placeholders = new ArrayList<>();
     private Supplier<List<Component>> loreBuilder = null;
     private final Collection<PotionEffect> potionEffects = new ArrayList<>();

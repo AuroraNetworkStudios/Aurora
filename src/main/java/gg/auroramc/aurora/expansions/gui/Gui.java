@@ -15,9 +15,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class Gui implements AuroraGui {
@@ -47,6 +47,14 @@ public class Gui implements AuroraGui {
         }
     }
 
+    public void refreshForPlayer(UUID uuid) {
+        for (var menu : menus) {
+            if (menu.getPlayer().getUniqueId().equals(uuid)) {
+                menu.refresh();
+            }
+        }
+    }
+
     @Override
     public void dispose() {
         if (!commands.isEmpty()) {
@@ -64,9 +72,15 @@ public class Gui implements AuroraGui {
     }
 
     @Override
-    public void open(Player player) {
+    public void open(Player player, @Nullable Map<String, String> args) {
+        args = args == null ? Map.of() : args;
+
+        List<Placeholder<?>> placeholders = new ArrayList<>(args.size() + 1);
+        args.forEach((key, value) -> placeholders.add(Placeholder.of("{arg_" + key + "}", value)));
+        placeholders.add(Placeholder.of("{player}", player.getName()));
+
         if (config.getOpenRequirements() != null) {
-            if (!Requirement.passes(player, config.getOpenRequirements())) {
+            if (!Requirement.passes(player, config.getOpenRequirements(), placeholders)) {
                 return;
             }
         }
@@ -80,7 +94,7 @@ public class Gui implements AuroraGui {
         }
 
         config.getItems().forEach((id, itemConfig) ->
-                menu.addItem(ItemBuilder.of(itemConfig).build(player), (e) -> {
+                menu.addItem(ItemBuilder.of(itemConfig).placeholder(placeholders).build(player), (e) -> {
                     if (itemConfig.getOnClick() != null && !itemConfig.getOnClick().isEmpty() && !itemConfig.getOnClick().contains("[close]")) {
                         return MenuAction.REFRESH_MENU_DELAYED;
                     }

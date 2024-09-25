@@ -18,6 +18,7 @@ import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
 import gg.auroramc.aurora.expansions.worldguard.WorldGuardExpansion;
+import gg.auroramc.aurora.hooks.LuckPermsHook;
 import lombok.Getter;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.event.Listener;
@@ -64,6 +65,10 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         menuManager = new MenuManager(this);
         setupExpansions();
+
+        if(DependencyManager.hasDep("LuckPerms")) {
+            LuckPermsHook.registerListeners();
+        }
 
         getCommand("aurora").setExecutor(new AuroraCommand());
     }

@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -137,7 +138,8 @@ public class AuroraCommand implements CommandExecutor, TabCompleter {
                 }
 
                 var id = args[3];
-                guiExpansion.openGui(id, player);
+                var argString = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+                guiExpansion.openGui(id, player, ArgumentParser.parseString(argString));
             } else if (args[1].equalsIgnoreCase("reload")) {
                 guiExpansion.reload();
                 Chat.sendMessage(sender, "&aSuccessfully reloaded &2" + guiExpansion.getGuiIds().size() + " &aguis");

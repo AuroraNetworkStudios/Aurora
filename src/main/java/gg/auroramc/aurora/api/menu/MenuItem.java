@@ -7,11 +7,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 public class MenuItem {
     private final ItemBuilder itemBuilder;
+    @Getter
+    private List<Placeholder<?>> placeholders;
     private ItemStack itemStack;
     private final Player player;
 
@@ -19,6 +22,9 @@ public class MenuItem {
         this.itemBuilder = builder;
         this.itemStack = itemStack;
         this.player = player;
+        var placeholders = new ArrayList<>(itemBuilder.getPlaceholders());
+        placeholders.add(Placeholder.of("{player}", player.getName()));
+        this.placeholders = placeholders;
     }
 
     @Deprecated(forRemoval = true)
@@ -32,24 +38,24 @@ public class MenuItem {
 
     public void runOnClickCommands(Player player) {
         if (itemBuilder.getConfig().getOnClick() == null) return;
-        var placeholder = Placeholder.of("{player}", player.getName());
-        itemBuilder.getConfig().getOnClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholder));
+        itemBuilder.getConfig().getOnClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
     }
 
     public void runOnLeftClickCommands(Player player) {
         if (itemBuilder.getConfig().getOnLeftClick() == null) return;
-        var placeholder = Placeholder.of("{player}", player.getName());
-        itemBuilder.getConfig().getOnLeftClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholder));
+        itemBuilder.getConfig().getOnLeftClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
     }
 
     public void runOnRightClickCommands(Player player) {
         if (itemBuilder.getConfig().getOnRightClick() == null) return;
-        var placeholder = Placeholder.of("{player}", player.getName());
-        itemBuilder.getConfig().getOnRightClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholder));
+        itemBuilder.getConfig().getOnRightClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
     }
 
     public void refresh() {
         itemStack = itemBuilder.build(player).getItemStack();
+        var placeholders = new ArrayList<>(itemBuilder.getPlaceholders());
+        placeholders.add(Placeholder.of("{player}", player.getName()));
+        this.placeholders = placeholders;
     }
 
     public boolean isRefreshEnabled() {

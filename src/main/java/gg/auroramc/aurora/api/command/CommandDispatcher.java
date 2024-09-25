@@ -8,6 +8,7 @@ import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
+import gg.auroramc.aurora.hooks.LuckPermsHook;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -35,8 +36,18 @@ public class CommandDispatcher {
         registerActionHandler("actionbar", ActionBar::send);
         registerActionHandler("sound", CommandDispatcher::playSound);
 
+        registerActionHandler("permission", (player, input) -> {
+            if(DependencyManager.hasDep("LuckPerms")) {
+                var args = ArgumentParser.parseString(input);
+                LuckPermsHook.grantPermission(player, args.get("prefix"), args);
+            }
+        });
+
         registerActionHandler("close", (player, command) -> player.getScheduler().run(Aurora.getInstance(), task -> player.closeInventory(), null));
-        registerActionHandler("open-gui", (player, gui) -> Aurora.getExpansionManager().getExpansion(GuiExpansion.class).openGui(gui, player));
+        registerActionHandler("open-gui", (player, input) -> {
+            var args = ArgumentParser.parseString(input);
+            Aurora.getExpansionManager().getExpansion(GuiExpansion.class).openGui(args.get("prefix"), player, args);
+        });
 
         registerActionHandler("placeholder", (player, placeholder) -> {
             if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, placeholder);
