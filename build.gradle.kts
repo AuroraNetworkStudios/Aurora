@@ -41,6 +41,7 @@ repositories {
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
     maven("https://repo.oraxen.com/snapshots")
     maven("https://mvn.lumine.io/repository/maven-public/")
+    maven("https://repo.aikar.co/content/groups/aikar/")
     //maven("https://repo.auxilor.io/repository/maven-public/")
 }
 
@@ -80,6 +81,9 @@ dependencies {
     // exp4j
     implementation("net.objecthunter:exp4j:0.4.8")
 
+    // ACF
+    implementation("co.aikar:acf-paper:0.5.1-SNAPSHOT")
+
     // JUnit Jupiter API and Engine dependencies
     testImplementation("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
@@ -106,6 +110,11 @@ tasks.withType<ShadowJar> {
 
     relocate("com.zaxxer.hikari", "gg.auroramc.aurora.libs.hikari")
     relocate("net.objecthunter.exp4j", "gg.auroramc.aurora.libs.exp4j")
+
+    relocate("co.aikar.commands", "gg.auroramc.quests.libs.acf")
+    relocate("co.aikar.locales", "gg.auroramc.quests.libs.locales")
+
+    exclude("acf-*.properties")
 }
 
 tasks {

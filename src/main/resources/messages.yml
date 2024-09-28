@@ -1,0 +1,22 @@
+# Don't touch this
+config-version: 0
+
+reloaded: "&aReloaded configuration!"
+data-not-loaded-yet: "&cData for this player hasn't loaded yet, try again later!"
+data-not-loaded-yet-self: "&cYour data isn't loaded yet, please try again later!"
+player-only-command: "&cThis command can only be executed by a player!"
+no-permission: "&cYou don't have permission to execute this command!"
+invalid-syntax: "&cInvalid command syntax!"
+must-be-number: "&cArgument must be a number!"
+player-not-found: "&cPlayer not found!"
+command-error: "&cAn error occurred while executing this command!"
+kicked-by-db-migration: "&cUnder maintenance, please try again later!"
+db-migrate-started: "&aAttempting to migrate storage, please wait..."
+db-migrate-finished: "&aStorage migration completed! It is advised to restart the server now, although it is not required."
+db-migrate-failed: "&cStorage migration failed! Check the console for more information."
+gui-reloaded: "&aSuccessfully reloaded &2{amount} &aguis"
+meta-set: "&aSet meta key &2{key} &ato &2{value}"
+meta-removed: "&aRemoved meta key &2{key}"
+meta-incremented: "&aIncremented meta key &2{key} &aby &2{value}&a. Current value: &2{current}"
+meta-decremented: "&aDecremented meta key &2{key} &aby &2{value}&a. Current value: &2{current}"
+meta-not-found: "&cMeta with key: &4{key} &cwas not found"

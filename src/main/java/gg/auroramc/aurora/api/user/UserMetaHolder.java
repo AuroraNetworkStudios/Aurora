@@ -4,6 +4,7 @@ import gg.auroramc.aurora.api.util.NamespacedId;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -90,5 +91,9 @@ public class UserMetaHolder extends UserDataHolder {
         }
         dirty.set(true);
         return true;
+    }
+
+    public List<String> getMetaKeys() {
+        return List.copyOf(meta.keySet());
     }
 }

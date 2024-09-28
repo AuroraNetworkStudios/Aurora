@@ -1,14 +1,15 @@
 package gg.auroramc.aurora;
 
 import gg.auroramc.aurora.api.AuroraLogger;
-import gg.auroramc.aurora.api.command.AuroraCommand;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
 import gg.auroramc.aurora.api.menu.MenuManager;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.api.user.UserMetaHolder;
+import gg.auroramc.aurora.commands.CommandManager;
 import gg.auroramc.aurora.config.Config;
+import gg.auroramc.aurora.config.MessageConfig;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.entity.EntityExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
@@ -26,10 +27,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class Aurora extends JavaPlugin implements Listener {
 
+    private CommandManager commandManager;
+
     @Getter
     private static final MiniMessage miniMessage = MiniMessage.miniMessage();
     @Getter
     private static Config libConfig;
+    @Getter
+    private static MessageConfig messageConfig;
     @Getter
     private static MenuManager menuManager;
     @Getter
@@ -59,6 +64,12 @@ public final class Aurora extends JavaPlugin implements Listener {
         instance = this;
         libConfig = new Config();
         libConfig.load();
+        MessageConfig.saveDefault();
+        messageConfig = new MessageConfig();
+        messageConfig.load();
+
+        commandManager = new CommandManager(this);
+        commandManager.reload();
 
         userManager = new UserManager();
         userManager.registerUserDataHolder(UserMetaHolder.class);
@@ -69,8 +80,6 @@ public final class Aurora extends JavaPlugin implements Listener {
         if(DependencyManager.hasDep("LuckPerms")) {
             LuckPermsHook.registerListeners();
         }
-
-        getCommand("aurora").setExecutor(new AuroraCommand());
     }
 
     @Override
@@ -100,5 +109,15 @@ public final class Aurora extends JavaPlugin implements Listener {
         if (libConfig.getBlockTracker().getEnabled()) {
             expansionManager.loadExpansion(RegionExpansion.class);
         }
+    }
+
+    public void reload() {
+        // Reloading lib config is considered unsafe if storage options are changed
+        libConfig = new Config();
+        libConfig.load();
+        messageConfig = new MessageConfig();
+        messageConfig.load();
+        commandManager.reload();
+        expansionManager.getExpansion(GuiExpansion.class).reload();
     }
 }

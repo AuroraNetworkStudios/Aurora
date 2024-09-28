@@ -68,7 +68,7 @@ public class UserManager implements Listener {
         leaderboardUpdateTask();
     }
 
-    public CompletableFuture<Boolean> attemptMigration() {
+    public CompletableFuture<Boolean> attemptMigration(int threadCount) {
         migrator.markMigrating();
 
         return CompletableFuture.supplyAsync(() -> {
@@ -77,7 +77,7 @@ public class UserManager implements Listener {
             offlineCache.invalidateAll();
 
             Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                Bukkit.getOnlinePlayers().forEach(player -> player.kick(Text.component("&cUnder maintenance, please try again later.")));
+                Bukkit.getOnlinePlayers().forEach(player -> player.kick(Text.component(Aurora.getMessageConfig().getKickedByDbMigration())));
             });
 
             UserStorage newStorage = this.storage;
@@ -86,10 +86,10 @@ public class UserManager implements Listener {
 
             if (storage instanceof MySqlStorage mySqlStorage) {
                 newStorage = new YamlStorage();
-                success = migrator.migrateUserData(mySqlStorage, (YamlStorage) newStorage, 5);
+                success = migrator.migrateUserData(mySqlStorage, (YamlStorage) newStorage, threadCount);
             } else if (storage instanceof YamlStorage yamlStorage) {
                 newStorage = new MySqlStorage();
-                success = migrator.migrateUserData(yamlStorage, (MySqlStorage) newStorage, 5);
+                success = migrator.migrateUserData(yamlStorage, (MySqlStorage) newStorage, threadCount);
             }
 
             if (success) {
