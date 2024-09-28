@@ -77,4 +77,8 @@ public class CommandManager {
     public void unregisterCommands() {
         this.commandManager.unregisterCommands();
     }
+
+    public PaperCommandManager getPaperCommandManager() {
+        return this.commandManager;
+    }
 }

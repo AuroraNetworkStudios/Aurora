@@ -14,6 +14,8 @@ import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.entity.EntityExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import gg.auroramc.aurora.api.user.UserStashHolder;
+import gg.auroramc.aurora.expansions.itemstash.ItemStashExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
@@ -27,6 +29,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class Aurora extends JavaPlugin implements Listener {
 
+    @Getter
     private CommandManager commandManager;
 
     @Getter
@@ -69,10 +72,10 @@ public final class Aurora extends JavaPlugin implements Listener {
         messageConfig.load();
 
         commandManager = new CommandManager(this);
-        commandManager.reload();
 
         userManager = new UserManager();
         userManager.registerUserDataHolder(UserMetaHolder.class);
+        userManager.registerUserDataHolder(UserStashHolder.class);
 
         menuManager = new MenuManager(this);
         setupExpansions();
@@ -80,6 +83,8 @@ public final class Aurora extends JavaPlugin implements Listener {
         if(DependencyManager.hasDep("LuckPerms")) {
             LuckPermsHook.registerListeners();
         }
+
+        commandManager.reload();
     }
 
     @Override
@@ -101,6 +106,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         expansionManager.loadExpansion(EntityExpansion.class);
         expansionManager.loadExpansion(LeaderboardExpansion.class);
         expansionManager.loadExpansion(GuiExpansion.class);
+        expansionManager.loadExpansion(ItemStashExpansion.class);
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);
@@ -119,5 +125,6 @@ public final class Aurora extends JavaPlugin implements Listener {
         messageConfig.load();
         commandManager.reload();
         expansionManager.getExpansion(GuiExpansion.class).reload();
+        expansionManager.getExpansion(ItemStashExpansion.class).reload();
     }
 }

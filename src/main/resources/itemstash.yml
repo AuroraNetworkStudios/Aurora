@@ -1,0 +1,60 @@
+config-version: 0
+
+# Should we send a message to the player when they join the server and have unclaimed items?
+notify-on-join: true
+
+command-aliases:
+  - stash
+  - itemstash
+
+# Where should be the stash items in the inventory?
+stash-area: [
+  0, 1, 2, 3, 4, 5, 6, 7, 8,
+  9, 10, 11, 12, 13, 14, 15, 16, 17,
+  18, 19, 20, 21, 22, 23, 24, 25, 26,
+  27, 28, 29, 30, 31, 32, 33, 34, 35,
+  36, 37, 38, 39, 40, 41, 42, 43, 44,
+]
+
+menu:
+  title: "Item stash"
+  filler:
+    enabled: true
+    item:
+      material: black_stained_glass_pane
+      name: " "
+      hide-tooltip: true
+  items:
+    prev-page:
+      material: arrow
+      slot: 48
+      name: "&fPrevious Page"
+      lore:
+        - "&7Click to go to the previous page"
+    next-page:
+      material: arrow
+      name: "&fNext Page"
+      slot: 50
+      lore:
+        - "&7Click to go to the next page"
+    current-page:
+      material: paper
+      name: "&fCurrent Page &7({current}/{max})"
+      slot: 49
+      lore:
+        - "&7You are currently on page {current}"
+    collect-all:
+      material: chest
+      name: "&aCollect all"
+      slot: 45
+      lore:
+        - "&7Click to collect all items"
+  custom-items:
+    close:
+      material: barrier
+      name: "&cClose"
+      slot: 53
+      lore:
+        - "&7Click to close the menu"
+      on-click:
+        - "[close]"

@@ -33,6 +33,9 @@ public class MessageConfig extends AuroraConfig {
     private String metaIncremented = "&aIncremented meta key &2{key} &aby &2{value}. Current value: &2{current}";
     private String metaDecremented = "&aDecremented meta key &2{key} &aby &2{value}. Current value: &2{current}";
     private String metaNotFound = "&cMeta with key: &4{key} &cwas not found";
+    private String stashAvailable = "&aYou have unclaimed items in your stash!";
+    private String stashItemAdded = "&aItems are added to the stash!";
+    private String stashItemsCleared = "&aItems cleared!";
 
     public MessageConfig() {
         super(new File(Aurora.getInstance().getDataFolder(), "messages.yml"));

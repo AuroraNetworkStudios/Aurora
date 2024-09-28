@@ -43,7 +43,7 @@ public class AuroraUser {
         Map<String, Double> dirty = Maps.newHashMap();
         for (var entry : leaderboardEntries.entrySet()) {
             if (originalLeaderboardValues.containsKey(entry.getKey())) {
-                if(!originalLeaderboardValues.get(entry.getKey()).equals(entry.getValue().getValue())) {
+                if (!originalLeaderboardValues.get(entry.getKey()).equals(entry.getValue().getValue())) {
                     dirty.put(entry.getKey(), entry.getValue().getValue());
                 }
             } else {
@@ -65,12 +65,12 @@ public class AuroraUser {
     public void initData(YamlConfiguration data, Set<Class<? extends UserDataHolder>> dataHolders) {
         synchronized (serializeLock) {
             final boolean isLoaded = loaded.get();
-            if(data != null) this.configuration = data;
-            for(var holderClass : dataHolders) {
+            if (data != null) this.configuration = data;
+            for (var holderClass : dataHolders) {
                 try {
                     var holder = holderClass.getDeclaredConstructor().newInstance();
                     holder.setUuid(this.uuid);
-                    if(isLoaded && data != null) {
+                    if (isLoaded && data != null) {
                         holder.initFrom(data.getConfigurationSection(holder.getId().toString()));
                     }
                     dataHolderMap.put(holderClass, holder);
@@ -86,7 +86,7 @@ public class AuroraUser {
             this.configuration = user.configuration;
             this.dataHolderMap.clear();
             this.dataHolderMap.putAll(user.dataHolderMap);
-            for(var holder : dataHolderMap.values()) {
+            for (var holder : dataHolderMap.values()) {
                 holder.setUuid(this.uuid);
             }
             this.loaded.set(true);
@@ -97,7 +97,7 @@ public class AuroraUser {
         // Refresh access timer
         Aurora.getUserManager().isUserCached(uuid);
 
-        if(dataHolderMap.containsKey(holderClass)) {
+        if (dataHolderMap.containsKey(holderClass)) {
             return holderClass.cast(dataHolderMap.get(holderClass));
         }
 
@@ -108,12 +108,16 @@ public class AuroraUser {
         return getData(UserMetaHolder.class);
     }
 
+    public UserStashHolder getStashData() {
+        return getData(UserStashHolder.class);
+    }
+
     public YamlConfiguration serializeData() {
         synchronized (serializeLock) {
-            if(configuration == null) {
+            if (configuration == null) {
                 Aurora.logger().debug("Configuration is null for user: " + uuid + " when calling AuroraUser#serializeData");
             }
-            for(var holder : dataHolderMap.values()) {
+            for (var holder : dataHolderMap.values()) {
                 holder.serializeInto(getOrCreateSection(holder.getId().toString()));
             }
             return configuration;
@@ -125,7 +129,7 @@ public class AuroraUser {
     }
 
     private ConfigurationSection getOrCreateSection(String path) {
-        if(configuration.getConfigurationSection(path) != null) {
+        if (configuration.getConfigurationSection(path) != null) {
             return configuration.getConfigurationSection(path);
         }
         return configuration.createSection(path);

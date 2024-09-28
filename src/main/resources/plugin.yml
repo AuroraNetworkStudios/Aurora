@@ -32,3 +32,4 @@ permissions:
       - aurora.core.admin.meta
       - aurora.core.admin.dbmigrate
       - aurora.core.admin.gui
+      - aurora.core.admin.stash
