@@ -3,7 +3,9 @@ package gg.auroramc.aurora.expansions.itemstash;
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.events.itemstash.StashItemAddEvent;
+import gg.auroramc.aurora.api.events.user.AuroraUserLoadedEvent;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
+import gg.auroramc.aurora.api.message.Chat;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -48,6 +50,14 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
     public void onStashItemAdd(StashItemAddEvent event) {
         if (menus.containsKey(event.getPlayerUniqueId())) {
             menus.get(event.getPlayerUniqueId()).refresh(config);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onUserLoaded(AuroraUserLoadedEvent event) {
+        var user = event.getUser();
+        if (config.getNotifyOnJoin() && user.getPlayer() != null && !user.getStashData().getItems().isEmpty()) {
+            Chat.sendMessage(user.getPlayer(), Aurora.getMessageConfig().getStashAvailable());
         }
     }
 
