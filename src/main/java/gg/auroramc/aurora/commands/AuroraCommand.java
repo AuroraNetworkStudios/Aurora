@@ -75,7 +75,7 @@ public class AuroraCommand extends BaseCommand {
     }
 
     @Subcommand("meta set")
-    @CommandCompletion("@players @userMetaKeys @nothing")
+    @CommandCompletion("@players @userMetaKeys @nothing true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaSet(CommandSender sender, @Flags("other") Player player, String key, String value, @Default("false") Boolean silent) {
         var user = Aurora.getUserManager().getUser(player);
@@ -115,7 +115,7 @@ public class AuroraCommand extends BaseCommand {
     }
 
     @Subcommand("meta remove")
-    @CommandCompletion("@players @userMetaKeys @nothing")
+    @CommandCompletion("@players @userMetaKeys true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaRemove(CommandSender sender, @Flags("other") Player player, String key, @Default("false") Boolean silent) {
         var user = Aurora.getUserManager().getUser(player);
@@ -130,7 +130,7 @@ public class AuroraCommand extends BaseCommand {
     }
 
     @Subcommand("meta increment")
-    @CommandCompletion("@players @userMetaKeys @range:1-100 @nothing")
+    @CommandCompletion("@players @userMetaKeys @range:1-100 true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaIncrement(CommandSender sender, @Flags("other") Player player, String key, @Default("1") Double value, @Default("false") Boolean silent) {
         var user = Aurora.getUserManager().getUser(player);
@@ -148,7 +148,7 @@ public class AuroraCommand extends BaseCommand {
     }
 
     @Subcommand("meta decrement")
-    @CommandCompletion("@players @userMetaKeys @range:1-100 @nothing")
+    @CommandCompletion("@players @userMetaKeys @range:1-100 true|false true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaDecrement(CommandSender sender, @Flags("other") Player player, String key, @Default("1") Double value, @Default("false") Boolean allowNegative, @Default("false") Boolean silent) {
         var user = Aurora.getUserManager().getUser(player);
