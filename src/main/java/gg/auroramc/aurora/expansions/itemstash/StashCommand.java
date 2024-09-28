@@ -18,6 +18,7 @@ public class StashCommand extends BaseCommand {
     }
 
     @Default
+    @CommandPermission("aurora.core.user.stash.open")
     public void onDefault(Player player) {
         expansion.open(player);
     }

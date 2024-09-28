@@ -33,3 +33,8 @@ permissions:
       - aurora.core.admin.dbmigrate
       - aurora.core.admin.gui
       - aurora.core.admin.stash
+  aurora.core.user:
+    description: Allows the player to use user commands
+    default: true
+    children:
+      - aurora.core.user.stash.open
