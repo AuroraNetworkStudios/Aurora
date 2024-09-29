@@ -19,8 +19,8 @@ public class ItemStore {
     @SneakyThrows
     public ItemStore(String filename) {
         file = new File(Aurora.getInstance().getDataFolder(), filename);
+        System.out.println(file.getAbsolutePath());
         if (!file.exists()) {
-            file.mkdirs();
             file.createNewFile();
         }
         data = YamlConfiguration.loadConfiguration(file);
