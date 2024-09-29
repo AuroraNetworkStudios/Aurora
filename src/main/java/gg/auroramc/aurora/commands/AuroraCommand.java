@@ -5,9 +5,11 @@ import co.aikar.commands.annotation.*;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.command.ArgumentParser;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
+import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
+import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -163,5 +165,51 @@ public class AuroraCommand extends BaseCommand {
                 Chat.sendMessage(sender, Aurora.getMessageConfig().getDataNotLoadedYet());
             }
         }
+    }
+
+    @Subcommand("registeritem")
+    @CommandCompletion("@nothing")
+    @CommandPermission("aurora.core.admin.registeritem")
+    public void onRegisterItem(Player player, String id) {
+        if (id == null || id.isEmpty()) return;
+
+        player.getScheduler().run(Aurora.getInstance(), (task) -> {
+            var item = player.getInventory().getItemInMainHand();
+            var expansion = Aurora.getExpansionManager().getExpansion(ItemExpansion.class);
+            expansion.getItemStore().addItem(id, item);
+            expansion.getItemStore().saveItems();
+            Chat.sendMessage(player, Aurora.getMessageConfig().getItemRegistered(), Placeholder.of("{id}", "aurora:" + id));
+        }, null);
+    }
+
+    @Subcommand("unregisteritem")
+    @CommandCompletion("@nothing")
+    @CommandPermission("aurora.core.admin.unregisteritem")
+    public void onUnRegisterItem(CommandSender sender, String id) {
+        if (id == null || id.isEmpty()) return;
+        var expansion = Aurora.getExpansionManager().getExpansion(ItemExpansion.class);
+        expansion.getItemStore().removeItem(id);
+        expansion.getItemStore().saveItems();
+        Chat.sendMessage(sender, Aurora.getMessageConfig().getItemUnregistered(), Placeholder.of("{id}", "aurora:" + id));
+    }
+
+    @Subcommand("giveitem")
+    @CommandCompletion("@players @nothing @range:1-64 @nothing")
+    @CommandPermission("aurora.core.admin.giveitem")
+    public void onGiveItem(CommandSender sender, @Flags("other") Player player, String id, @Default("1") Integer amount) {
+        if (id == null || id.isEmpty()) return;
+
+        var expansion = Aurora.getExpansionManager().getExpansion(ItemExpansion.class);
+        var item = expansion.getItemManager().resolveItem(TypeId.fromDefault(id));
+
+        if (item == null) {
+            Chat.sendMessage(sender, "&cItem with id: &4" + id + " &cwas not found.");
+            return;
+        }
+
+        item.setAmount(amount);
+
+        player.getScheduler().run(Aurora.getInstance(),
+                (task) -> player.getInventory().addItem(item), null);
     }
 }

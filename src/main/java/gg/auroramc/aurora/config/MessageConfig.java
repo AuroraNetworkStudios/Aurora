@@ -36,6 +36,8 @@ public class MessageConfig extends AuroraConfig {
     private String stashAvailable = "&aYou have unclaimed items in your stash!";
     private String stashItemAdded = "&aItems are added to the stash!";
     private String stashItemsCleared = "&aItems cleared!";
+    private String itemRegistered = "&aItem registered with id: &2{id}!";
+    private String itemUnregistered = "&aItem unregistered with id: &2{id}!";
 
     public MessageConfig() {
         super(new File(Aurora.getInstance().getDataFolder(), "messages.yml"));

@@ -36,6 +36,14 @@ public class InventorySerializer {
         return deserializeItemsFromBytes(Base64.getDecoder().decode(base64));
     }
 
+    public static ItemStack readItemStackFromBase64(String base64) {
+        return ItemStack.deserializeBytes(Base64.getDecoder().decode(base64));
+    }
+
+    public static String writeItemStackToBase64(ItemStack item) {
+        return Base64.getEncoder().encodeToString(item.serializeAsBytes());
+    }
+
     public static ItemStack[] deserializeItemsFromBytes(final byte[] bytes) {
         try (final ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes)) {
             final DataInputStream input = new DataInputStream(inputStream);

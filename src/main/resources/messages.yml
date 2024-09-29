@@ -23,3 +23,5 @@ meta-not-found: "&cMeta with key: &4{key} &cwas not found"
 stash-available: "&a<click:run_command:/stash>You have unclaimed items in your stash! Click to redeem</click>"
 stash-item-added: "&aItems are added to the stash!"
 stash-items-cleared: "&aItems cleared!"
+item-registered: "&aItem registered with id: &2{id}!";
+item-unregistered: "&aItem unregistered with id: &2{id}!";

@@ -33,6 +33,9 @@ permissions:
       - aurora.core.admin.dbmigrate
       - aurora.core.admin.gui
       - aurora.core.admin.stash
+      - aurora.core.admin.registeritem
+      - aurora.core.admin.giveitem
+      - aurora.core.admin.unregisteritem
   aurora.core.user:
     description: Allows the player to use user commands
     default: true
