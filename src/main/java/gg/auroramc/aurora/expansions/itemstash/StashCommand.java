@@ -24,15 +24,17 @@ public class StashCommand extends BaseCommand {
     }
 
     @Subcommand("add")
-    @CommandCompletion("@players * @range:1-64 @nothing")
+    @CommandCompletion("@players * @range:1-64 true|false @nothing")
     @CommandPermission("aurora.core.admin.stash")
-    public void onAdd(CommandSender sender, @Flags("other") Player player, String itemId, @Default("1") Integer amount) {
+    public void onAdd(CommandSender sender, @Flags("other") Player player, String itemId, @Default("1") Integer amount, @Default("false") Boolean silent) {
         var item = Aurora.getExpansionManager().getExpansion(ItemExpansion.class)
                 .getItemManager().resolveItem(TypeId.fromDefault(itemId));
         item.setAmount(amount);
         Aurora.getUserManager().getUser(player).getStashData().addItem(item);
 
-        Chat.sendMessage(sender, Aurora.getMessageConfig().getStashItemAdded());
+        if (!silent) {
+            Chat.sendMessage(sender, Aurora.getMessageConfig().getStashItemAdded());
+        }
     }
 
     @Subcommand("clear")
