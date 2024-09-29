@@ -43,6 +43,8 @@ public class Config extends AuroraConfig {
     }
 
     public static void saveDefault() {
-        Aurora.getInstance().saveResource("itemstash.yml", false);
+        if (!new File(Aurora.getInstance().getDataFolder(), "/itemstash.yml").exists()) {
+            Aurora.getInstance().saveResource("itemstash.yml", false);
+        }
     }
 }
