@@ -38,6 +38,12 @@ public class MenuManager implements Listener {
         if (event.getInventory().getHolder() instanceof AuroraMenu menu) {
             event.setCancelled(true);
 
+            if (event.getClickedInventory() != null) {
+                if (!(event.getClickedInventory().getHolder() instanceof AuroraMenu)) {
+                    return;
+                }
+            }
+
             if (cache.getIfPresent(event.getWhoClicked().getUniqueId()) != null) {
                 return;
             }
@@ -68,7 +74,7 @@ public class MenuManager implements Listener {
             menu.handleEvent(event);
             event.getPlayer().getScheduler().runDelayed(Aurora.getInstance(), (task) -> {
                 cleanInventory((Player) event.getPlayer(), dupeFixer.getMarker());
-            }, null,3L);
+            }, null, 3L);
         }
     }
 
