@@ -244,6 +244,10 @@ public class ItemBuilder {
             item = new ItemStack(Material.valueOf(config.getMaterial().toUpperCase()));
         }
 
+        if (item.getType() == Material.AIR) {
+            return item;
+        }
+
         return toItemStack(item, player);
     }
 
