@@ -21,6 +21,7 @@ softdepend:
   - ExecutableItems
   - SCore
   - ItemsAdder
+  - HeadDatabase
 
 permissions:
   aurora.core.admin:

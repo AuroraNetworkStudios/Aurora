@@ -28,6 +28,7 @@ public enum Dep {
     WILDREGENERATION("WildRegeneration"),
     ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium"),
     EXECUTABLE_ITEMS("ExecutableItems"),
+    HEAD_DATABASE("HeadDatabase"),
     ECO("Eco");
 
     private String id;

@@ -9,6 +9,7 @@ import gg.auroramc.aurora.expansions.item.resolvers.*;
 import gg.auroramc.aurora.expansions.item.resolvers.EcoItemsResolver;
 import gg.auroramc.aurora.expansions.item.store.ItemStore;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 
 @Getter
 public class ItemExpansion implements AuroraExpansion {
@@ -57,6 +58,13 @@ public class ItemExpansion implements AuroraExpansion {
         }
 
         itemManager.registerResolver("aurora", new AuroraItemResolver(itemStore));
+
+        if (DependencyManager.hasDep(Dep.HEAD_DATABASE)) {
+            var hdbResolver = new HdbItemResolver();
+            Bukkit.getPluginManager().registerEvents(hdbResolver, Aurora.getInstance());
+            itemManager.registerResolver("hdb", hdbResolver);
+            Aurora.logger().debug("Hooked into HeadDatabase for item resolvers.");
+        }
     }
 
     @Override
