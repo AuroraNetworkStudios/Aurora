@@ -5,10 +5,13 @@ import gg.auroramc.aurora.api.config.ConfigManager;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.Locale;
@@ -26,29 +29,33 @@ public class ItemReward extends AbstractReward {
 
     @Override
     public void execute(Player player, long level, List<Placeholder<?>> placeholders) {
-        if (itemConfig == null) {
-            Aurora.logger().warning("Item reward doesn't have a valid item configuration!");
-            return;
-        }
+        if (itemConfig == null) return;
 
         if (stash == StashHandle.FORCE) {
-            var item = ItemBuilder.of(itemConfig).placeholder(placeholders).toItemStack(player);
+            final var items = getItems(player, placeholders);
+            if (items == null) return;
+
             var stashHolder = Aurora.getUserManager().getUser(player.getUniqueId()).getStashData();
-            stashHolder.addItem(item);
+
+            for (var i : items) {
+                stashHolder.addItem(i);
+            }
+
             return;
         }
 
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
-            var item = ItemBuilder.of(itemConfig).placeholder(placeholders).toItemStack(player);
+            final var items = getItems(player, placeholders);
+            if (items == null) return;
 
             if (stash == StashHandle.NONE) {
-                var failed = player.getInventory().addItem(item);
+                var failed = player.getInventory().addItem(items);
                 if (failed.isEmpty()) return;
                 Bukkit.getRegionScheduler().run(Aurora.getInstance(), player.getLocation(), (t) -> {
                     failed.forEach((slot, fitem) -> player.getWorld().dropItem(player.getLocation(), fitem));
                 });
             } else if (stash == StashHandle.OVERFLOW) {
-                var failed = player.getInventory().addItem(item);
+                var failed = player.getInventory().addItem(items);
                 if (failed.isEmpty()) return;
                 CompletableFuture.runAsync(() -> {
                     var stashHolder = Aurora.getUserManager().getUser(player.getUniqueId()).getStashData();
@@ -78,5 +85,17 @@ public class ItemReward extends AbstractReward {
     public ThreadSafety getThreadSafety() {
         // Any since it will be scheduled back to the player's thread anyway
         return ThreadSafety.ANY;
+    }
+
+    private ItemStack[] getItems(Player player, List<Placeholder<?>> placeholders) {
+        var amount = itemConfig.getAmount();
+        var item = ItemBuilder.of(itemConfig).placeholder(placeholders).amount(1).toItemStack(player);
+
+        if (item == null || item.getType() == Material.AIR) {
+            Aurora.logger().warning("Item reward failed to create item because the resolved item was null or AIR!");
+            return null;
+        }
+
+        return ItemUtils.createStacksFromAmount(item, amount);
     }
 }

@@ -5,7 +5,10 @@ import co.aikar.commands.annotation.*;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Chat;
+import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -29,11 +32,23 @@ public class StashCommand extends BaseCommand {
     public void onAdd(CommandSender sender, @Flags("other") Player player, String itemId, @Default("1") Integer amount, @Default("false") Boolean silent) {
         var item = Aurora.getExpansionManager().getExpansion(ItemExpansion.class)
                 .getItemManager().resolveItem(TypeId.fromDefault(itemId));
-        item.setAmount(amount);
-        Aurora.getUserManager().getUser(player).getStashData().addItem(item);
+
+        if (item == null || item.getType() == Material.AIR) {
+            if (!silent) {
+                Chat.sendMessage(sender, Aurora.getMessageConfig().getItemNotFound(), Placeholder.of("{id}", itemId));
+            }
+            return;
+        }
+
+        var stacks = ItemUtils.createStacksFromAmount(item, amount);
+        var stashHolder = Aurora.getUserManager().getUser(player).getStashData();
+
+        for (var stack : stacks) {
+            stashHolder.addItem(stack);
+        }
 
         if (!silent) {
-            Chat.sendMessage(sender, Aurora.getMessageConfig().getStashItemAdded());
+            Chat.sendMessage(sender, Aurora.getMessageConfig().getStashItemAdded(), Placeholder.of("{player}", player.getName()));
         }
     }
 

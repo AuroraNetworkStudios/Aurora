@@ -8,10 +8,14 @@ import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 @CommandAlias("aurora")
 public class AuroraCommand extends BaseCommand {
@@ -202,14 +206,21 @@ public class AuroraCommand extends BaseCommand {
         var expansion = Aurora.getExpansionManager().getExpansion(ItemExpansion.class);
         var item = expansion.getItemManager().resolveItem(TypeId.fromDefault(id));
 
-        if (item == null) {
+        if (item == null || item.getType() == Material.AIR) {
             Chat.sendMessage(sender, "&cItem with id: &4" + id + " &cwas not found.");
             return;
         }
 
-        item.setAmount(amount);
+        final ItemStack[] items = ItemUtils.createStacksFromAmount(item, amount);
 
         player.getScheduler().run(Aurora.getInstance(),
-                (task) -> player.getInventory().addItem(item), null);
+                (task) -> {
+                    var failed = player.getInventory().addItem(items);
+                    if (!failed.isEmpty()) {
+                        Bukkit.getRegionScheduler().run(Aurora.getInstance(), player.getLocation(), (t) -> {
+                            failed.forEach((index, itemStack) -> player.getWorld().dropItem(player.getLocation(), itemStack));
+                        });
+                    }
+                }, null);
     }
 }

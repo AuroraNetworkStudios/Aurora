@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -38,6 +39,7 @@ public class MessageConfig extends AuroraConfig {
     private String stashItemsCleared = "&aItems cleared!";
     private String itemRegistered = "&aItem registered with id: &2{id}!";
     private String itemUnregistered = "&aItem unregistered with id: &2{id}!";
+    private String itemNotFound = "&cItem with id &4{id} &cwas not found";
 
     public MessageConfig() {
         super(new File(Aurora.getInstance().getDataFolder(), "messages.yml"));
@@ -48,5 +50,24 @@ public class MessageConfig extends AuroraConfig {
         if (!file.exists()) {
             Aurora.getInstance().saveResource("messages.yml", false);
         }
+    }
+
+    @Override
+    protected List<Consumer<YamlConfiguration>> getMigrationSteps() {
+        return List.of(
+                (yaml) -> {
+                    try (var in = Aurora.getInstance().getResource("messages.yml")) {
+                        var original = YamlConfiguration.loadConfiguration(new InputStreamReader(in));
+
+                        for(var key : original.getKeys(false)) {
+                            if (yaml.contains(key)) continue;
+                            yaml.set(key, original.get(key));
+                        }
+                    } catch (Exception e) {
+                        Aurora.logger().severe("Failed to run migrations on messages.yml");
+                        e.printStackTrace();
+                    }
+                }
+        );
     }
 }

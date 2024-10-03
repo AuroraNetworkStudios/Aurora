@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.item;
 
+import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.dependency.Dep;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -38,15 +39,27 @@ public class ItemManager {
     }
 
     public ItemStack resolveItem(TypeId typeId, @Nullable Player player) {
-        if (typeId.namespace().equalsIgnoreCase("minecraft"))
-            return new ItemStack(Material.valueOf(typeId.id().toUpperCase()));
+        if (typeId.namespace().equalsIgnoreCase("minecraft")) {
+            return resolveVanilla(typeId);
+        }
 
         for (var resolver : resolvers.entrySet()) {
             if (resolver.getKey().equalsIgnoreCase(typeId.namespace())) {
                 return resolver.getValue().resolveItem(typeId.id(), player);
             }
         }
-        return new ItemStack(Material.valueOf(typeId.id().toUpperCase()));
+
+        return resolveVanilla(typeId);
+    }
+
+    private ItemStack resolveVanilla(TypeId typeId) {
+        try {
+            return new ItemStack(Material.valueOf(typeId.id().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            Aurora.logger().warning("Failed to resolve item: " + typeId + " using AIR instead.");
+            return new ItemStack(Material.AIR);
+        }
+
     }
 
     public ItemStack resolveItem(TypeId typeId) {
