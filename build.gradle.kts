@@ -42,6 +42,7 @@ repositories {
     maven("https://repo.oraxen.com/snapshots")
     maven("https://mvn.lumine.io/repository/maven-public/")
     maven("https://repo.aikar.co/content/groups/aikar/")
+    maven("https://repo.magmaguy.com/releases")
     //maven("https://repo.auxilor.io/repository/maven-public/")
 }
 
@@ -63,6 +64,9 @@ dependencies {
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
     compileOnly("com.github.LoneDev6:api-itemsadder:3.6.1")
     compileOnly("com.arcaniax:HeadDatabase-API:1.3.2")
+    // EliteMobs
+    compileOnly("com.magmaguy:EliteMobs:9.1.11")
+    compileOnly("com.magmaguy:MagmaCore:1.4")
     //compileOnly("com.willfp:eco:6.73.0")
 
     // 3rd party local
