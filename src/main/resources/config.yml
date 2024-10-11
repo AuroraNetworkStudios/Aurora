@@ -39,14 +39,9 @@ block-tracker:
 leaderboards:
   empty-placeholder: "---"
 
-# This defines the order of the item resolvers. The first resolver that matches the item will be used.
-item-resolvers:
-  - id: customfishing
-    enabled: true
-  - id: ei
-    enabled: true
-  - id: mmoitems
-    enabled: true
+# Use "auto-detect" to automatically detect the economy provider. Otherwise use the plugin name you want.
+# Supported plugins: Vault, Essentials, CMI, PlayerPoints, CoinsEngine, EcoBits, EliteMobs
+# Changing this requires a full restart
+default-economy-provider: "auto-detect"
 
-
-config-version: 3
+config-version: 4

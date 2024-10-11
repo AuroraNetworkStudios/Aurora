@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.expansions.economy;
 
 import com.Zrips.CMI.CMI;
+import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class EconomyExpansion implements AuroraExpansion {
     private final Map<String, AuroraEconomy> economies = new ConcurrentHashMap<>();
-    private String defaultEconomy;
+    private String defaultEconomy = null;
 
     @Override
     public void hook() {
@@ -31,19 +32,34 @@ public class EconomyExpansion implements AuroraExpansion {
 
         if (DependencyManager.hasDep(Dep.ELITEMOBS)) {
             economies.put(Dep.ELITEMOBS.getId(), new EliteMobsEconomy());
-        }
-
-        if (DependencyManager.hasDep(Dep.PLAYER_POINTS)) {
-            economies.put(Dep.PLAYER_POINTS.getId(), new PlayerPointsEconomy());
-        }
-
-        if (DependencyManager.hasDep(Dep.COINS_ENGINE)) {
-            economies.put(Dep.COINS_ENGINE.getId(), new CoinsEngineEconomy());
+            if (defaultEconomy == null) defaultEconomy = Dep.ELITEMOBS.getId();
         }
 
         if (DependencyManager.hasDep("EcoBits")) {
             economies.put("EcoBits", new EcoBitsEconomy());
+            if (defaultEconomy == null) defaultEconomy = "EcoBits";
         }
+
+        if (DependencyManager.hasDep(Dep.PLAYER_POINTS)) {
+            economies.put(Dep.PLAYER_POINTS.getId(), new PlayerPointsEconomy());
+            if (defaultEconomy == null) defaultEconomy = Dep.PLAYER_POINTS.getId();
+        }
+
+        if (DependencyManager.hasDep(Dep.COINS_ENGINE)) {
+            economies.put(Dep.COINS_ENGINE.getId(), new CoinsEngineEconomy());
+            if (defaultEconomy == null) defaultEconomy = Dep.COINS_ENGINE.getId();
+        }
+
+        if (!Aurora.getLibConfig().getDefaultEconomyProvider().equals("auto-detect")) {
+            if (economies.containsKey(Aurora.getLibConfig().getDefaultEconomyProvider())) {
+                defaultEconomy = Aurora.getLibConfig().getDefaultEconomyProvider();
+            } else {
+                Aurora.logger().severe("Invalid default economy provider in config: " + Aurora.getLibConfig().getDefaultEconomyProvider() + ", using " + defaultEconomy + " instead.");
+            }
+        }
+
+        Aurora.logger().info("Loaded " + economies.size() + " economy providers. " + String.join(", ", economies.keySet()));
+        Aurora.logger().info("Using " + defaultEconomy + " as the default economy provider.");
     }
 
     @Override

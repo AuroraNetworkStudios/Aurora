@@ -22,6 +22,7 @@ public class Config extends AuroraConfig {
     private BlockTrackerConfig blockTracker;
     private MySqlConfig mysql;
     private LeaderboardConfig leaderboards;
+    private String defaultEconomyProvider = "auto-detect";
 
 
     public Config() {
@@ -47,6 +48,15 @@ public class Config extends AuroraConfig {
                     yaml.set("leaderboards.empty-placeholder", "---");
                     yaml.set("config-version", null);
                     yaml.set("config-version", 3);
+                },
+                (yaml) -> {
+                    yaml.set("default-economy-provider", "auto-detect");
+                    yaml.setComments("default-economy-provider", List.of(
+                            "Use 'auto-detect' to automatically detect the economy provider. Otherwise use the plugin name you want.",
+                            "Supported plugins: Vault, Essentials, CMI, PlayerPoints, CoinsEngine, EcoBits, EliteMobs",
+                            "Changing this requires a full restart"));
+                    yaml.set("config-version", null);
+                    yaml.set("config-version", 4);
                 }
         );
     }
