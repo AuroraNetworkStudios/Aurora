@@ -24,6 +24,7 @@ softdepend:
   - HeadDatabase
   - EliteMobs
   - PlayerPoints
+  - CoinsEngine
 
 permissions:
   aurora.core.admin:

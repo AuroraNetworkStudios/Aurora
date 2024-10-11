@@ -36,6 +36,10 @@ public class EconomyExpansion implements AuroraExpansion {
         if (DependencyManager.hasDep(Dep.PLAYER_POINTS)) {
             economies.put(Dep.PLAYER_POINTS.getId(), new PlayerPointsEconomy());
         }
+
+        if (DependencyManager.hasDep(Dep.COINS_ENGINE)) {
+            economies.put(Dep.COINS_ENGINE.getId(), new CoinsEngineEconomy());
+        }
     }
 
     @Override

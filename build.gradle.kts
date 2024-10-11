@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.6.1-SNAPSHOT"
+version = "1.7.0-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -31,20 +31,30 @@ repositories {
     }
     mavenCentral()
     maven("https://jitpack.io")
+    // PaperMC
     maven("https://repo.papermc.io/repository/maven-public/")
-    maven("https://oss.sonatype.org/content/groups/public/")
-    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+    // PlaceholderAPI
     maven("https://repo.helpch.at/releases/")
+    // WorldGuard, WorldEdit
     maven("https://maven.enginehub.org/repo/")
+    // EssentialsX
     maven("https://repo.essentialsx.net/releases/")
+    // MultiVerse-Core
     maven("https://repo.onarandombox.com/content/groups/public/")
+    // MMO plugins
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
+    // Oraxen
     maven("https://repo.oraxen.com/snapshots")
+    // Mythic plugins
     maven("https://mvn.lumine.io/repository/maven-public/")
+    // ACF
     maven("https://repo.aikar.co/content/groups/aikar/")
+    // ELiteMobs, MagmaCore
     maven("https://repo.magmaguy.com/releases")
+    // PlayerPoints
     maven("https://repo.rosewooddev.io/repository/public/")
-    //maven("https://repo.auxilor.io/repository/maven-public/")
+    // Eco plugins
+    maven("https://repo.auxilor.io/repository/maven-public/")
 }
 
 dependencies {
@@ -65,17 +75,16 @@ dependencies {
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
     compileOnly("com.github.LoneDev6:api-itemsadder:3.6.1")
     compileOnly("com.arcaniax:HeadDatabase-API:1.3.2")
-    // EliteMobs
     compileOnly("com.magmaguy:EliteMobs:9.1.11")
     compileOnly("com.magmaguy:MagmaCore:1.4")
-    // PlayerPoints
     compileOnly("org.black_ixx:playerpoints:3.2.7")
-    //compileOnly("com.willfp:eco:6.73.0")
+    compileOnly("com.willfp:eco:6.74.2")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
-    compileOnly(name = "eco-6.73.1-all", group = "com.willfp", version = "6.73.1")
+    //compileOnly(name = "eco-6.73.1-all", group = "com.willfp", version = "6.73.1")
     compileOnly(name = "SCore-5.24.8.25", group = "com.ssomar.score", version = "5.24.8.25")
+    compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")

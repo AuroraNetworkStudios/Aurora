@@ -30,6 +30,7 @@ public enum Dep {
     EXECUTABLE_ITEMS("ExecutableItems"),
     HEAD_DATABASE("HeadDatabase"),
     PLAYER_POINTS("PlayerPoints"),
+    COINS_ENGINE("CoinsEngine"),
     ECO("Eco");
 
     private String id;
