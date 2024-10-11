@@ -38,6 +38,6 @@ public class RoyaleEconomyBank implements AuroraEconomy {
 
     @Override
     public ThreadSafety getThreadSafety() {
-        return ThreadSafety.ASYNC_ONLY;
+        return ThreadSafety.SYNC_ONLY;
     }
 }
