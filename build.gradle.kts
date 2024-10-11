@@ -79,6 +79,7 @@ dependencies {
     compileOnly("com.magmaguy:MagmaCore:1.4")
     compileOnly("org.black_ixx:playerpoints:3.2.7")
     compileOnly("com.willfp:eco:6.74.2")
+    compileOnly("com.willfp:EcoBits:1.8.4")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")

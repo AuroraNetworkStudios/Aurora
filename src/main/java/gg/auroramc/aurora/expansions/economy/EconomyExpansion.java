@@ -40,6 +40,10 @@ public class EconomyExpansion implements AuroraExpansion {
         if (DependencyManager.hasDep(Dep.COINS_ENGINE)) {
             economies.put(Dep.COINS_ENGINE.getId(), new CoinsEngineEconomy());
         }
+
+        if (DependencyManager.hasDep("EcoBits")) {
+            economies.put("EcoBits", new EcoBitsEconomy());
+        }
     }
 
     @Override

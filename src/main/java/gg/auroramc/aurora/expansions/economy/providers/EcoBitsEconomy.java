@@ -1,24 +1,36 @@
 package gg.auroramc.aurora.expansions.economy.providers;
 
+import com.willfp.ecobits.currencies.Currencies;
+import com.willfp.ecobits.currencies.Currency;
+import com.willfp.ecobits.currencies.CurrencyUtils;
 import gg.auroramc.aurora.api.util.ThreadSafety;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import org.bukkit.entity.Player;
-import su.nightexpress.coinsengine.api.CoinsEngineAPI;
 
-public class CoinsEngineEconomy implements AuroraEconomy {
+import java.math.BigDecimal;
+
+public class EcoBitsEconomy implements AuroraEconomy {
+    private Currency getCurrency(String currency) {
+        var c = Currencies.getByID(currency);
+        if (c == null) {
+            return Currencies.values().getFirst();
+        }
+        return c;
+    }
+
     @Override
     public void withdraw(Player player, String currency, double amount) {
-        CoinsEngineAPI.removeBalance(player.getUniqueId(), currency, amount);
+        CurrencyUtils.adjustBalance(player, getCurrency(currency), BigDecimal.valueOf(-amount));
     }
 
     @Override
     public void deposit(Player player, String currency, double amount) {
-        CoinsEngineAPI.addBalance(player.getUniqueId(), currency, amount);
+        CurrencyUtils.adjustBalance(player, getCurrency(currency), BigDecimal.valueOf(amount));
     }
 
     @Override
     public double getBalance(Player player, String currency) {
-        return CoinsEngineAPI.getBalance(player.getUniqueId(), currency);
+        return CurrencyUtils.getBalance(player, getCurrency(currency)).doubleValue();
     }
 
     @Override
@@ -28,7 +40,7 @@ public class CoinsEngineEconomy implements AuroraEconomy {
 
     @Override
     public boolean validateCurrency(String currency) {
-        return CoinsEngineAPI.hasCurrency(currency);
+        return Currencies.getByID(currency) != null;
     }
 
     @Override
