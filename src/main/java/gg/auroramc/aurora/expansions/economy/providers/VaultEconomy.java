@@ -15,23 +15,33 @@ public class VaultEconomy implements AuroraEconomy {
     }
 
     @Override
-    public void withdraw(Player player, double amount) {
+    public void withdraw(Player player, String currency, double amount) {
         economy.withdrawPlayer(player, amount);
     }
 
     @Override
-    public void deposit(Player player, double amount) {
+    public void deposit(Player player, String currency, double amount) {
         economy.depositPlayer(player, amount);
     }
 
     @Override
-    public double getBalance(Player player) {
+    public double getBalance(Player player, String currency) {
         return economy.getBalance(player);
     }
 
     @Override
-    public boolean hasBalance(Player player, double amount) {
+    public boolean hasBalance(Player player, String currency, double amount) {
         return economy.getBalance(player) > amount;
+    }
+
+    @Override
+    public boolean supportsCurrency() {
+        return false;
+    }
+
+    @Override
+    public boolean validateCurrency(String currency) {
+        return false;
     }
 
     private Economy resolveEconomy() {

@@ -11,6 +11,7 @@ import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.hooks.LuckPermsHook;
+import io.lumine.mythic.lib.util.TriConsumer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -55,8 +56,8 @@ public class CommandDispatcher {
             if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, placeholder);
         });
 
-        registerActionHandler("give-money", (player, input) -> useEconomy(input, (econ, amount) -> econ.deposit(player, amount)));
-        registerActionHandler("take-money", (player, input) -> useEconomy(input, (econ, amount) -> econ.withdraw(player, amount)));
+        registerActionHandler("give-money", (player, input) -> useEconomy(input, (econ, currency, amount) -> econ.deposit(player, currency, amount)));
+        registerActionHandler("take-money", (player, input) -> useEconomy(input, (econ, currency, amount) -> econ.withdraw(player, currency, amount)));
     }
 
     public static void registerActionHandler(String id, BiConsumer<Player, String> handler) {
@@ -185,7 +186,7 @@ public class CommandDispatcher {
         return text;
     }
 
-    private static void useEconomy(String input, BiConsumer<AuroraEconomy, Double> action) {
+    private static void useEconomy(String input, TriConsumer<AuroraEconomy, String, Double> action) {
         var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
         var econ = expansion.getDefaultEconomy();
         var args = ArgumentParser.parseString(input);
@@ -196,6 +197,12 @@ public class CommandDispatcher {
             Aurora.logger().warning("Invalid economy provider: " + args.get("economy"));
             return;
         }
-        action.accept(econ, Double.parseDouble(args.get("prefix")));
+        if(args.containsKey("currency")) {
+            if (!econ.supportsCurrency() || !econ.validateCurrency(args.get("currency"))) {
+                Aurora.logger().warning("Currency " + args.get("currency") + " is not supported by economy provider " + args.get("economy") + ". Please check your configuration.");
+                return;
+            }
+        }
+        action.accept(econ, args.get("currency"), Double.parseDouble(args.get("prefix")));
     }
 }
