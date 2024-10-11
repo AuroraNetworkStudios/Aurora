@@ -39,4 +39,14 @@ block-tracker:
 leaderboards:
   empty-placeholder: "---"
 
+# This defines the order of the item resolvers. The first resolver that matches the item will be used.
+item-resolvers:
+  - id: customfishing
+    enabled: true
+  - id: ei
+    enabled: true
+  - id: mmoitems
+    enabled: true
+
+
 config-version: 3

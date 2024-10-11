@@ -6,19 +6,23 @@ import org.bukkit.entity.Player;
 import su.nightexpress.coinsengine.api.CoinsEngineAPI;
 
 public class CoinsEngineEconomy implements AuroraEconomy {
+    private String getCurrencyId(String currency) {
+        return currency == null || currency.equals("default") ? "coins" : currency;
+    }
+
     @Override
     public void withdraw(Player player, String currency, double amount) {
-        CoinsEngineAPI.removeBalance(player.getUniqueId(), currency, amount);
+        CoinsEngineAPI.removeBalance(player.getUniqueId(), getCurrencyId(currency), amount);
     }
 
     @Override
     public void deposit(Player player, String currency, double amount) {
-        CoinsEngineAPI.addBalance(player.getUniqueId(), currency, amount);
+        CoinsEngineAPI.addBalance(player.getUniqueId(), getCurrencyId(currency), amount);
     }
 
     @Override
     public double getBalance(Player player, String currency) {
-        return CoinsEngineAPI.getBalance(player.getUniqueId(), currency);
+        return CoinsEngineAPI.getBalance(player.getUniqueId(), getCurrencyId(currency));
     }
 
     @Override

@@ -24,14 +24,14 @@ public class MoneyReward extends NumberReward {
             return;
         }
 
-        econ.deposit(player, currency, getValue(placeholders));
+        econ.deposit(player, currency == null ? "default" : currency, getValue(placeholders));
     }
 
     @Override
     public void init(ConfigurationSection args) {
         super.init(args);
-        economy = args.getString("economy", Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getDefaultEconomyId());
-        currency = args.getString("currency", null);
+        this.economy = args.getString("economy", Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getDefaultEconomyId());
+        this.currency = args.getString("currency", null);
         var econ = getEconomy();
 
         if (AuroraAPI.getEconomy(economy) == null && econ != null) {

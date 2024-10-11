@@ -7,11 +7,11 @@ import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.api.util.TriConsumer;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.hooks.LuckPermsHook;
-import io.lumine.mythic.lib.util.TriConsumer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -203,6 +203,6 @@ public class CommandDispatcher {
                 return;
             }
         }
-        action.accept(econ, args.get("currency"), Double.parseDouble(args.get("prefix")));
+        action.accept(econ, args.getOrDefault("currency", "default"), Double.parseDouble(args.get("prefix")));
     }
 }
