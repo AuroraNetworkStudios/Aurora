@@ -5,16 +5,16 @@ import org.bukkit.entity.Player;
 
 public interface AuroraEconomy {
     default void withdraw(Player player, double amount) {
-        withdraw(player, null, amount);
+        withdraw(player, "default", amount);
     }
     default void deposit(Player player, double amount) {
-        deposit(player, null, amount);
+        deposit(player, "default", amount);
     }
     default double getBalance(Player player) {
-        return getBalance(player, null);
+        return getBalance(player, "default");
     }
     default boolean hasBalance(Player player, double amount) {
-        return hasBalance(player, null, amount);
+        return hasBalance(player, "default", amount);
     }
 
     void withdraw(Player player, String currency, double amount);

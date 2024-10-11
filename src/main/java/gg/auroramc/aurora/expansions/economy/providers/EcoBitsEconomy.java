@@ -11,11 +11,10 @@ import java.math.BigDecimal;
 
 public class EcoBitsEconomy implements AuroraEconomy {
     private Currency getCurrency(String currency) {
-        var c = Currencies.getByID(currency);
-        if (c == null) {
+        if (currency == null || Currencies.getByID(currency) == null) {
             return Currencies.values().getFirst();
         }
-        return c;
+        return Currencies.getByID(currency);
     }
 
     @Override
