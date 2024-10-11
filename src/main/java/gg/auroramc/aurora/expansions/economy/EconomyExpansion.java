@@ -4,10 +4,7 @@ import com.Zrips.CMI.CMI;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
-import gg.auroramc.aurora.expansions.economy.providers.CMIEconomy;
-import gg.auroramc.aurora.expansions.economy.providers.EliteMobsEconomy;
-import gg.auroramc.aurora.expansions.economy.providers.EssentialsEconomy;
-import gg.auroramc.aurora.expansions.economy.providers.VaultEconomy;
+import gg.auroramc.aurora.expansions.economy.providers.*;
 
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +31,10 @@ public class EconomyExpansion implements AuroraExpansion {
 
         if (DependencyManager.hasDep(Dep.ELITEMOBS)) {
             economies.put(Dep.ELITEMOBS.getId(), new EliteMobsEconomy());
+        }
+
+        if (DependencyManager.hasDep(Dep.PLAYER_POINTS)) {
+            economies.put(Dep.PLAYER_POINTS.getId(), new PlayerPointsEconomy());
         }
     }
 

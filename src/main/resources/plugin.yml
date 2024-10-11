@@ -23,6 +23,7 @@ softdepend:
   - ItemsAdder
   - HeadDatabase
   - EliteMobs
+  - PlayerPoints
 
 permissions:
   aurora.core.admin:

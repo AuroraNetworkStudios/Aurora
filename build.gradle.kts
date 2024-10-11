@@ -43,6 +43,7 @@ repositories {
     maven("https://mvn.lumine.io/repository/maven-public/")
     maven("https://repo.aikar.co/content/groups/aikar/")
     maven("https://repo.magmaguy.com/releases")
+    maven("https://repo.rosewooddev.io/repository/public/")
     //maven("https://repo.auxilor.io/repository/maven-public/")
 }
 
@@ -67,6 +68,8 @@ dependencies {
     // EliteMobs
     compileOnly("com.magmaguy:EliteMobs:9.1.11")
     compileOnly("com.magmaguy:MagmaCore:1.4")
+    // PlayerPoints
+    compileOnly("org.black_ixx:playerpoints:3.2.7")
     //compileOnly("com.willfp:eco:6.73.0")
 
     // 3rd party local

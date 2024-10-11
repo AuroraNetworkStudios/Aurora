@@ -29,6 +29,7 @@ public enum Dep {
     ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium"),
     EXECUTABLE_ITEMS("ExecutableItems"),
     HEAD_DATABASE("HeadDatabase"),
+    PLAYER_POINTS("PlayerPoints"),
     ECO("Eco");
 
     private String id;
