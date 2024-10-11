@@ -53,7 +53,7 @@ public class Config extends AuroraConfig {
                     yaml.set("default-economy-provider", "auto-detect");
                     yaml.setComments("default-economy-provider", List.of(
                             "Use 'auto-detect' to automatically detect the economy provider. Otherwise use the plugin name you want.",
-                            "Supported plugins: Vault, Essentials, CMI, PlayerPoints, CoinsEngine, EcoBits, EliteMobs",
+                            "Supported plugins: Vault, Essentials, CMI, PlayerPoints, CoinsEngine, EcoBits, EliteMobs", "RoyaleEconomy", "RoyaleEconomyBank",
                             "Changing this requires a full restart"));
                     yaml.set("config-version", null);
                     yaml.set("config-version", 4);

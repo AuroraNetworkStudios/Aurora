@@ -50,6 +50,12 @@ public class EconomyExpansion implements AuroraExpansion {
             if (defaultEconomy == null) defaultEconomy = Dep.COINS_ENGINE.getId();
         }
 
+        if (DependencyManager.hasDep("RoyaleEconomy")) {
+            economies.put("RoyaleEconomyBank", new RoyaleEconomyBank());
+            economies.put("RoyaleEconomy", new RoyaleEco());
+            if (defaultEconomy == null) defaultEconomy = "RoyaleEconomy";
+        }
+
         if (!Aurora.getLibConfig().getDefaultEconomyProvider().equals("auto-detect")) {
             if (economies.containsKey(Aurora.getLibConfig().getDefaultEconomyProvider())) {
                 defaultEconomy = Aurora.getLibConfig().getDefaultEconomyProvider();

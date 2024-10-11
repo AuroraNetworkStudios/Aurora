@@ -25,6 +25,7 @@ softdepend:
   - EliteMobs
   - PlayerPoints
   - CoinsEngine
+  - RoyaleEconomy
 
 permissions:
   aurora.core.admin:

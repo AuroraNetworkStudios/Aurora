@@ -86,6 +86,7 @@ dependencies {
     //compileOnly(name = "eco-6.73.1-all", group = "com.willfp", version = "6.73.1")
     compileOnly(name = "SCore-5.24.8.25", group = "com.ssomar.score", version = "5.24.8.25")
     compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
+    compileOnly(name = "RoyaleEconomyAPI", group = "me.qKing12", version = "1.0")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")
