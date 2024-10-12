@@ -85,7 +85,7 @@ public class Gui implements AuroraGui {
             }
         }
 
-        var menu = new AuroraMenu(player, config.getTitle(), config.getRows() * 9, false, NamespacedId.fromDefault(id), Placeholder.of("{player}", player.getName()));
+        var menu = new AuroraMenu(player, config.getTitle(), config.getRows() * 9, false, NamespacedId.fromDefault(id), placeholders.toArray(Placeholder[]::new));
 
         if (config.getFiller() != null) {
             menu.addFiller(ItemBuilder.of(config.getFiller()).toItemStack(player));
