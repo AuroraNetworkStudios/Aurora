@@ -21,7 +21,7 @@ public class Chat {
     private static final String[] MINI_MESSAGE_CODES = {
             "<black>", "<dark_blue>", "<dark_green>", "<dark_aqua>", "<dark_red>", "<dark_purple>", "<gold>", "<gray>", "<dark_gray>", "<blue>",
             "<green>", "<aqua>", "<red>", "<light_purple>", "<yellow>", "<white>",
-            "<obfuscated>", "<bold>", "<strikethrough>", "<underline>", "<italic>", "<reset>"
+            "<obfuscated>", "<bold>", "<strikethrough>", "<underlined>", "<italic>", "<reset>"
     };
 
     /**
