@@ -24,7 +24,6 @@ public class AuroraMenu implements InventoryHolder {
     private final Inventory inventory;
     private ItemStack filler;
     private final Map<Integer, List<MenuEntry>> menuItems = new HashMap<>();
-    private final Map<Integer, Consumer<InventoryClickEvent>> freeSlotHandlers = new HashMap<>();
     private Set<Integer> freeSlots;
     private List<ItemStack> freeItems;
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
@@ -91,10 +90,6 @@ public class AuroraMenu implements InventoryHolder {
         }
     }
 
-    public void freeSlotHandler(int slot, Consumer<InventoryClickEvent> handler) {
-        this.freeSlotHandlers.put(slot, handler);
-    }
-
     public AuroraMenu addFiller(ItemStack filler) {
         this.filler = filler;
         return this;
@@ -150,12 +145,13 @@ public class AuroraMenu implements InventoryHolder {
         }
     }
 
+    public boolean hasFreeSlots() {
+        return freeSlots != null;
+    }
+
     public boolean handleEvent(InventoryClickEvent e) {
         if (freeSlots != null && freeSlots.contains(e.getSlot())) {
             e.setCancelled(false);
-            if (freeSlotHandlers.containsKey(e.getSlot())) {
-                freeSlotHandlers.get(e.getSlot()).accept(e);
-            }
             return false;
         } else {
             e.setCancelled(true);

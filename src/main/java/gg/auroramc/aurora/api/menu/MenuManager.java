@@ -40,6 +40,7 @@ public class MenuManager implements Listener {
 
             if (event.getClickedInventory() != null) {
                 if (!(event.getClickedInventory().getHolder() instanceof AuroraMenu)) {
+                    if (menu.hasFreeSlots()) event.setCancelled(false);
                     return;
                 }
             }
