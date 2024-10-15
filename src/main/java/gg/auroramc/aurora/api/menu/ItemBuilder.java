@@ -43,6 +43,7 @@ public class ItemBuilder {
     private ItemStack item = null;
     private PlayerProfile playerProfile;
     private static final Map<String, String> skinCache = new HashMap<>();
+    private static final Map<String, com.destroystokyo.paper.profile.PlayerProfile> profileCache = new HashMap<>();
 
     private ItemBuilder(ItemConfig config) {
         this.config = new ItemConfig(config);
@@ -319,14 +320,18 @@ public class ItemBuilder {
             }
 
             if (url != null) {
-                // If you don't use these profile methods, then it won't work for some reason
-                var profile = Bukkit.createProfile(UUID.randomUUID());
-                try {
-                    var textures = profile.getTextures();
-                    textures.setSkin(URI.create(url).toURL());
-                    profile.setTextures(textures);
-                    skullMeta.setPlayerProfile(profile);
-                } catch (Exception ignored) {
+                if (profileCache.containsKey(url)) {
+                    skullMeta.setPlayerProfile(profileCache.get(url));
+                } else {
+                    var profile = Bukkit.createProfile(UUID.randomUUID());
+                    try {
+                        var textures = profile.getTextures();
+                        textures.setSkin(URI.create(url).toURL());
+                        profile.setTextures(textures);
+                        skullMeta.setPlayerProfile(profile);
+                        profileCache.put(url, profile);
+                    } catch (Exception ignored) {
+                    }
                 }
             }
 
