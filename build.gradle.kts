@@ -13,12 +13,12 @@ fun loadProperties(filename: String): Properties {
 
 plugins {
     id("java")
-    id("io.github.goooler.shadow") version "8.1.7"
+    id("com.gradleup.shadow") version "8.3.3"
     id("maven-publish")
 }
 
 group = "gg.auroramc"
-version = "1.7.0-SNAPSHOT"
+version = "1.7.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -69,7 +69,7 @@ dependencies {
     compileOnly("com.github.angeschossen:WildRegenerationAPI:1.5.0")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.lumine:Mythic-Dist:5.6.1")
-    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.26")
+    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.2.29")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
