@@ -14,6 +14,7 @@ public class ItemConfig {
     private Boolean hideTooltip;
     private String name;
     private List<String> lore;
+    private List<String> appendLore;
     private String material;
     private Integer customModelData;
     private String texture;
@@ -46,6 +47,10 @@ public class ItemConfig {
 
         if (other.lore != null && !other.lore.isEmpty()) {
             ret.lore = new ArrayList<>(other.lore);
+        }
+
+        if(other.appendLore != null && !other.appendLore.isEmpty()) {
+            ret.appendLore = new ArrayList<>(other.appendLore);
         }
 
         if (other.hideTooltip != null) ret.hideTooltip = other.hideTooltip;
@@ -125,6 +130,12 @@ public class ItemConfig {
             this.lore = new ArrayList<>(other.lore);
         } else {
             this.lore = new ArrayList<>();
+        }
+
+        if(other.appendLore != null) {
+            this.appendLore = new ArrayList<>(other.appendLore);
+        } else {
+            this.appendLore = new ArrayList<>();
         }
 
         this.hideTooltip = other.hideTooltip;

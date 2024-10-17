@@ -2,10 +2,12 @@ package gg.auroramc.aurora.api.menu;
 
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.config.premade.RequirementConfig;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
+import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -91,6 +93,21 @@ public class Requirement {
         if (args[0].equalsIgnoreCase("[arg]")) {
             var placeholderValue = Placeholder.execute("{arg_" + args[1] + "}", placeholders);
             return doPlaceholderCheck(args, placeholderValue);
+        }
+
+        if (args[0].equalsIgnoreCase("[has-items]")) {
+            // oraxen:example/45 oraxen:example2/32
+
+            for (int i = 1; i < args.length; i++) {
+                var split = args[i].split("/");
+                var item = AuroraAPI.getItemManager().resolveItem(TypeId.fromDefault(split[0]));
+                var amount = Integer.parseInt(split[1]);
+
+                if (!player.getInventory().containsAtLeast(item, amount)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         var customResolver = resolvers.get(args[0]);

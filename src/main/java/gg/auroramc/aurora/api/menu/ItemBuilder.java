@@ -277,6 +277,15 @@ public class ItemBuilder {
             meta.lore(loreBuilder.get());
         }
 
+        if (config.getAppendLore() != null && !config.getAppendLore().isEmpty()) {
+            var lore = meta.lore();
+            if (lore == null) {
+                lore = new ArrayList<>();
+            }
+            lore.addAll(config.getAppendLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+            meta.lore(lore);
+        }
+
         if (config.getDurability() != null && meta instanceof Damageable damageable) {
             damageable.setDamage(config.getDurability());
         }

@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.7.0"
+version = "1.7.1"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -58,7 +58,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
 
     // 3rd party
     compileOnly("me.clip:placeholderapi:2.11.6")

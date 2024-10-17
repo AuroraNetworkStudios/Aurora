@@ -2,11 +2,15 @@ package gg.auroramc.aurora.api.command;
 
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
+import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.api.util.InventorySerializer;
+import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.api.util.TriConsumer;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
@@ -17,6 +21,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -25,6 +30,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 
 public class CommandDispatcher {
@@ -51,6 +57,9 @@ public class CommandDispatcher {
             var args = ArgumentParser.parseString(input);
             Aurora.getExpansionManager().getExpansion(GuiExpansion.class).openGui(args.get("prefix"), player, args);
         });
+
+        registerActionHandler("take-items", CommandDispatcher::takeItems);
+        registerActionHandler("give-item", CommandDispatcher::giveItem);
 
         registerActionHandler("placeholder", (player, placeholder) -> {
             if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, placeholder);
@@ -197,12 +206,106 @@ public class CommandDispatcher {
             Aurora.logger().warning("Invalid economy provider: " + args.get("economy"));
             return;
         }
-        if(args.containsKey("currency")) {
+        if (args.containsKey("currency")) {
             if (!econ.supportsCurrency() || !econ.validateCurrency(args.get("currency"))) {
                 Aurora.logger().warning("Currency " + args.get("currency") + " is not supported by economy provider " + args.get("economy") + ". Please check your configuration.");
                 return;
             }
         }
         action.accept(econ, args.getOrDefault("currency", "default"), Double.parseDouble(args.get("prefix")));
+    }
+
+    private static void giveItem(Player player, String input) {
+        var args = input.split(" ");
+        var split = args[0].split("/");
+        var stash = args.length > 1 && args[1].equalsIgnoreCase("true");
+        var typeId = TypeId.fromDefault(split[0]);
+        var amount = Integer.parseInt(split[1]);
+        var item = AuroraAPI.getItemManager().resolveItem(typeId);
+
+        if (item == null || item.isEmpty()) {
+            Aurora.logger().warning("Failed to resolve item: " + typeId);
+            return;
+        }
+
+        var stacks = ItemUtils.createStacksFromAmount(item, amount);
+
+        var failed = player.getInventory().addItem(stacks);
+
+        if (!failed.isEmpty()) {
+            if (stash) {
+                var data = Aurora.getUserManager().getUser(player).getStashData();
+                for (var stack : stacks) {
+                    data.addItem(stack);
+                }
+            } else {
+                Bukkit.getRegionScheduler().run(Aurora.getInstance(), player.getLocation(), (t) -> {
+                    failed.forEach((index, itemStack) -> player.getWorld().dropItem(player.getLocation(), itemStack));
+                });
+            }
+        }
+    }
+
+    private static void takeItems(Player player, String input) {
+        // oraxen:example/45 oraxen:example2/32
+
+        var items = Stream.of(input.split(" ")).map(id -> {
+            var split = id.split("/");
+            var typeId = TypeId.fromDefault(split[0]);
+            return new ItemData(AuroraAPI.getItemManager().resolveItem(typeId), typeId, Integer.parseInt(split[1]));
+        }).toList();
+
+        var inv = player.getInventory();
+
+        var success = true;
+
+        for (var itemData : items) {
+            if (!inv.containsAtLeast(AuroraAPI.getItemManager().resolveItem(itemData.typeId()), itemData.amount)) {
+                success = false;
+                break;
+            }
+        }
+
+        if (success) {
+            for (var item : inv.getContents()) {
+                if (item == null || item.isEmpty()) continue;
+                for (var itemData : items) {
+                    if (itemData.amount() == 0) continue;
+                    if (AuroraAPI.getItemManager().resolveId(item).equals(itemData.typeId())) {
+                        var decrementAmount = Math.min(itemData.amount(), item.getAmount());
+                        itemData.decrement(decrementAmount);
+                        item.setAmount(item.getAmount() - decrementAmount);
+                    }
+                }
+            }
+        }
+    }
+
+    public static class ItemData {
+        private final TypeId typeId;
+        private int amount;
+        private final ItemStack item;
+
+        public ItemData(ItemStack item, TypeId typeId, int amount) {
+            this.typeId = typeId;
+            this.amount = amount;
+            this.item = item;
+        }
+
+        public TypeId typeId() {
+            return typeId;
+        }
+
+        public int amount() {
+            return amount;
+        }
+
+        public void decrement(int amount) {
+            this.amount -= amount;
+        }
+
+        public ItemStack item() {
+            return item;
+        }
     }
 }
