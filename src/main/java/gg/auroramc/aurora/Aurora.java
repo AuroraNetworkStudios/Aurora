@@ -24,6 +24,8 @@ import gg.auroramc.aurora.expansions.worldguard.WorldGuardExpansion;
 import gg.auroramc.aurora.hooks.LuckPermsHook;
 import lombok.Getter;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -85,6 +87,9 @@ public final class Aurora extends JavaPlugin implements Listener {
         }
 
         commandManager.reload();
+
+        var metrics = new Metrics(this, 23780);
+        metrics.addCustomChart(new SimplePie("storage_type", () -> libConfig.getStorageType().equals("mysql") ? "mysql" : "yaml"));
     }
 
     @Override

@@ -58,7 +58,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.3-R0.1-SNAPSHOT")
 
     // 3rd party
     compileOnly("me.clip:placeholderapi:2.11.6")
@@ -103,6 +103,9 @@ dependencies {
     // ACF
     implementation("co.aikar:acf-paper:0.5.1-SNAPSHOT")
 
+    // bSats
+    implementation("org.bstats:bstats-bukkit:3.0.2")
+
     // JUnit Jupiter API and Engine dependencies
     testImplementation("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
@@ -132,6 +135,8 @@ tasks.withType<ShadowJar> {
 
     relocate("co.aikar.commands", "gg.auroramc.quests.libs.acf")
     relocate("co.aikar.locales", "gg.auroramc.quests.libs.locales")
+
+    relocate("org.bstats", "gg.auroramc.quests.libs.bstats")
 
     exclude("acf-*.properties")
 }
