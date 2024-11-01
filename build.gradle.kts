@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "1.7.1"
+version = "1.7.2"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -133,10 +133,10 @@ tasks.withType<ShadowJar> {
     relocate("com.zaxxer.hikari", "gg.auroramc.aurora.libs.hikari")
     relocate("net.objecthunter.exp4j", "gg.auroramc.aurora.libs.exp4j")
 
-    relocate("co.aikar.commands", "gg.auroramc.quests.libs.acf")
-    relocate("co.aikar.locales", "gg.auroramc.quests.libs.locales")
+    relocate("co.aikar.commands", "gg.auroramc.aurora.libs.acf")
+    relocate("co.aikar.locales", "gg.auroramc.aurora.libs.locales")
 
-    relocate("org.bstats", "gg.auroramc.quests.libs.bstats")
+    relocate("org.bstats", "gg.auroramc.aurora.libs.bstats")
 
     exclude("acf-*.properties")
 }
