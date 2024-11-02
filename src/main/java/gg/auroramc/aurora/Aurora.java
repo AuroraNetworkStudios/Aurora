@@ -17,6 +17,7 @@ import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.api.user.UserStashHolder;
 import gg.auroramc.aurora.expansions.itemstash.ItemStashExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
+import gg.auroramc.aurora.expansions.merchant.MerchantExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
@@ -112,6 +113,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         expansionManager.loadExpansion(LeaderboardExpansion.class);
         expansionManager.loadExpansion(GuiExpansion.class);
         expansionManager.loadExpansion(ItemStashExpansion.class);
+        expansionManager.loadExpansion(MerchantExpansion.class);
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);
@@ -129,7 +131,6 @@ public final class Aurora extends JavaPlugin implements Listener {
         messageConfig = new MessageConfig();
         messageConfig.load();
         commandManager.reload();
-        expansionManager.getExpansion(GuiExpansion.class).reload();
-        expansionManager.getExpansion(ItemStashExpansion.class).reload();
+        expansionManager.reloadExpansions();
     }
 }

@@ -1,0 +1,19 @@
+config-version: 0
+
+command-aliases:
+  - merchants
+
+messages:
+  no-permission: "&cYou don't have permission to open this merchant!"
+  not-found: "&cMerchant not found!"
+
+merchants:
+  test:
+    enabled: true
+    name: "Test Merchant"
+    permission: "test.permission"
+    offers:
+      - ingredients:
+          - "minecraft:cobblestone/64"
+          - "minecraft:coal/7"
+        result: "minecraft:stone/64"

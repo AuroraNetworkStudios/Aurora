@@ -35,6 +35,7 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
         return true;
     }
 
+    @Override
     public void reload() {
         Config.saveDefault();
         config = new Config();

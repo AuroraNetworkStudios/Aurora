@@ -41,8 +41,10 @@ permissions:
       - aurora.core.admin.registeritem
       - aurora.core.admin.giveitem
       - aurora.core.admin.unregisteritem
+      - aurora.core.admin.merchant
   aurora.core.user:
     description: Allows the player to use user commands
     default: true
     children:
       - aurora.core.user.stash.open
+      - aurora.core.user.merchant.open

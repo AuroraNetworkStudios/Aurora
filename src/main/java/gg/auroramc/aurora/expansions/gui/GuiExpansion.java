@@ -50,6 +50,7 @@ public class GuiExpansion implements AuroraExpansion {
         return guiMap.keySet();
     }
 
+    @Override
     public void reload() {
         guiMap.values().forEach(Gui::dispose);
         guiMap.clear();

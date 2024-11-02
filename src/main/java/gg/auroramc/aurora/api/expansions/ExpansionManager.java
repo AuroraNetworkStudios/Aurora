@@ -59,4 +59,8 @@ public class ExpansionManager {
         }
         return null;
     }
+
+    public void reloadExpansions() {
+        expansions.values().forEach(AuroraExpansion::reload);
+    }
 }
