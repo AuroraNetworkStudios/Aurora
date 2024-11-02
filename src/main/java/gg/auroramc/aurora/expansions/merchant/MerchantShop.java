@@ -30,6 +30,7 @@ public class MerchantShop {
 
         for (var offerConfig : config.getOffers()) {
             var recipe = new MerchantRecipe(getItemStack(offerConfig.getResult()), Integer.MAX_VALUE);
+            recipe.setIgnoreDiscounts(true);
 
             for (var ingredient : offerConfig.getIngredients()) {
                 var item = getItemStack(ingredient);
