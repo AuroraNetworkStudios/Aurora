@@ -141,32 +141,41 @@ public class RegionExpansion implements AuroraExpansion {
         isSaving.set(true);
         Aurora.logger().debug("Saving " + regions.size() + " regions...");
 
-        for (Region region : regions.values()) {
-            if (!region.isLoaded()) continue;
-            if (Aurora.getLibConfig().getDebug()) {
-                Aurora.logger().debug("Saving " + region.getChunkCount() + " chunks in region with " + region.getPlacedBlockCount() + " placed blocks.");
+        try {
+            for (Region region : regions.values()) {
+                if (!region.isLoaded()) continue;
+                if (Aurora.getLibConfig().getDebug()) {
+                    Aurora.logger().debug("Saving " + region.getChunkCount() + " chunks in region with " + region.getPlacedBlockCount() + " placed blocks.");
+                }
+                storage.saveRegion(region);
             }
-            storage.saveRegion(region);
             // Clear region from memory if no chunks are loaded in it
             if (clearUnused) {
-                if (isRegionUnused(region)) {
-                    regions.remove(new RegionCoordinate(region.getWorldName(), region.getX(), region.getZ()));
-                }
+                removeUnusedRegions();
             }
+        } finally {
+            isSaving.set(false);
         }
-        isSaving.set(false);
         Aurora.logger().debug("All regions have been auto saved.");
     }
 
-    private boolean isRegionUnused(Region region) {
+    private void removeUnusedRegions() {
+        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (t) -> {
+            for (var region : regions.values()) {
+                removeIfUnused(region);
+            }
+        });
+    }
+
+    private void removeIfUnused(Region region) {
         for (int chunkX = region.getX() * 32; chunkX < region.getX() * 32 + 32; chunkX++) {
             for (int chunkZ = region.getZ() * 32; chunkZ < region.getZ() * 32 + 32; chunkZ++) {
                 if (region.getWorld() != null && region.getWorld().isChunkLoaded(chunkX, chunkZ)) {
-                    return false;
+                    return;
                 }
             }
         }
-        return true;
+        regions.remove(new RegionCoordinate(region.getWorldName(), region.getX(), region.getZ()));
     }
 
     @Override
