@@ -34,6 +34,14 @@ public class Region {
         this.z = z;
     }
 
+    public int getChunkCount() {
+        return chunks.size();
+    }
+
+    public long getPlacedBlockCount() {
+        return chunks.values().stream().mapToLong(ChunkData::getPlacedBlockCount).sum();
+    }
+
     public World getWorld() {
         return world.get();
     }

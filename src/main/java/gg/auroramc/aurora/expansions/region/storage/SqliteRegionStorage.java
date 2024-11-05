@@ -13,10 +13,18 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SqliteRegionStorage implements RegionStorage {
     private final String DB_URL = "jdbc:sqlite:" + Aurora.getInstance().getDataFolder() + "/regiondata.db";
     private HikariDataSource dataSource;
+    private final ReentrantLock writeLock = new ReentrantLock();
+
+    private final static String[] indexes = new String[]{
+            "CREATE INDEX IF NOT EXISTS idx_regions_world_name ON regions (world_name)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_chunks_unique_region_chunk ON chunks (region_id, chunk_x, chunk_z)",
+            "CREATE INDEX IF NOT EXISTS idx_blocks_chunk_id ON blocks (chunk_id)"
+    };
 
     private Connection getConnection() throws SQLException {
         try {
@@ -48,6 +56,9 @@ public class SqliteRegionStorage implements RegionStorage {
 
                 for (String table : tables) {
                     stmt.addBatch(table);
+                }
+                for(String index : indexes) {
+                    stmt.addBatch(index);
                 }
                 stmt.executeBatch();
             }
@@ -91,21 +102,26 @@ public class SqliteRegionStorage implements RegionStorage {
 
     @Override
     public void saveRegion(Region region) {
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                int regionId = getOrCreateRegionId(conn, region.getWorldName(), region.getX(), region.getZ());
-                for (ChunkData chunk : region.getChunks().values()) {
-                    int chunkId = getOrCreateChunkId(conn, regionId, chunk.getX(), chunk.getZ());
-                    saveChunk(conn, chunkId, chunk);
+        try {
+            writeLock.lock();
+            try (Connection conn = getConnection()) {
+                conn.setAutoCommit(false);
+                try {
+                    int regionId = getOrCreateRegionId(conn, region.getWorldName(), region.getX(), region.getZ());
+                    for (ChunkData chunk : region.getChunks().values()) {
+                        int chunkId = getOrCreateChunkId(conn, regionId, chunk.getX(), chunk.getZ());
+                        saveChunk(conn, chunkId, chunk);
+                    }
+                    conn.commit();
+                } catch (Exception e) {
+                    conn.rollback();
+                    throw e;
                 }
-                conn.commit();
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } finally {
+            writeLock.unlock();
         }
     }
 
@@ -185,30 +201,41 @@ public class SqliteRegionStorage implements RegionStorage {
 
     @Override
     public void deleteRegionsInWorld(String worldName) {
-        try (Connection conn = getConnection()) {
-            String delete = "DELETE FROM regions WHERE world_name = ?";
-            try (PreparedStatement stmt = conn.prepareStatement(delete)) {
-                stmt.setString(1, worldName);
-                stmt.executeUpdate();
+        try {
+            writeLock.lock();
+            try (Connection conn = getConnection()) {
+                String delete = "DELETE FROM regions WHERE world_name = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(delete)) {
+                    stmt.setString(1, worldName);
+                    stmt.executeUpdate();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } finally {
+            writeLock.unlock();
         }
+
     }
 
     @Override
     public void deleteChunkData(String worldName, int regionX, int regionZ, byte chunkX, byte chunkZ) {
-        try (Connection conn = getConnection()) {
-            int regionId = getOrCreateRegionId(conn, worldName, regionX, regionZ);
-            String delete = "DELETE FROM chunks WHERE region_id = ? AND chunk_x = ? AND chunk_z = ?";
-            try (PreparedStatement stmt = conn.prepareStatement(delete)) {
-                stmt.setInt(1, regionId);
-                stmt.setByte(2, chunkX);
-                stmt.setByte(3, chunkZ);
-                stmt.executeUpdate();
+        try {
+            writeLock.lock();
+            try (Connection conn = getConnection()) {
+                int regionId = getOrCreateRegionId(conn, worldName, regionX, regionZ);
+                String delete = "DELETE FROM chunks WHERE region_id = ? AND chunk_x = ? AND chunk_z = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(delete)) {
+                    stmt.setInt(1, regionId);
+                    stmt.setByte(2, chunkX);
+                    stmt.setByte(3, chunkZ);
+                    stmt.executeUpdate();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } finally {
+            writeLock.unlock();
         }
     }
 

@@ -20,6 +20,10 @@ public class ChunkData {
         this.z = z;
     }
 
+    public int getPlacedBlockCount() {
+        return placedBlocks.size();
+    }
+
     public boolean isPlacedBlock(BlockPosition blockPosition) {
         return placedBlocks.containsKey(blockPosition);
     }

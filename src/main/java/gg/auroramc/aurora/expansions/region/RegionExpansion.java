@@ -9,6 +9,7 @@ import gg.auroramc.aurora.expansions.region.integrations.WildRegeneration;
 import gg.auroramc.aurora.expansions.region.storage.FileRegionStorage;
 import gg.auroramc.aurora.expansions.region.storage.SqliteRegionStorage;
 import gg.auroramc.aurora.expansions.region.storage.RegionStorage;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
@@ -17,11 +18,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RegionExpansion implements AuroraExpansion {
 
     private final ConcurrentMap<RegionCoordinate, Region> regions = new ConcurrentHashMap<>();
     private RegionStorage storage;
+    private final AtomicBoolean isSaving = new AtomicBoolean(false);
+    private ScheduledTask autoSaveTask;
 
 
     public Region getRegion(RegionCoordinate regionCoordinate) {
@@ -130,8 +134,18 @@ public class RegionExpansion implements AuroraExpansion {
     }
 
     public void saveAllRegions(boolean clearUnused) {
+        if (isSaving.get()) {
+            Aurora.logger().debug("Regions are already saving, skipping this save.");
+            return;
+        }
+        isSaving.set(true);
+        Aurora.logger().debug("Saving " + regions.size() + " regions...");
+
         for (Region region : regions.values()) {
             if (!region.isLoaded()) continue;
+            if (Aurora.getLibConfig().getDebug()) {
+                Aurora.logger().debug("Saving " + region.getChunkCount() + " chunks in region with " + region.getPlacedBlockCount() + " placed blocks.");
+            }
             storage.saveRegion(region);
             // Clear region from memory if no chunks are loaded in it
             if (clearUnused) {
@@ -140,6 +154,8 @@ public class RegionExpansion implements AuroraExpansion {
                 }
             }
         }
+        isSaving.set(false);
+        Aurora.logger().debug("All regions have been auto saved.");
     }
 
     private boolean isRegionUnused(Region region) {
@@ -182,14 +198,18 @@ public class RegionExpansion implements AuroraExpansion {
     }
 
     public void startSaveTimer() {
-        Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(),
+        this.autoSaveTask = Bukkit.getAsyncScheduler().runAtFixedRate(Aurora.getInstance(),
                 (task) -> {
+                    if (Bukkit.getServer().isStopping()) return;
                     saveAllRegions(true);
-                    Aurora.logger().debug("All regions have been auto saved.");
                 }, 300, 300, TimeUnit.SECONDS);
     }
 
     public void dispose() {
+        if (autoSaveTask != null && !autoSaveTask.isCancelled()) {
+            autoSaveTask.cancel();
+        }
+        saveAllRegions(false);
         storage.dispose();
     }
 }
