@@ -23,7 +23,8 @@ public class SqliteRegionStorage implements RegionStorage {
     private final static String[] indexes = new String[]{
             "CREATE INDEX IF NOT EXISTS idx_regions_world_name ON regions (world_name)",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_chunks_unique_region_chunk ON chunks (region_id, chunk_x, chunk_z)",
-            "CREATE INDEX IF NOT EXISTS idx_blocks_chunk_id ON blocks (chunk_id)"
+            "CREATE INDEX IF NOT EXISTS idx_blocks_chunk_id ON blocks (chunk_id)",
+            "CREATE INDEX IF NOT EXISTS idx_regions_world_x_z ON regions (world_name, region_x, region_z)"
     };
 
     private Connection getConnection() throws SQLException {
