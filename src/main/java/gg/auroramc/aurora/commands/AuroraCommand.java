@@ -11,6 +11,7 @@ import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import gg.auroramc.aurora.expansions.region.RegionExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -30,6 +31,35 @@ public class AuroraCommand extends BaseCommand {
     public void onReload(CommandSender sender) {
         plugin.reload();
         Chat.sendMessage(sender, Aurora.getMessageConfig().getReloaded());
+    }
+
+    @Subcommand("setasplacedblocks")
+    @CommandPermission("aurora.core.admin.debug")
+    public void onRegionSelection(Player player, Integer x1, Integer y1, Integer z1, Integer x2, Integer y2, Integer z2) {
+        var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+
+        for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
+            for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
+                for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
+                    var block = player.getWorld().getBlockAt(x, y, z);
+                    regionExpansion.addPlacedBlock(block, player.getUniqueId());
+                }
+            }
+        }
+    }
+
+    @Subcommand("blockinfo")
+    @CommandPermission("aurora.core.admin.debug")
+    public void onRegionSelection(Player player) {
+        var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+        var block = player.getTargetBlockExact(25);
+        if(block == null) return;
+        var data = regionExpansion.getPlacedBlockData(block);
+        if(data == null) {
+            Chat.sendMessage(player, "&cBlock is not placed by a player.");
+            return;
+        }
+        Chat.sendMessage(player, "&eBlock placed by: &6" + Bukkit.getOfflinePlayer(data.playerId()).getName());
     }
 
     @Subcommand("dispatch")

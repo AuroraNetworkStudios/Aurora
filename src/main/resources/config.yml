@@ -34,7 +34,7 @@ mysql:
 block-tracker:
   enabled: true
   # can be file or sqlite
-  storage-type: "sqlite"
+  storage-type: "file"
 
 leaderboards:
   empty-placeholder: "---"
