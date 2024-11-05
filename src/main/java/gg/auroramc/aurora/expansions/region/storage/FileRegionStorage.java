@@ -32,6 +32,7 @@ public class FileRegionStorage implements RegionStorage {
         var path = Aurora.getInstance().getDataFolder() + "/regiondata/" + worldName + "/r." + regionX + "." + regionZ + ".txt";
 
         synchronized (lockCache.getUnchecked(path)) {
+            long start = System.currentTimeMillis();
             Path filePath = Paths.get(path);
             File file = filePath.toFile();
 
@@ -46,6 +47,8 @@ public class FileRegionStorage implements RegionStorage {
                             loadChunk(region, new ChunkCoordinate(chunkX, chunkZ), reader);
                         }
                     }
+                    long end = System.currentTimeMillis();
+                    Aurora.logger().debug("Loaded region " + worldName + " " + regionX + "." + regionZ + " in " + (end - start) + "ms");
                 } catch (Exception e) {
                     if (file.delete()) {
                         Aurora.logger().warning("Deleted " + file.getName() + " because it was corrupted, this won't affect anything.");
@@ -60,6 +63,7 @@ public class FileRegionStorage implements RegionStorage {
         var path = Aurora.getInstance().getDataFolder() + "/regiondata/" + region.getWorldName() + "/r." + region.getX() + "." + region.getZ() + ".txt";
 
         synchronized (lockCache.getUnchecked(path)) {
+            long start = System.currentTimeMillis();
             Path filePath = Paths.get(path);
             File file = filePath.toFile();
 
@@ -71,6 +75,8 @@ public class FileRegionStorage implements RegionStorage {
                 for (ChunkData chunkData : region.getChunks().values()) {
                     saveChunk(writer, chunkData);
                 }
+                long end = System.currentTimeMillis();
+                Aurora.logger().debug("Saved region " + region.getWorldName() + " " + region.getX() + "." + region.getZ() + " in " + (end - start) + "ms");
             } catch (Exception e) {
                 if (file.delete()) {
                     Aurora.logger().warning("Deleted " + file.getName() + " because it was corrupted, this won't affect anything.");
