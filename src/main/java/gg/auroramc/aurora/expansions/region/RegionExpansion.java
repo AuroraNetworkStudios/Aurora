@@ -160,11 +160,9 @@ public class RegionExpansion implements AuroraExpansion {
     }
 
     private void removeUnusedRegions() {
-        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (t) -> {
-            for (var region : regions.values()) {
-                removeIfUnused(region);
-            }
-        });
+        for (var region : regions.values()) {
+            removeIfUnused(region);
+        }
     }
 
     private void removeIfUnused(Region region) {
