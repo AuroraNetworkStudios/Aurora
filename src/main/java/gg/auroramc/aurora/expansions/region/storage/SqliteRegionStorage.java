@@ -58,7 +58,7 @@ public class SqliteRegionStorage implements RegionStorage {
                 for (String table : tables) {
                     stmt.addBatch(table);
                 }
-                for(String index : indexes) {
+                for (String index : indexes) {
                     stmt.addBatch(index);
                 }
                 stmt.executeBatch();
@@ -68,6 +68,7 @@ public class SqliteRegionStorage implements RegionStorage {
 
     @Override
     public void loadRegion(Region region) {
+        long start = System.currentTimeMillis();
         try (Connection conn = getConnection()) {
             String query = "SELECT * FROM chunks JOIN blocks ON chunks.id = blocks.chunk_id WHERE region_id = (SELECT id FROM regions WHERE world_name = ? AND region_x = ? AND region_z = ?)";
             try (PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -94,6 +95,8 @@ public class SqliteRegionStorage implements RegionStorage {
                     for (var chunk : chunks.entrySet()) {
                         region.setChunkData(chunk.getKey(), chunk.getValue());
                     }
+                    long end = System.currentTimeMillis();
+                    Aurora.logger().debug("Loaded region " + region.getWorldName() + " " + region.getX() + " " + region.getZ() + " in " + (end - start) + "ms");
                 }
             }
         } catch (SQLException e) {
@@ -105,6 +108,7 @@ public class SqliteRegionStorage implements RegionStorage {
     public void saveRegion(Region region) {
         try {
             writeLock.lock();
+            long start = System.currentTimeMillis();
             try (Connection conn = getConnection()) {
                 conn.setAutoCommit(false);
                 try {
@@ -114,6 +118,8 @@ public class SqliteRegionStorage implements RegionStorage {
                         saveChunk(conn, chunkId, chunk);
                     }
                     conn.commit();
+                    long end = System.currentTimeMillis();
+                    Aurora.logger().debug("Saved region " + region.getWorldName() + " " + region.getX() + " " + region.getZ() + " in " + (end - start) + "ms");
                 } catch (Exception e) {
                     conn.rollback();
                     throw e;
