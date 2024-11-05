@@ -138,6 +138,7 @@ public class FileRegionStorage implements RegionStorage {
             writer.write(block.x() + "," + block.y() + "," + block.z() + "," + uuid + "\n");
         }
         writer.write("end_chunk\n");
+        chunkData.clearDiffs();
     }
 
     @Override

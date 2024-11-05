@@ -24,7 +24,12 @@ public class AuroraMenu implements InventoryHolder {
     private final Inventory inventory;
     private ItemStack filler;
     private final Map<Integer, List<MenuEntry>> menuItems = new HashMap<>();
+    @Getter
     private Set<Integer> freeSlots;
+    private Consumer<Inventory> freeSlotUpdateHandler;
+    private Set<Integer> managedSlots;
+    private BiConsumer<InventoryClickEvent, Integer> managedSlotClickHandler;
+
     private List<ItemStack> freeItems;
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
     @Getter
@@ -54,6 +59,16 @@ public class AuroraMenu implements InventoryHolder {
 
     public AuroraMenu onClose(BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler) {
         this.closeHandler = closeHandler;
+        return this;
+    }
+
+    public AuroraMenu onBeforeFreeSlotsUpdate(Consumer<Inventory> freeSlotUpdateHandler) {
+        this.freeSlotUpdateHandler = freeSlotUpdateHandler;
+        return this;
+    }
+
+    public AuroraMenu onManagedSlotClick(BiConsumer<InventoryClickEvent, Integer> managedSlotClickHandler) {
+        this.managedSlotClickHandler = managedSlotClickHandler;
         return this;
     }
 
@@ -117,6 +132,28 @@ public class AuroraMenu implements InventoryHolder {
         return freeSlots(0, end);
     }
 
+    public AuroraMenu managedSlots(List<Integer> slots) {
+        if (managedSlots == null) {
+            managedSlots = new HashSet<>(slots.size());
+        }
+        managedSlots.addAll(slots);
+        return this;
+    }
+
+    public AuroraMenu managedSlots(int start, int end) {
+        if (managedSlots == null) {
+            managedSlots = new HashSet<>(end - start);
+        }
+        for (int i = start; i < end; i++) {
+            managedSlots.add(i);
+        }
+        return this;
+    }
+
+    public AuroraMenu managedSlots(int end) {
+        return managedSlots(0, end);
+    }
+
     public AuroraMenu setFreeSlotsContent(List<ItemStack> items) {
         if (freeItems == null) {
             freeItems = new ArrayList<>(items.size());
@@ -149,15 +186,27 @@ public class AuroraMenu implements InventoryHolder {
         return freeSlots != null;
     }
 
+    public boolean isFreeSlot(int slot) {
+        return freeSlots != null && freeSlots.contains(slot);
+    }
+
     public boolean handleEvent(InventoryClickEvent e) {
         if (freeSlots != null && freeSlots.contains(e.getSlot())) {
             e.setCancelled(false);
+            handleFreeSlotUpdate(e.getInventory());
             return false;
         } else {
             e.setCancelled(true);
         }
 
         if (!(e.getWhoClicked() instanceof Player player)) return false;
+
+        if (managedSlots != null && managedSlots.contains(e.getSlot())) {
+            if (managedSlotClickHandler != null) {
+                managedSlotClickHandler.accept(e, e.getSlot());
+            }
+            return true;
+        }
 
         if (menuItems.containsKey(e.getSlot())) {
             var menuEntries = menuItems.get(e.getSlot());
@@ -231,7 +280,7 @@ public class AuroraMenu implements InventoryHolder {
                     inventory.setItem(i, freeItems.get(j));
                     j++;
                 }
-            } else {
+            } else if (managedSlots == null || !managedSlots.contains(i)) {
                 inventory.setItem(i, filler);
             }
         }
@@ -277,5 +326,11 @@ public class AuroraMenu implements InventoryHolder {
             populateInventory(player, true);
             player.updateInventory();
         }, null, delayTicks);
+    }
+
+    public void handleFreeSlotUpdate(Inventory inventory) {
+        if (freeSlotUpdateHandler != null) {
+            freeSlotUpdateHandler.accept(inventory);
+        }
     }
 }

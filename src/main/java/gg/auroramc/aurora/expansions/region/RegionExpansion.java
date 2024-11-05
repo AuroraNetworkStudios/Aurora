@@ -145,7 +145,8 @@ public class RegionExpansion implements AuroraExpansion {
             for (Region region : regions.values()) {
                 if (!region.isLoaded()) continue;
                 if (Aurora.getLibConfig().getDebug()) {
-                    Aurora.logger().debug("Saving " + region.getChunkCount() + " chunks in region with " + region.getPlacedBlockCount() + " placed blocks.");
+                    Aurora.logger().debug("Saving " + region.getChunkCount() + " chunks in region with total of: " + region.getPlacedBlockCount() +
+                            " placed blocks. Diff: " + region.getDiffBlockCount());
                 }
                 storage.saveRegion(region);
             }

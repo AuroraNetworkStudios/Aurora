@@ -42,6 +42,10 @@ permissions:
       - aurora.core.admin.giveitem
       - aurora.core.admin.unregisteritem
       - aurora.core.admin.merchant
+      - aurora.core.admin.debug.saveregions
+      - aurora.core.admin.debug.blockinfo
+      - aurora.core.admin.debug.setasplacedblocks
+      - aurora.core.admin.debug.saveregiondata
   aurora.core.user:
     description: Allows the player to use user commands
     default: true

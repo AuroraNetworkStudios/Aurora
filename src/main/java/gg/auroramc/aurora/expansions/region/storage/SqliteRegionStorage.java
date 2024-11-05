@@ -21,10 +21,10 @@ public class SqliteRegionStorage implements RegionStorage {
     private final ReentrantLock writeLock = new ReentrantLock();
 
     private final static String[] indexes = new String[]{
-            "CREATE INDEX IF NOT EXISTS idx_regions_world_name ON regions (world_name)",
+            "CREATE INDEX IF NOT EXISTS idx_regions_world_name ON regions (world_name, region_x, region_z)",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_chunks_unique_region_chunk ON chunks (region_id, chunk_x, chunk_z)",
             "CREATE INDEX IF NOT EXISTS idx_blocks_chunk_id ON blocks (chunk_id)",
-            "CREATE INDEX IF NOT EXISTS idx_regions_world_x_z ON regions (world_name, region_x, region_z)"
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_blocks_chunk_id_x_y_z ON blocks (chunk_id, block_x, block_y, block_z)",
     };
 
     private Connection getConnection() throws SQLException {
@@ -70,37 +70,61 @@ public class SqliteRegionStorage implements RegionStorage {
     public void loadRegion(Region region) {
         long start = System.currentTimeMillis();
         try (Connection conn = getConnection()) {
-            String query = "SELECT * FROM chunks JOIN blocks ON chunks.id = blocks.chunk_id WHERE region_id = (SELECT id FROM regions WHERE world_name = ? AND region_x = ? AND region_z = ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.setString(1, region.getWorldName());
-                stmt.setInt(2, region.getX());
-                stmt.setInt(3, region.getZ());
+            // First, load all chunks in the region
+            String chunkQuery = "SELECT chunk_x, chunk_z, id FROM chunks WHERE region_id = (SELECT id FROM regions WHERE world_name = ? AND region_x = ? AND region_z = ?)";
+            try (PreparedStatement chunkStmt = conn.prepareStatement(chunkQuery)) {
+                chunkStmt.setString(1, region.getWorldName());
+                chunkStmt.setInt(2, region.getX());
+                chunkStmt.setInt(3, region.getZ());
 
                 var chunks = new HashMap<ChunkCoordinate, ChunkData>();
 
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        byte chunkX = rs.getByte("chunk_x");
-                        byte chunkZ = rs.getByte("chunk_z");
-                        int blockX = rs.getInt("block_x");
-                        int blockY = rs.getInt("block_y");
-                        int blockZ = rs.getInt("block_z");
-                        UUID playerId = UUID.fromString(rs.getString("player_uuid"));
+                try (ResultSet chunkRs = chunkStmt.executeQuery()) {
+                    // Load each chunk
+                    while (chunkRs.next()) {
+                        byte chunkX = chunkRs.getByte("chunk_x");
+                        byte chunkZ = chunkRs.getByte("chunk_z");
+                        int chunkId = chunkRs.getInt("id");
 
                         ChunkCoordinate chunkCoord = new ChunkCoordinate(chunkX, chunkZ);
-                        BlockPosition blockPos = new BlockPosition(blockX, blockY, blockZ);
-                        chunks.computeIfAbsent(chunkCoord, k -> new ChunkData(region, chunkCoord.x(), chunkCoord.z()))
-                                .addPlacedBlock(blockPos, playerId);
+                        chunks.put(chunkCoord, new ChunkData(region, chunkX, chunkZ));
+
+                        // Now, load blocks for each chunk
+                        loadBlocksForChunk(conn, chunkId, chunks.get(chunkCoord));
                     }
+
+                    // Set the chunk data for the region
                     for (var chunk : chunks.entrySet()) {
                         region.setChunkData(chunk.getKey(), chunk.getValue());
                     }
+
                     long end = System.currentTimeMillis();
-                    Aurora.logger().debug("Loaded region " + region.getWorldName() + " " + region.getX() + " " + region.getZ() + " in " + (end - start) + "ms");
+                    Aurora.logger().debug("Loaded region " + region.getWorldName() + " " + region.getX() + " " + region.getZ() + " in " + (end - start) + "ms with "
+                            + region.getPlacedBlockCount() + " placed blocks in it.");
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void loadBlocksForChunk(Connection conn, int chunkId, ChunkData chunkData) throws SQLException {
+        // Query to load blocks for a specific chunk
+        String blockQuery = "SELECT block_x, block_y, block_z, player_uuid FROM blocks WHERE chunk_id = ?";
+        try (PreparedStatement blockStmt = conn.prepareStatement(blockQuery)) {
+            blockStmt.setInt(1, chunkId);
+
+            try (ResultSet blockRs = blockStmt.executeQuery()) {
+                while (blockRs.next()) {
+                    int blockX = blockRs.getInt("block_x");
+                    int blockY = blockRs.getInt("block_y");
+                    int blockZ = blockRs.getInt("block_z");
+                    UUID playerId = UUID.fromString(blockRs.getString("player_uuid"));
+
+                    BlockPosition blockPos = new BlockPosition(blockX, blockY, blockZ);
+                    chunkData.addPlacedBlock(blockPos, playerId);
+                }
+            }
         }
     }
 
@@ -115,7 +139,7 @@ public class SqliteRegionStorage implements RegionStorage {
                     int regionId = getOrCreateRegionId(conn, region.getWorldName(), region.getX(), region.getZ());
                     for (ChunkData chunk : region.getChunks().values()) {
                         int chunkId = getOrCreateChunkId(conn, regionId, chunk.getX(), chunk.getZ());
-                        saveChunk(conn, chunkId, chunk);
+                        saveChunkDiff(conn, chunkId, chunk);
                     }
                     conn.commit();
                     long end = System.currentTimeMillis();
@@ -184,6 +208,7 @@ public class SqliteRegionStorage implements RegionStorage {
         throw new SQLException("Failed to create or find chunk ID");
     }
 
+    @Deprecated
     private void saveChunk(Connection conn, int chunkId, ChunkData chunkData) throws SQLException {
         String delete = "DELETE FROM blocks WHERE chunk_id = ?";
         try (PreparedStatement delStmt = conn.prepareStatement(delete)) {
@@ -204,6 +229,40 @@ public class SqliteRegionStorage implements RegionStorage {
             }
             insertStmt.executeBatch();
         }
+    }
+
+
+    private void saveChunkDiff(Connection conn, int chunkId, ChunkData chunkData) throws SQLException {
+        // Handle the deleted blocks (blocks removed since the last save)
+        String delete = "DELETE FROM blocks WHERE chunk_id = ? AND block_x = ? AND block_y = ? AND block_z = ?";
+        try (PreparedStatement delStmt = conn.prepareStatement(delete)) {
+            for (BlockPosition block : chunkData.getDeletedDiff()) {
+                delStmt.setInt(1, chunkId);
+                delStmt.setInt(2, block.x());
+                delStmt.setInt(3, block.y());
+                delStmt.setInt(4, block.z());
+                delStmt.addBatch();
+            }
+            delStmt.executeBatch();
+        }
+
+        // Handle the placed blocks (new blocks placed since the last save)
+        String insert = "INSERT OR IGNORE INTO blocks (chunk_id, block_x, block_y, block_z, player_uuid) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement insertStmt = conn.prepareStatement(insert)) {
+            for (BlockPosition block : chunkData.getPlacedDiff()) {
+                UUID uuid = chunkData.getBlockData(block).playerId();
+                insertStmt.setInt(1, chunkId);
+                insertStmt.setInt(2, block.x());
+                insertStmt.setInt(3, block.y());
+                insertStmt.setInt(4, block.z());
+                insertStmt.setString(5, uuid.toString());
+                insertStmt.addBatch();
+            }
+            insertStmt.executeBatch();
+        }
+
+        // After saving, clear the diffs as they've now been persisted
+        chunkData.clearDiffs();
     }
 
     @Override

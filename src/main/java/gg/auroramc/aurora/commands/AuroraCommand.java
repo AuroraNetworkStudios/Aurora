@@ -18,6 +18,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.concurrent.CompletableFuture;
+
 @CommandAlias("aurora")
 public class AuroraCommand extends BaseCommand {
     private final Aurora plugin;
@@ -33,8 +35,8 @@ public class AuroraCommand extends BaseCommand {
         Chat.sendMessage(sender, Aurora.getMessageConfig().getReloaded());
     }
 
-    @Subcommand("setasplacedblocks")
-    @CommandPermission("aurora.core.admin.debug")
+    @Subcommand("debug setasplacedblocks")
+    @CommandPermission("aurora.core.admin.debug.setasplacedblocks")
     public void onRegionSelection(Player player, Integer x1, Integer y1, Integer z1, Integer x2, Integer y2, Integer z2) {
         var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
 
@@ -42,24 +44,35 @@ public class AuroraCommand extends BaseCommand {
             for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
                 for (int z = Math.min(z1, z2); z <= Math.max(z1, z2); z++) {
                     var block = player.getWorld().getBlockAt(x, y, z);
+                    if (block.getType() == Material.AIR) continue;
                     regionExpansion.addPlacedBlock(block, player.getUniqueId());
                 }
             }
         }
     }
 
-    @Subcommand("blockinfo")
-    @CommandPermission("aurora.core.admin.debug")
+    @Subcommand("debug blockinfo")
+    @CommandPermission("aurora.core.admin.debug.blockinfo")
     public void onRegionSelection(Player player) {
         var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
         var block = player.getTargetBlockExact(25);
-        if(block == null) return;
+        if (block == null) return;
         var data = regionExpansion.getPlacedBlockData(block);
-        if(data == null) {
+        if (data == null) {
             Chat.sendMessage(player, "&cBlock is not placed by a player.");
             return;
         }
         Chat.sendMessage(player, "&eBlock placed by: &6" + Bukkit.getOfflinePlayer(data.playerId()).getName());
+    }
+
+    @Subcommand("debug saveregions")
+    @CommandPermission("aurora.core.admin.debug.saveregions")
+    public void onSaveRegions(Player player, @Default("false") Boolean clear) {
+        var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+        CompletableFuture.runAsync(() -> {
+            regionExpansion.saveAllRegions(clear);
+            Chat.sendMessage(player, "&aRegions saved.");
+        });
     }
 
     @Subcommand("dispatch")

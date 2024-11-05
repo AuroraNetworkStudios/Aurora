@@ -42,12 +42,16 @@ public class Region {
         return chunks.values().stream().mapToLong(ChunkData::getPlacedBlockCount).sum();
     }
 
+    public long getDiffBlockCount() {
+        return chunks.values().stream().mapToLong(chunk -> chunk.getPlacedDiff().size() + chunk.getDeletedDiff().size()).sum();
+    }
+
     public World getWorld() {
         return world.get();
     }
 
     public void clear() {
-        if(isLoaded()) {
+        if (isLoaded()) {
             chunks.clear();
         } else {
             tempChunks.clear();
@@ -97,9 +101,9 @@ public class Region {
 
     @ApiStatus.Internal
     public void setChunkData(ChunkCoordinate chunkCoordinate, ChunkData chunkData) {
-        if(tempChunks.containsKey(chunkCoordinate)) {
+        if (tempChunks.containsKey(chunkCoordinate)) {
             var tempChunk = tempChunks.get(chunkCoordinate);
-            for(var block : tempChunk.getPlacedBlocks().keySet()) {
+            for (var block : tempChunk.getPlacedBlocks().keySet()) {
                 chunkData.addPlacedBlock(block, tempChunk.getPlacedBlocks().get(block).playerId());
             }
         }
@@ -122,5 +126,9 @@ public class Region {
         }
         this.loaded.set(true);
         tempChunks.clear();
+    }
+
+    public void signalSave() {
+        chunks.values().forEach(ChunkData::clearDiffs);
     }
 }

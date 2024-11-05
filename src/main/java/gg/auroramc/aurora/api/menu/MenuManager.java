@@ -9,9 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.*;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +38,12 @@ public class MenuManager implements Listener {
 
             if (event.getClickedInventory() != null) {
                 if (!(event.getClickedInventory().getHolder() instanceof AuroraMenu)) {
-                    if (menu.hasFreeSlots()) event.setCancelled(false);
+                    if (menu.hasFreeSlots()) {
+                        event.setCancelled(false);
+                        if (event.isShiftClick()) {
+                            menu.handleFreeSlotUpdate(event.getInventory());
+                        }
+                    }
                     return;
                 }
             }
@@ -65,6 +68,20 @@ public class MenuManager implements Listener {
 
             if (valid) {
                 cache.put(event.getWhoClicked().getUniqueId(), System.currentTimeMillis());
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onDrag(InventoryDragEvent event) {
+        if (event.getInventory().getHolder() instanceof AuroraMenu menu) {
+            if (menu.hasFreeSlots()) {
+                for (var slot : event.getInventorySlots()) {
+                    if (menu.isFreeSlot(slot)) {
+                        menu.handleFreeSlotUpdate(event.getInventory());
+                        return;
+                    }
+                }
             }
         }
     }
