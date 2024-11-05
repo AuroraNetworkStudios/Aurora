@@ -20,6 +20,7 @@ public class Config extends AuroraConfig {
     @Setter
     private String storageType = "yaml";
     private BlockTrackerConfig blockTracker;
+    private Boolean modernBlockTracker = true;
     private MySqlConfig mysql;
     private LeaderboardConfig leaderboards;
     private String defaultEconomyProvider = "auto-detect";
@@ -34,8 +35,6 @@ public class Config extends AuroraConfig {
         return List.of(
                 (yaml) -> {
                     yaml.set("block-tracker.enabled", true);
-                    yaml.set("block-tracker.storage-type", yaml.get("block-tracker-storage", "file"));
-                    yaml.set("block-tracker-storage", null);
                     yaml.set("config-version", 1);
                 },
                 (yaml) -> {

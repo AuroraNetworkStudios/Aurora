@@ -33,8 +33,6 @@ mysql:
 # Tracks blocks placed by players
 block-tracker:
   enabled: true
-  # can be file or sqlite
-  storage-type: "file"
 
 leaderboards:
   empty-placeholder: "---"

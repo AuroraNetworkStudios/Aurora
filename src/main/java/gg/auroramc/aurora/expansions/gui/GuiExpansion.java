@@ -3,6 +3,7 @@ package gg.auroramc.aurora.expansions.gui;
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,9 +29,9 @@ public class GuiExpansion implements AuroraExpansion {
 
     public void openGui(String id, Player player, @Nullable Map<String, String> args) {
         var gui = guiMap.get(id);
-        if(gui == null) {
+        if (gui == null) {
             var customGui = customGuiMap.get(id);
-            if(customGui != null) {
+            if (customGui != null) {
                 customGui.apply(player).open(player, args);
             }
         } else {
@@ -39,6 +40,7 @@ public class GuiExpansion implements AuroraExpansion {
     }
 
     public void refreshPlayerGuis(UUID uuid) {
+        if (Bukkit.getServer().isStopping()) return;
         guiMap.forEach((id, gui) -> gui.refreshForPlayer(uuid));
     }
 

@@ -1,10 +1,13 @@
 package gg.auroramc.aurora.api.events.region;
 
+import lombok.Getter;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.jetbrains.annotations.NotNull;
 
+@Getter
 public class RegionBlockPlaceEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();
     public static HandlerList getHandlerList() {
@@ -12,7 +15,7 @@ public class RegionBlockPlaceEvent extends Event {
     }
 
     @Override
-    public HandlerList getHandlers() {
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 
@@ -25,11 +28,4 @@ public class RegionBlockPlaceEvent extends Event {
         this.block = block;
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
-    public Block getBlock() {
-        return block;
-    }
 }

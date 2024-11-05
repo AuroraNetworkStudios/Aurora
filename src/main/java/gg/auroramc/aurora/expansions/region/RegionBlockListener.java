@@ -35,7 +35,7 @@ public class RegionBlockListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void checkPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
-        regionExpansion.addPlacedBlock(block, event.getPlayer().getUniqueId());
+        regionExpansion.addPlacedBlock(block);
         Bukkit.getPluginManager().callEvent(new RegionBlockPlaceEvent(event.getPlayer(), block));
     }
 
@@ -48,7 +48,7 @@ public class RegionBlockListener implements Listener {
             Block below = block.getRelative(BlockFace.DOWN);
             if (below.getType() == Material.AIR || below.getType() == Material.CAVE_AIR || below.getType() == Material.VOID_AIR
                     || below.getType() == Material.WATER || below.getType() == Material.BUBBLE_COLUMN || below.getType() == Material.LAVA) {
-                BlockData blockData = regionExpansion.getPlacedBlockData(block);
+
                 regionExpansion.removePlacedBlock(block);
                 Entity entity = event.getEntity();
                 AtomicInteger counter = new AtomicInteger();
@@ -56,7 +56,7 @@ public class RegionBlockListener implements Listener {
                     Block currentBlock = entity.getLocation().getBlock();
                     if (entity.isDead() || !entity.isValid()) {
                         if (currentBlock.getType() == type) {
-                            regionExpansion.addPlacedBlock(entity.getLocation().getBlock(), blockData.playerId());
+                            regionExpansion.addPlacedBlock(entity.getLocation().getBlock());
                         }
                         task.cancel();
                     } else if (currentBlock.getType().toString().contains("WEB")) {
@@ -86,8 +86,7 @@ public class RegionBlockListener implements Listener {
     public void onBlockPistonExtend(BlockPistonExtendEvent event) {
         for (Block block : event.getBlocks()) {
             if (regionExpansion.isPlacedBlock(block)) {
-                BlockData blockData = regionExpansion.getPlacedBlockData(block);
-                regionExpansion.addPlacedBlock(block.getRelative(event.getDirection()), blockData.playerId());
+                regionExpansion.addPlacedBlock(block.getRelative(event.getDirection()));
             }
         }
         regionExpansion.removePlacedBlock(event.getBlock().getRelative(event.getDirection()));
@@ -98,8 +97,7 @@ public class RegionBlockListener implements Listener {
         Block lastBlock = event.getBlock();
         for (Block block : event.getBlocks()) {
             if (regionExpansion.isPlacedBlock(block)) {
-                BlockData blockData = regionExpansion.getPlacedBlockData(block);
-                regionExpansion.addPlacedBlock(block.getRelative(event.getDirection()), blockData.playerId());
+                regionExpansion.addPlacedBlock(block.getRelative(event.getDirection()));
                 if (block.getLocation().distanceSquared(event.getBlock().getLocation()) > lastBlock.getLocation().distanceSquared(event.getBlock().getLocation())) {
                     lastBlock = block;
                 }
@@ -153,13 +151,10 @@ public class RegionBlockListener implements Listener {
 
     private void removeBlockWithEvent(Player player, Block checkedBlock) {
         if (regionExpansion.isPlacedBlock(checkedBlock)) {
-            var data = regionExpansion.getPlacedBlockData(checkedBlock);
-            if (data != null) {
-                Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, Bukkit.getOfflinePlayer(data.playerId()), checkedBlock, false));
-            }
+            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, checkedBlock, false));
             regionExpansion.removePlacedBlock(checkedBlock);
         } else {
-            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, null, checkedBlock, true));
+            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, checkedBlock, true));
         }
     }
 }
