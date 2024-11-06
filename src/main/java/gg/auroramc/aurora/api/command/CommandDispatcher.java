@@ -9,7 +9,6 @@ import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
-import gg.auroramc.aurora.api.util.InventorySerializer;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.api.util.TriConsumer;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
@@ -167,9 +166,9 @@ public class CommandDispatcher {
         if (args.length == 1) {
             player.playSound(player, sound, 1, 1);
         } else if (args.length == 2) {
-            player.playSound(player.getLocation(), args[0], Float.parseFloat(args[1]), 1);
+            player.playSound(player.getLocation(), sound, Float.parseFloat(args[1]), 1);
         } else if (args.length == 3) {
-            player.playSound(player.getLocation(), args[0], Float.parseFloat(args[1]), Float.parseFloat(args[2]));
+            player.playSound(player.getLocation(), sound, Float.parseFloat(args[1]), Float.parseFloat(args[2]));
         }
     }
 
