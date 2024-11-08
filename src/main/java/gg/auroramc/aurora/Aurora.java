@@ -17,7 +17,6 @@ import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.api.user.UserStashHolder;
 import gg.auroramc.aurora.expansions.itemstash.ItemStashExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
-import gg.auroramc.aurora.expansions.merchant.MerchantExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
 import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
@@ -83,7 +82,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         menuManager = new MenuManager(this);
         setupExpansions();
 
-        if(DependencyManager.hasDep("LuckPerms")) {
+        if (DependencyManager.hasDep("LuckPerms")) {
             LuckPermsHook.registerListeners();
         }
 
@@ -109,7 +108,6 @@ public final class Aurora extends JavaPlugin implements Listener {
         expansionManager.loadExpansion(LeaderboardExpansion.class);
         expansionManager.loadExpansion(GuiExpansion.class);
         expansionManager.loadExpansion(ItemStashExpansion.class);
-        expansionManager.loadExpansion(MerchantExpansion.class);
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             expansionManager.loadExpansion(WorldGuardExpansion.class);
