@@ -24,7 +24,7 @@ public class ItemStore {
         }
         data = YamlConfiguration.loadConfiguration(file);
 
-        for(String key : data.getKeys(false)) {
+        for (String key : data.getKeys(false)) {
             items.put(key, InventorySerializer.readItemStackFromBase64(data.getString(key)));
         }
     }
@@ -41,6 +41,15 @@ public class ItemStore {
         } else {
             return null;
         }
+    }
+
+    public String getIdFromItem(ItemStack item) {
+        for (var entry : items.entrySet()) {
+            if (entry.getValue().isSimilar(item)) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     public void removeItem(String id) {
