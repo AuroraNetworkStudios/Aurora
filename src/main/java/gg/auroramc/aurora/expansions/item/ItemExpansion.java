@@ -26,6 +26,12 @@ public class ItemExpansion implements AuroraExpansion {
             Aurora.logger().debug("Hooked into CustomFishing for item resolvers.");
         }
 
+        if (DependencyManager.hasDep(Dep.EXECUTABLE_BLOCKS)) {
+            // Use short name for plugin since it would be way too long
+            itemManager.registerResolver("eb", new ExecutableBlocksResolver());
+            Aurora.logger().debug("Hooked into ExecutableBlocks for item resolvers.");
+        }
+
         if (DependencyManager.hasDep(Dep.EXECUTABLE_ITEMS)) {
             // Use short name for plugin since it would be way too long
             itemManager.registerResolver("ei", new ExecutableItemsResolver());

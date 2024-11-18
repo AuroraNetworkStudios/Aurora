@@ -28,6 +28,7 @@ public enum Dep {
     WILDREGENERATION("WildRegeneration"),
     ECONOMYSHOPGUIPREMIUM("EconomyShopGUI-Premium"),
     EXECUTABLE_ITEMS("ExecutableItems"),
+    EXECUTABLE_BLOCKS("ExecutableBlocks"),
     HEAD_DATABASE("HeadDatabase"),
     PLAYER_POINTS("PlayerPoints"),
     COINS_ENGINE("CoinsEngine"),

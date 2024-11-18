@@ -17,6 +17,7 @@ softdepend:
   - MythicMobs
   - Oraxen
   - ExecutableItems
+  - ExecutableBlocks
   - SCore
   - ItemsAdder
   - HeadDatabase
