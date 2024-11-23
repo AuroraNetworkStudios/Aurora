@@ -12,6 +12,7 @@ public enum Dep {
     LANDS("Lands"),
     MYTHICMOBS("MythicMobs"),
     ORAXEN("Oraxen"),
+    NEXO("Nexo"),
     ELITEMOBS("EliteMobs"),
     AURELIUMSKILLS("AureliumSkills"),
     AURASKILLS("AuraSkills"),

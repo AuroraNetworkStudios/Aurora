@@ -25,6 +25,7 @@ softdepend:
   - PlayerPoints
   - CoinsEngine
   - RoyaleEconomy
+  - Nexo
 
 permissions:
   aurora.core.admin:

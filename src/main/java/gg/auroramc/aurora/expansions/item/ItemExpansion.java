@@ -53,6 +53,11 @@ public class ItemExpansion implements AuroraExpansion {
             Aurora.logger().debug("Hooked into EcoItems for item resolvers.");
         }
 
+        if (DependencyManager.hasDep(Dep.NEXO)) {
+            itemManager.registerResolver(Dep.NEXO, new NexoItemResolver());
+            Aurora.logger().debug("Hooked into Nexo for item resolvers.");
+        }
+
         if (DependencyManager.hasDep(Dep.ORAXEN)) {
             itemManager.registerResolver(Dep.ORAXEN, new OraxenItemResolver());
             Aurora.logger().debug("Hooked into Oraxen for item resolvers.");
