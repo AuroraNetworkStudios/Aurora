@@ -1,8 +1,8 @@
 package gg.auroramc.aurora.expansions.region;
 
 import gg.auroramc.aurora.Aurora;
-import gg.auroramc.aurora.api.events.region.RegionBlockPlaceEvent;
 import gg.auroramc.aurora.api.events.region.RegionBlockBreakEvent;
+import gg.auroramc.aurora.api.events.region.RegionBlockPlaceEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -26,6 +26,7 @@ public class RegionBlockListener implements Listener {
     private final Aurora plugin;
     private final RegionExpansion regionExpansion;
     private final BlockFace[] blockFaces = new BlockFace[]{BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.UP, BlockFace.DOWN};
+
 
     public RegionBlockListener(Aurora plugin, RegionExpansion regionExpansion) {
         this.plugin = plugin;
@@ -150,11 +151,15 @@ public class RegionBlockListener implements Listener {
     }
 
     private void removeBlockWithEvent(Player player, Block checkedBlock) {
-        if (regionExpansion.isPlacedBlock(checkedBlock)) {
-            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, checkedBlock, false));
-            regionExpansion.removePlacedBlock(checkedBlock);
-        } else {
-            Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, checkedBlock, true));
+        // Emit the event sync so proper block data is available
+        var natural = !regionExpansion.isPlacedBlock(checkedBlock);
+        Bukkit.getPluginManager().callEvent(new RegionBlockBreakEvent(player, checkedBlock, natural));
+
+        if (!natural) {
+            // Remove it a tick later, so we have the info in the bukkit block drop event still
+            Bukkit.getRegionScheduler().run(plugin, checkedBlock.getLocation(),
+                    (t) -> regionExpansion.removePlacedBlock(checkedBlock));
         }
+
     }
 }

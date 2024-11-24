@@ -1,7 +1,6 @@
 package gg.auroramc.aurora.api.events.region;
 
 import lombok.Getter;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
