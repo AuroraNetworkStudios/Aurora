@@ -241,6 +241,8 @@ public class ItemBuilder {
         } else if (config.getMaterial().equalsIgnoreCase("self_head")) {
             setPlayerHead(player);
             item = new ItemStack(Material.PLAYER_HEAD);
+        } else if (config.getMaterial().equalsIgnoreCase("main_hand")) {
+            item = player.getInventory().getItemInMainHand().clone();
         } else {
             item = new ItemStack(Material.valueOf(config.getMaterial().toUpperCase()));
         }

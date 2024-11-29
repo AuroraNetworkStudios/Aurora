@@ -21,6 +21,7 @@ import org.bukkit.entity.Player;
 
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -154,7 +155,7 @@ public class AuroraAPI {
         return Aurora.getExpansionManager().getExpansion(EntityExpansion.class).getEntityManager();
     }
 
-    public static void registerRequirementHandler(String name, Function<String[], Boolean> resolver) {
+    public static void registerRequirementHandler(String name, BiFunction<Player, String[], Boolean> resolver) {
         Requirement.register(name, resolver);
     }
 

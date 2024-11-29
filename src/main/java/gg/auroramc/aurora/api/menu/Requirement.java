@@ -16,12 +16,13 @@ import org.bukkit.entity.Player;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class Requirement {
-    private static final Map<String, Function<String[], Boolean>> resolvers = Maps.newConcurrentMap();
+    private static final Map<String, BiFunction<Player, String[], Boolean>> resolvers = Maps.newConcurrentMap();
 
-    public static void register(String name, Function<String[], Boolean> resolver) {
+    public static void register(String name, BiFunction<Player, String[], Boolean> resolver) {
         resolvers.put("[" + name + "]", resolver);
     }
 
@@ -87,12 +88,12 @@ public class Requirement {
         if (args[0].equalsIgnoreCase("[placeholder]")) {
             if (!DependencyManager.hasDep(Dep.PAPI)) return false;
             var placeholderValue = PlaceholderAPI.setPlaceholders(player, args[1]);
-            return doPlaceholderCheck(args, placeholderValue);
+            return doPlaceholderCheck(player, args, placeholderValue);
         }
 
         if (args[0].equalsIgnoreCase("[arg]")) {
             var placeholderValue = Placeholder.execute("{arg_" + args[1] + "}", placeholders);
-            return doPlaceholderCheck(args, placeholderValue);
+            return doPlaceholderCheck(player, args, placeholderValue);
         }
 
         if (args[0].equalsIgnoreCase("[has-items]")) {
@@ -113,14 +114,14 @@ public class Requirement {
         var customResolver = resolvers.get(args[0]);
 
         if (customResolver != null) {
-            return customResolver.apply(args);
+            return customResolver.apply(player, args);
         }
 
         return false;
     }
 
-    private static boolean doPlaceholderCheck(String[] args, String placeholderValue) {
-        var compareValue = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+    private static boolean doPlaceholderCheck(Player player, String[] args, String placeholderValue) {
+        var compareValue = PlaceholderAPI.setPlaceholders(player, String.join(" ", Arrays.copyOfRange(args, 3, args.length)));
 
         return switch (args[2]) {
             case "==" -> placeholderValue.equals(compareValue);
