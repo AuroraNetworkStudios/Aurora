@@ -10,7 +10,8 @@ import org.bukkit.inventory.ItemStack;
 public class CustomFishingItemResolver implements ItemResolver {
     @Override
     public boolean matches(ItemStack item) {
-        return BukkitCustomFishingPlugin.getInstance().getItemManager().getCustomFishingItemID(item) != null;
+        var wrappedItem = BukkitCustomFishingPlugin.getInstance().getItemManager().wrap(item);
+        return wrappedItem.hasTag("CustomFishing", "id");
     }
 
     @Override
