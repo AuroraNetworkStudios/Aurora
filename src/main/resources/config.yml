@@ -42,4 +42,18 @@ leaderboards:
 # Changing this requires a full restart
 default-economy-provider: "auto-detect"
 
-config-version: 4
+# Remove the stuff you don't want in case if there are errors
+# Otherwise those will be loaded that are available on the server
+item-matchers:
+  - "CustomFishing"
+  - "Eco"
+  - "ExecutableItems"
+  - "ExecutableBlocks"
+  - "HeadDatabase"
+  - "ItemsAdder"
+  - "MMOItems"
+  - "MythicMobs"
+  - "Nexo"
+  - "Oraxen"
+
+config-version: 5

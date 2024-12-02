@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -24,6 +25,18 @@ public class Config extends AuroraConfig {
     private MySqlConfig mysql;
     private LeaderboardConfig leaderboards;
     private String defaultEconomyProvider = "auto-detect";
+    private Set<String> itemMatchers = Set.of(
+            "CustomFishing",
+            "Eco",
+            "ExecutableItems",
+            "ExecutableBlocks",
+            "HeadDatabase",
+            "ItemsAdder",
+            "MMOItems",
+            "MythicMobs",
+            "Nexo",
+            "Oraxen"
+    );
 
 
     public Config() {
@@ -56,6 +69,22 @@ public class Config extends AuroraConfig {
                             "Changing this requires a full restart"));
                     yaml.set("config-version", null);
                     yaml.set("config-version", 4);
+                },
+                (yaml) -> {
+                    yaml.set("item-matchers", List.of(
+                            "CustomFishing",
+                            "Eco",
+                            "ExecutableItems",
+                            "ExecutableBlocks",
+                            "HeadDatabase",
+                            "ItemsAdder",
+                            "MMOItems",
+                            "MythicMobs",
+                            "Nexo",
+                            "Oraxen"
+                    ));
+                    yaml.set("config-version", null);
+                    yaml.set("config-version", 5);
                 }
         );
     }

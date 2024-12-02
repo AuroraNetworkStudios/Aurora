@@ -30,6 +30,9 @@ public class ItemManager {
     }
 
     public TypeId resolveId(ItemStack item) {
+        if (item.getType() == Material.AIR) {
+            return TypeId.from(Material.AIR);
+        }
         for (ItemResolver resolver : resolvers.values()) {
             if (resolver.matches(item)) {
                 return resolver.resolveId(item);

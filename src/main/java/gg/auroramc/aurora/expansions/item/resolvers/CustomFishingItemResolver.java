@@ -4,14 +4,17 @@ import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
 import net.momirealms.customfishing.api.BukkitCustomFishingPlugin;
 import net.momirealms.customfishing.api.mechanic.context.Context;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public class CustomFishingItemResolver implements ItemResolver {
     @Override
     public boolean matches(ItemStack item) {
-        var wrappedItem = BukkitCustomFishingPlugin.getInstance().getItemManager().wrap(item);
-        return wrappedItem.hasTag("CustomFishing", "id");
+        if (item.getType() == Material.AIR) {
+            return false;
+        }
+        return BukkitCustomFishingPlugin.getInstance().getItemManager().getCustomFishingItemID(item) != null;
     }
 
     @Override

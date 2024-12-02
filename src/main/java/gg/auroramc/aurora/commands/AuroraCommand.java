@@ -3,6 +3,7 @@ package gg.auroramc.aurora.commands;
 import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.*;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.command.ArgumentParser;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.item.TypeId;
@@ -37,7 +38,7 @@ public class AuroraCommand extends BaseCommand {
 
     @Subcommand("debug blockinfo")
     @CommandPermission("aurora.core.admin.debug.blockinfo")
-    public void onRegionSelection(Player player) {
+    public void onBlockInfo(Player player) {
         var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
         var block = player.getTargetBlockExact(25);
         if (block == null) return;
@@ -46,6 +47,13 @@ public class AuroraCommand extends BaseCommand {
             return;
         }
         Chat.sendMessage(player, "&eBlock placed by a player");
+    }
+
+    @Subcommand("debug itemid")
+    @CommandPermission("aurora.core.admin.debug.itemid")
+    public void onItemId(Player player) {
+        var id = AuroraAPI.getItemManager().resolveId(player.getInventory().getItemInMainHand());
+        Chat.sendMessage(player, "&aItem id: " + id.toString());
     }
 
     @Subcommand("dispatch")
