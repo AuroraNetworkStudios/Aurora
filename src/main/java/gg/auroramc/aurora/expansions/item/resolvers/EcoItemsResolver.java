@@ -10,7 +10,14 @@ import org.jetbrains.annotations.Nullable;
 public class EcoItemsResolver implements ItemResolver {
     @Override
     public boolean matches(ItemStack item) {
-        return Items.isCustomItem(item);
+        var resolvedItem = Items.getCustomItem(item);
+        if (resolvedItem == null) {
+            return false;
+        }
+
+        return !resolvedItem.getKey().namespace().equals("itemsadder")
+                && !resolvedItem.getKey().namespace().equals("oraxen")
+                && !resolvedItem.getKey().namespace().equals("nexo");
     }
 
     @Override
