@@ -17,6 +17,7 @@ public class ItemConfig {
     private List<String> appendLore;
     private String material;
     private Integer customModelData;
+    private String itemModel;
     private String texture;
     private Integer slot;
     private List<Integer> slots;
@@ -57,6 +58,7 @@ public class ItemConfig {
 
         if (other.material != null) ret.material = other.material;
         if (other.customModelData != null) ret.customModelData = other.customModelData;
+        if (other.itemModel != null) ret.itemModel = other.itemModel;
         if (other.texture != null) ret.texture = other.texture;
         if (other.slot != null) ret.slot = other.slot;
         if (other.slots != null && !other.slots.isEmpty()) {
@@ -142,6 +144,7 @@ public class ItemConfig {
 
         this.material = other.material;
         this.customModelData = other.customModelData;
+        this.itemModel = other.itemModel;
         this.texture = other.texture;
         this.slot = other.slot;
         if (other.slots != null) {

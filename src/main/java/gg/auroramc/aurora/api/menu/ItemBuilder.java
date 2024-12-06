@@ -296,6 +296,12 @@ public class ItemBuilder {
             meta.setCustomModelData(config.getCustomModelData());
         }
 
+        if (Version.isAtLeastVersion(21, 4)) {
+            if (config.getItemModel() != null) {
+                meta.setItemModel(NamespacedKey.fromString(config.getItemModel()));
+            }
+        }
+
         for (var enchant : config.getEnchantments().entrySet()) {
             var key = NamespacedKey.fromString(enchant.getKey());
             if (key == null) continue;
