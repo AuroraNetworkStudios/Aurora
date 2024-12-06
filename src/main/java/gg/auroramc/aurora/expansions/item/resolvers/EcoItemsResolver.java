@@ -24,8 +24,7 @@ public class EcoItemsResolver implements ItemResolver {
     private final NamespacedKey reforgesKey = new NamespacedKey("reforges", "reforge_stone");
     private final NamespacedKey ecoscrollsKey = new NamespacedKey("ecoscrolls", "scroll");
     private final NamespacedKey ecocratesKey = new NamespacedKey("ecocrates", "key");
-    // TODO
-    //private final NamespacedKey stattrackersKey = new NamespacedKey("stattrackers", "tracker");
+    private final NamespacedKey stattrackersKey = new NamespacedKey("stattrackers", "stat_tracker");
 
     @Override
     public boolean matches(ItemStack item) {
@@ -55,7 +54,8 @@ public class EcoItemsResolver implements ItemResolver {
                 pdc.has(ecoscrollsKey) ||
                 pdc.has(ecocratesKey) ||
                 pdc.has(ecoarmorShardKey) ||
-                pdc.has(ecoarmorUpgradeCrystalKey);
+                pdc.has(ecoarmorUpgradeCrystalKey) ||
+                pdc.has(stattrackersKey);
     }
 
     private TypeId resolveEcoItemId(ItemStack item) {
@@ -85,6 +85,8 @@ public class EcoItemsResolver implements ItemResolver {
             return new TypeId("eco", "ecoarmor:shard_" + pdc.get(ecoarmorShardKey, type));
         } else if(pdc.has(ecoarmorUpgradeCrystalKey)) {
             return new TypeId("eco", "ecoarmor:upgrade_crystal_" + pdc.get(ecoarmorUpgradeCrystalKey, type));
+        } else if(pdc.has(stattrackersKey)) {
+            return new TypeId("eco", "stattrackers:" + pdc.get(stattrackersKey, type));
         }
         return null;
     }
