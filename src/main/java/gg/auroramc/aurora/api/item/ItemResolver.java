@@ -7,6 +7,13 @@ import org.jetbrains.annotations.Nullable;
 public interface ItemResolver {
     boolean matches(ItemStack item);
 
+    default TypeId oneStepMatch(ItemStack item) {
+        if (matches(item)) {
+            return resolveId(item);
+        }
+        return null;
+    }
+
     TypeId resolveId(ItemStack item);
 
     ItemStack resolveItem(String id, @Nullable Player player);

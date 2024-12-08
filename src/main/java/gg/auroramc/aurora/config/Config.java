@@ -37,6 +37,15 @@ public class Config extends AuroraConfig {
             "Nexo",
             "Oraxen"
     );
+    private ItemIdResolverConfig auroraItems;
+
+
+    @Getter
+    public final static class ItemIdResolverConfig {
+        private Boolean enableIdResolver = false;
+        private Boolean requireExactMatch = false;
+        private Map<String, Boolean> hashIncludes;
+    }
 
 
     public Config() {
@@ -85,6 +94,16 @@ public class Config extends AuroraConfig {
                     ));
                     yaml.set("config-version", null);
                     yaml.set("config-version", 5);
+                },
+                (yaml) -> {
+                    yaml.set("aurora-items.enable-id-resolver", false);
+                    yaml.setComments("aurora-items", List.of(
+                            "Should we try resolve IDs for items registered through /aurora registeritem <id>?",
+                            "This is experimental and may not work for every use case.",
+                            "Changing these values requires a full restart."
+                    ));
+                    yaml.set("config-version", null);
+                    yaml.set("config-version", 6);
                 }
         );
     }

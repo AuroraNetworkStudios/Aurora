@@ -56,4 +56,10 @@ item-matchers:
   - "Nexo"
   - "Oraxen"
 
-config-version: 5
+# Should we try resolve IDs for items registered through /aurora registeritem <id>?
+# This is experimental and may not work for every use case.
+# Changing these values requires a full restart
+aurora-items:
+  enable-id-resolver: true
+
+config-version: 6

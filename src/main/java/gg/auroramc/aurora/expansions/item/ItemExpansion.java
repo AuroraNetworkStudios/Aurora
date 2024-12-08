@@ -5,11 +5,14 @@ import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.AuroraExpansion;
 import gg.auroramc.aurora.api.item.ItemManager;
+import gg.auroramc.aurora.api.util.Version;
 import gg.auroramc.aurora.expansions.item.resolvers.*;
 import gg.auroramc.aurora.expansions.item.resolvers.EcoItemsResolver;
 import gg.auroramc.aurora.expansions.item.store.ItemStore;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 
 @Getter
 public class ItemExpansion implements AuroraExpansion {
@@ -70,7 +73,7 @@ public class ItemExpansion implements AuroraExpansion {
             Aurora.logger().debug("Hooked into ItemsAdder for item resolvers.");
         }
 
-        itemManager.registerResolver("aurora", new AuroraItemResolver(itemStore));
+        initAuroraItemResolver();
 
         if (DependencyManager.hasDep(Dep.HEAD_DATABASE) && enabledMatchers.contains(Dep.HEAD_DATABASE.getId())) {
             var hdbResolver = new HdbItemResolver();
@@ -83,5 +86,10 @@ public class ItemExpansion implements AuroraExpansion {
     @Override
     public boolean canHook() {
         return true;
+    }
+
+    private void initAuroraItemResolver() {
+        var itemConfig = Aurora.getLibConfig().getAuroraItems();
+        itemManager.registerResolver("aurora", new AuroraItemResolver(itemStore, itemConfig.getEnableIdResolver()));
     }
 }

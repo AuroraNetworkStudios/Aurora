@@ -34,8 +34,9 @@ public class ItemManager {
             return TypeId.from(Material.AIR);
         }
         for (ItemResolver resolver : resolvers.values()) {
-            if (resolver.matches(item)) {
-                return resolver.resolveId(item);
+            var res = resolver.oneStepMatch(item);
+            if (res != null) {
+                return res;
             }
         }
         return TypeId.from(item.getType());
