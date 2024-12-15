@@ -8,6 +8,8 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -44,6 +46,7 @@ public class RegionBlockListener implements Listener {
     public void onSandFall(EntityChangeBlockEvent event) {
         Block block = event.getBlock();
         if (!regionExpansion.isPlacedBlock(block)) return;
+        if (!(event.getEntity() instanceof FallingBlock)) return;
         Material type = block.getType();
         if (type == Material.SAND || type == Material.RED_SAND || type == Material.GRAVEL) {
             Block below = block.getRelative(BlockFace.DOWN);
