@@ -12,6 +12,7 @@ public class ItemConfig {
     private boolean refresh = false;
     private int priority = -1;
     private Boolean hideTooltip;
+    private String tooltipStyle;
     private String name;
     private List<String> lore;
     private List<String> appendLore;
@@ -50,11 +51,12 @@ public class ItemConfig {
             ret.lore = new ArrayList<>(other.lore);
         }
 
-        if(other.appendLore != null && !other.appendLore.isEmpty()) {
+        if (other.appendLore != null && !other.appendLore.isEmpty()) {
             ret.appendLore = new ArrayList<>(other.appendLore);
         }
 
         if (other.hideTooltip != null) ret.hideTooltip = other.hideTooltip;
+        if (other.tooltipStyle != null) ret.tooltipStyle = other.tooltipStyle;
 
         if (other.material != null) ret.material = other.material;
         if (other.customModelData != null) ret.customModelData = other.customModelData;
@@ -83,19 +85,19 @@ public class ItemConfig {
             ret.enchantments = new HashMap<>(other.enchantments);
         }
 
-        if(other.viewRequirements != null && !other.viewRequirements.isEmpty()) {
+        if (other.viewRequirements != null && !other.viewRequirements.isEmpty()) {
             ret.viewRequirements = new ArrayList<>(other.viewRequirements);
         }
 
-        if(other.clickRequirements != null && !other.clickRequirements.isEmpty()) {
+        if (other.clickRequirements != null && !other.clickRequirements.isEmpty()) {
             ret.clickRequirements = new ArrayList<>(other.clickRequirements);
         }
 
-        if(other.leftClickRequirements != null && !other.leftClickRequirements.isEmpty()) {
+        if (other.leftClickRequirements != null && !other.leftClickRequirements.isEmpty()) {
             ret.leftClickRequirements = new ArrayList<>(other.leftClickRequirements);
         }
 
-        if(other.rightClickRequirements != null && !other.rightClickRequirements.isEmpty()) {
+        if (other.rightClickRequirements != null && !other.rightClickRequirements.isEmpty()) {
             ret.rightClickRequirements = new ArrayList<>(other.rightClickRequirements);
         }
 
@@ -134,13 +136,14 @@ public class ItemConfig {
             this.lore = new ArrayList<>();
         }
 
-        if(other.appendLore != null) {
+        if (other.appendLore != null) {
             this.appendLore = new ArrayList<>(other.appendLore);
         } else {
             this.appendLore = new ArrayList<>();
         }
 
         this.hideTooltip = other.hideTooltip;
+        this.tooltipStyle = other.tooltipStyle;
 
         this.material = other.material;
         this.customModelData = other.customModelData;
@@ -175,25 +178,25 @@ public class ItemConfig {
             this.enchantments = new HashMap<>();
         }
 
-        if(other.viewRequirements != null) {
+        if (other.viewRequirements != null) {
             this.viewRequirements = new ArrayList<>(other.viewRequirements);
         } else {
             this.viewRequirements = new ArrayList<>();
         }
 
-        if(other.clickRequirements != null) {
+        if (other.clickRequirements != null) {
             this.clickRequirements = new ArrayList<>(other.clickRequirements);
         } else {
             this.clickRequirements = new ArrayList<>();
         }
 
-        if(other.leftClickRequirements != null) {
+        if (other.leftClickRequirements != null) {
             this.leftClickRequirements = new ArrayList<>(other.leftClickRequirements);
         } else {
             this.leftClickRequirements = new ArrayList<>();
         }
 
-        if(other.rightClickRequirements != null) {
+        if (other.rightClickRequirements != null) {
             this.rightClickRequirements = new ArrayList<>(other.rightClickRequirements);
         } else {
             this.rightClickRequirements = new ArrayList<>();

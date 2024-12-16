@@ -265,6 +265,12 @@ public class ItemBuilder {
             }
         }
 
+        if(Version.isAtLeastVersion(21, 2)) {
+            if(config.getTooltipStyle() != null) {
+                meta.setTooltipStyle(NamespacedKey.fromString(config.getTooltipStyle()));
+            }
+        }
+
         var placeholders = this.placeholders.toArray(Placeholder[]::new);
 
         if (config.getName() != null) {
