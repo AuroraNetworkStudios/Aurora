@@ -7,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,12 +29,25 @@ public class EcoItemsResolver implements ItemResolver {
 
     @Override
     public boolean matches(ItemStack item) {
-        return isEcoItem(item);
+        if (!item.hasItemMeta()) return false;
+        return isEcoItem(item.getItemMeta());
     }
 
     @Override
     public TypeId resolveId(ItemStack item) {
-        return resolveEcoItemId(item);
+        return resolveEcoItemId(item, item.getItemMeta());
+    }
+
+    @Override
+    public TypeId oneStepMatch(ItemStack item) {
+        var meta = item.getItemMeta();
+        if (meta == null) {
+            return null;
+        }
+        if (isEcoItem(meta)) {
+            return resolveEcoItemId(item, meta);
+        }
+        return null;
     }
 
     @Override
@@ -41,7 +55,7 @@ public class EcoItemsResolver implements ItemResolver {
         return Items.lookup(id).getItem();
     }
 
-    private boolean isEcoItem(ItemStack item) {
+    private boolean isEcoItem(ItemMeta item) {
         // Check every single pdc key
         // This is so dumb
         var pdc = item.getPersistentDataContainer();
@@ -58,16 +72,16 @@ public class EcoItemsResolver implements ItemResolver {
                 pdc.has(stattrackersKey);
     }
 
-    private TypeId resolveEcoItemId(ItemStack item) {
+    private TypeId resolveEcoItemId(ItemStack item, ItemMeta meta) {
         // Get the key for the matching pdc key
-        var pdc = item.getPersistentDataContainer();
+        var pdc = meta.getPersistentDataContainer();
         var type = PersistentDataType.STRING;
 
         if (pdc.has(ecoitemsKey)) {
             return new TypeId("eco", "ecoitems:" + pdc.get(ecoitemsKey, type));
         } else if (pdc.has(ecoarmorKey)) {
             var slot = parseArmorSlot(item);
-            if(pdc.has(ecoarmorAdvancedKey) && pdc.get(ecoarmorAdvancedKey, PersistentDataType.INTEGER) != 0) {
+            if (pdc.has(ecoarmorAdvancedKey) && pdc.get(ecoarmorAdvancedKey, PersistentDataType.INTEGER) != 0) {
                 return new TypeId("eco", "ecoarmor:set_" + pdc.get(ecoarmorKey, type) + "_" + slot + "_advanced");
             }
             return new TypeId("eco", "ecoarmor:set_" + pdc.get(ecoarmorKey, type) + "_" + slot);
@@ -81,11 +95,11 @@ public class EcoItemsResolver implements ItemResolver {
             return new TypeId("eco", "ecoscrolls:scroll_" + pdc.get(ecoscrollsKey, type));
         } else if (pdc.has(ecocratesKey)) {
             return new TypeId("eco", "ecocrates:" + pdc.get(ecocratesKey, type) + "_key");
-        } else if(pdc.has(ecoarmorShardKey)) {
+        } else if (pdc.has(ecoarmorShardKey)) {
             return new TypeId("eco", "ecoarmor:shard_" + pdc.get(ecoarmorShardKey, type));
-        } else if(pdc.has(ecoarmorUpgradeCrystalKey)) {
+        } else if (pdc.has(ecoarmorUpgradeCrystalKey)) {
             return new TypeId("eco", "ecoarmor:upgrade_crystal_" + pdc.get(ecoarmorUpgradeCrystalKey, type));
-        } else if(pdc.has(stattrackersKey)) {
+        } else if (pdc.has(stattrackersKey)) {
             return new TypeId("eco", "stattrackers:" + pdc.get(stattrackersKey, type));
         }
         return null;
