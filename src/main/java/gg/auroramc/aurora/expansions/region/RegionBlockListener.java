@@ -3,6 +3,7 @@ package gg.auroramc.aurora.expansions.region;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.events.region.RegionBlockBreakEvent;
 import gg.auroramc.aurora.api.events.region.RegionBlockPlaceEvent;
+import gg.auroramc.aurora.api.util.Version;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -44,6 +45,9 @@ public class RegionBlockListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSandFall(EntityChangeBlockEvent event) {
+        // Don't do anything on folia.
+        if (Version.isFolia()) return;
+
         Block block = event.getBlock();
         if (!regionExpansion.isPlacedBlock(block)) return;
         if (!(event.getEntity() instanceof FallingBlock)) return;

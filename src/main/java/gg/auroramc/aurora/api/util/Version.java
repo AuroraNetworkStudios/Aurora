@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.util;
 
+import gg.auroramc.aurora.Aurora;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
@@ -8,14 +9,29 @@ public class Version {
 
     public static final int MAJOR_VERSION = getMajorVersion(getVersionString(Bukkit.getBukkitVersion()));
     public static final int MINOR_VERSION = getMinorVersion(getVersionString(Bukkit.getBukkitVersion()));
+    private static boolean IS_FOLIA = getFolia();
 
     public static boolean isPigman(EntityType type) {
         if (MAJOR_VERSION == 16) {
             return type.equals(EntityType.ZOMBIFIED_PIGLIN);
-        }
-        else {
+        } else {
             return type.name().equals("PIG_ZOMBIE");
         }
+    }
+
+    private static boolean getFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            Aurora.logger().debug("Detected Folia.");
+            return true;
+        } catch (ClassNotFoundException e) {
+            Aurora.logger().debug("We are not running on Folia.");
+            return false;
+        }
+    }
+
+    public static boolean isFolia() {
+        return IS_FOLIA;
     }
 
     public static boolean isAtLeastVersion(int version) {
