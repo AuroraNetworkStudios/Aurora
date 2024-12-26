@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "2.1.1"
+version = "2.1.2"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -39,6 +39,7 @@ repositories {
     maven("https://maven.enginehub.org/repo/")
     // EssentialsX
     maven("https://repo.essentialsx.net/releases/")
+    maven("https://repo.essentialsx.net/snapshots/")
     // MultiVerse-Core
     maven("https://repo.onarandombox.com/content/groups/public/")
     // MMO plugins
@@ -63,10 +64,12 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
 
     // 3rd party
+    compileOnly("net.essentialsx:EssentialsX:2.21.0-SNAPSHOT") {
+        exclude(group = "org.spigotmc", module = "spigot-api")
+    }
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
     compileOnly("me.clip:placeholderapi:2.11.6")
-    compileOnly("net.essentialsx:EssentialsX:2.19.0")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
-    compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("com.onarandombox.multiversecore:multiverse-core:4.3.12")
     compileOnly("com.github.angeschossen:WildRegenerationAPI:1.5.0")
     compileOnly("net.luckperms:api:5.4")
@@ -133,6 +136,10 @@ tasks.processResources {
 
 tasks.withType<ShadowJar> {
     archiveFileName.set("Aurora-${project.version}.jar")
+
+    manifest {
+        attributes["paperweight-mappings-namespace"] = "mojang"
+    }
 
     relocate("com.zaxxer.hikari", "gg.auroramc.aurora.libs.hikari")
     relocate("net.objecthunter.exp4j", "gg.auroramc.aurora.libs.exp4j")
