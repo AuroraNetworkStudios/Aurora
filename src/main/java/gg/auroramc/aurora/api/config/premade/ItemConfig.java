@@ -16,6 +16,7 @@ public class ItemConfig {
     private String name;
     private List<String> lore;
     private List<String> appendLore;
+    private List<ConditionalLore> conditionalLore;
     private String material;
     private Integer customModelData;
     private String itemModel;
@@ -36,6 +37,13 @@ public class ItemConfig {
     private List<RequirementConfig> leftClickRequirements;
     private List<RequirementConfig> rightClickRequirements;
 
+    @Getter
+    @Setter
+    public static final class ConditionalLore {
+        private List<String> conditions = new ArrayList<>();
+        private List<String> lore = new ArrayList<>();
+    }
+
     public ItemConfig() {
     }
 
@@ -53,6 +61,10 @@ public class ItemConfig {
 
         if (other.appendLore != null && !other.appendLore.isEmpty()) {
             ret.appendLore = new ArrayList<>(other.appendLore);
+        }
+
+        if (other.conditionalLore != null && !other.conditionalLore.isEmpty()) {
+            ret.conditionalLore = new ArrayList<>(other.conditionalLore);
         }
 
         if (other.hideTooltip != null) ret.hideTooltip = other.hideTooltip;
@@ -140,6 +152,12 @@ public class ItemConfig {
             this.appendLore = new ArrayList<>(other.appendLore);
         } else {
             this.appendLore = new ArrayList<>();
+        }
+
+        if (other.conditionalLore != null) {
+            this.conditionalLore = new ArrayList<>(other.conditionalLore);
+        } else {
+            this.conditionalLore = new ArrayList<>();
         }
 
         this.hideTooltip = other.hideTooltip;

@@ -265,8 +265,8 @@ public class ItemBuilder {
             }
         }
 
-        if(Version.isAtLeastVersion(21, 2)) {
-            if(config.getTooltipStyle() != null) {
+        if (Version.isAtLeastVersion(21, 2)) {
+            if (config.getTooltipStyle() != null) {
                 meta.setTooltipStyle(NamespacedKey.fromString(config.getTooltipStyle()));
             }
         }
@@ -291,6 +291,19 @@ public class ItemBuilder {
                 lore = new ArrayList<>();
             }
             lore.addAll(config.getAppendLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+            meta.lore(lore);
+        }
+
+        if (config.getConditionalLore() != null && !config.getConditionalLore().isEmpty()) {
+            var lore = meta.lore();
+            if (lore == null) {
+                lore = new ArrayList<>();
+            }
+            for (var conditional : config.getConditionalLore()) {
+                if (Requirement.isAllMet(player, conditional.getConditions(), this.placeholders)) {
+                    lore.addAll(conditional.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+                }
+            }
             meta.lore(lore);
         }
 
