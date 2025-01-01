@@ -24,10 +24,18 @@ public class PermissionReward extends AbstractReward {
     @Override
     public void execute(Player player, long level, List<Placeholder<?>> placeholders) {
         if (permissions.isEmpty()) return;
+
         var nodes = buildNodes(player, placeholders);
-        LuckPermsProvider.get().getUserManager().modifyUser(player.getUniqueId(), user -> {
-            for (var node : nodes) user.data().add(node);
-        });
+
+        var user = LuckPermsProvider.get().getUserManager().getUser(player.getUniqueId());
+        if (user == null) {
+            Aurora.logger().warning("User " + player.getName() + " doesn't have LuckPerms user object");
+            return;
+        }
+
+        for (var node : nodes) user.data().add(node);
+
+        LuckPermsProvider.get().getUserManager().saveUser(user);
     }
 
     @Override
