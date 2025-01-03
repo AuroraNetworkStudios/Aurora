@@ -1,10 +1,12 @@
 package gg.auroramc.aurora.api.menu;
 
+import com.google.common.collect.HashMultimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import gg.auroramc.aurora.Aurora;
-import gg.auroramc.aurora.api.config.premade.*;
+import gg.auroramc.aurora.api.config.premade.ItemConfig;
+import gg.auroramc.aurora.api.config.premade.SkullConfig;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
@@ -15,7 +17,6 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -27,7 +28,6 @@ import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -337,7 +337,7 @@ public class ItemBuilder {
                 var pFlag = ItemFlag.valueOf(flag.toUpperCase(Locale.ROOT));
 
                 if (pFlag == ItemFlag.HIDE_ATTRIBUTES && Version.isAtLeastVersion(20, 5)) {
-                    meta.setAttributeModifiers(Material.IRON_SWORD.getDefaultAttributeModifiers(EquipmentSlot.HAND));
+                    meta.setAttributeModifiers(HashMultimap.create());
                 }
 
                 meta.addItemFlags(pFlag);
