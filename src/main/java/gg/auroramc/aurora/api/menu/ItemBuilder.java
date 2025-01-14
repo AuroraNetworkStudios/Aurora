@@ -41,6 +41,7 @@ public class ItemBuilder {
     private final Collection<PotionEffect> potionEffects = new ArrayList<>();
     private Color potionColor = null;
     private ItemStack item = null;
+    private final List<String> extraLore = new ArrayList<>();
     private PlayerProfile playerProfile;
     private static final Map<String, String> skinCache = new HashMap<>();
     private static final Map<String, com.destroystokyo.paper.profile.PlayerProfile> profileCache = new HashMap<>();
@@ -120,6 +121,16 @@ public class ItemBuilder {
 
     public ItemBuilder potionEffect(Collection<PotionEffect> effects) {
         this.potionEffects.addAll(effects);
+        return this;
+    }
+
+    public ItemBuilder extraLore(String lore) {
+        this.extraLore.add(lore);
+        return this;
+    }
+
+    public ItemBuilder extraLore(List<String> lore) {
+        this.extraLore.addAll(lore);
         return this;
     }
 
@@ -304,6 +315,15 @@ public class ItemBuilder {
                     lore.addAll(conditional.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
                 }
             }
+            meta.lore(lore);
+        }
+
+        if (!extraLore.isEmpty()) {
+            var lore = meta.lore();
+            if (lore == null) {
+                lore = new ArrayList<>();
+            }
+            lore.addAll(extraLore.stream().map(l -> Text.component(player, l, placeholders)).toList());
             meta.lore(lore);
         }
 
