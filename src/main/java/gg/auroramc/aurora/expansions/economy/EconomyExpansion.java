@@ -70,7 +70,18 @@ public class EconomyExpansion implements AuroraExpansion {
 
     @Override
     public boolean canHook() {
-        return DependencyManager.hasAnyDep(Dep.ESSENTIALS, Dep.CMI, Dep.VAULT);
+        return
+            DependencyManager.hasAnyDep(
+                Dep.ESSENTIALS,
+                Dep.CMI,
+                Dep.VAULT,
+                Dep.ELITEMOBS,
+                Dep.PLAYER_POINTS,
+                Dep.COINS_ENGINE
+            ) || DependencyManager.hasAnyDep(
+        "EcoBits",
+                "RoyaleEconomy"
+            );
     }
 
     public AuroraEconomy getEconomy(String economyPlugin) {
