@@ -21,13 +21,16 @@ public class WorldGuardExpansion implements AuroraExpansion, Listener {
     private final Map<UUID, Location> teleportMoves = new HashMap<>();
 
     protected void onRegionUpdate(UUID playerUUID, Set<ProtectedRegion> newRegions) {
+        var player = Bukkit.getPlayer(playerUUID);
+        if (player == null) return;
+
         var oldRegions = previousRegions.get(playerUUID);
         var regions = new ArrayList<>(newRegions);
         if (regions.isEmpty()) {
 
-            if(oldRegions != null && !oldRegions.isEmpty()) {
+            if (oldRegions != null && !oldRegions.isEmpty()) {
                 previousRegions.remove(playerUUID);
-                Bukkit.getPluginManager().callEvent(new PlayerRegionLeaveEvent(Bukkit.getPlayer(playerUUID), oldRegions.stream().toList()));
+                Bukkit.getPluginManager().callEvent(new PlayerRegionLeaveEvent(player, oldRegions.stream().toList()));
             }
             return;
         }
@@ -38,10 +41,10 @@ public class WorldGuardExpansion implements AuroraExpansion, Listener {
         previousRegions.put(playerUUID, newRegions);
 
         if (leaveRegions != null && !leaveRegions.isEmpty()) {
-            Bukkit.getPluginManager().callEvent(new PlayerRegionLeaveEvent(Bukkit.getPlayer(playerUUID), leaveRegions));
+            Bukkit.getPluginManager().callEvent(new PlayerRegionLeaveEvent(player, leaveRegions));
         }
         if (!enterRegions.isEmpty()) {
-            Bukkit.getPluginManager().callEvent(new PlayerRegionEnterEvent(Bukkit.getPlayer(playerUUID), enterRegions));
+            Bukkit.getPluginManager().callEvent(new PlayerRegionEnterEvent(player, enterRegions));
         }
     }
 
@@ -54,11 +57,11 @@ public class WorldGuardExpansion implements AuroraExpansion, Listener {
     }
 
     protected boolean checkFreeMoveAfterTeleport(UUID playerUUID, Location location) {
-        if(teleportMoves.containsKey(playerUUID)) {
+        if (teleportMoves.containsKey(playerUUID)) {
             var oldLocation = teleportMoves.get(playerUUID);
             removeTeleportMove(playerUUID);
-            if(oldLocation == null) return false;
-            if(oldLocation.getWorld() != location.getWorld()) return false;
+            if (oldLocation == null) return false;
+            if (oldLocation.getWorld() != location.getWorld()) return false;
             return oldLocation.distance(location) <= 5;
         }
         return false;
