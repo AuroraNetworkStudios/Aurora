@@ -86,6 +86,7 @@ public class RegionBlockListener implements Listener {
         checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.SUGAR_CANE);
         checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.BAMBOO);
         checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.CACTUS);
+        checkTallPlant(event.getPlayer(), block, 0, mat -> mat == Material.KELP_PLANT);
         checkBlocksRequiringSupportBelow(event.getPlayer(), block);
         checkAmethystCluster(event.getPlayer(), block);
     }
@@ -129,7 +130,7 @@ public class RegionBlockListener implements Listener {
     }
 
     private void checkTallPlant(Player player, Block block, int num, Predicate<Material> isMaterial) {
-        if (num < 20) {
+        if (num < 26) {
             Block above = block.getRelative(BlockFace.UP);
             if (isMaterial.test(above.getType())) {
                 removeBlockWithEvent(player, above);
