@@ -44,6 +44,7 @@ permissions:
       - aurora.core.admin.merchant
       - aurora.core.admin.debug.blockinfo
       - aurora.core.admin.debug.itemid
+      - aurora.core.admin.debug.blockremove
   aurora.core.user:
     description: Allows the player to use user commands
     default: true

@@ -49,6 +49,20 @@ public class AuroraCommand extends BaseCommand {
         Chat.sendMessage(player, "&eBlock placed by a player");
     }
 
+    @Subcommand("debug blockremove")
+    @CommandPermission("aurora.core.admin.debug.blockremove")
+    public void onBlockRemove(Player player) {
+        var regionExpansion = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+        var block = player.getTargetBlockExact(25);
+        if (block == null) return;
+        if (!regionExpansion.isPlacedBlock(block)) {
+            Chat.sendMessage(player, "&cBlock is not placed by a player.");
+            return;
+        }
+        regionExpansion.removePlacedBlock(block);
+        Chat.sendMessage(player, "&eBlock is now not registered as player placed.");
+    }
+
     @Subcommand("debug itemid")
     @CommandPermission("aurora.core.admin.debug.itemid")
     public void onItemId(Player player) {
