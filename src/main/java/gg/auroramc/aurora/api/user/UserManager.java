@@ -128,11 +128,12 @@ public class UserManager implements Listener {
         this.autoSaveTask = Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
             var values = cache.asMap().values();
             var toSave = values.stream().filter(u -> u.isLoaded() && u.isDirty()).toList();
-            if (toSave.isEmpty()) return;
-            var successCount = storage.bulkSaveUsers(toSave, SaveReason.AUTO_SAVE);
-            var all = toSave.size();
-            if (!Bukkit.getOnlinePlayers().isEmpty() && !values.isEmpty()) {
-                Aurora.logger().info("Auto background saved user data for " + successCount + "/" + all + " online players");
+            if (!toSave.isEmpty()) {
+                var successCount = storage.bulkSaveUsers(toSave, SaveReason.AUTO_SAVE);
+                var all = toSave.size();
+                if (!Bukkit.getOnlinePlayers().isEmpty() && !values.isEmpty()) {
+                    Aurora.logger().info("Auto background saved user data for " + successCount + "/" + all + " online players");
+                }
             }
             autoSaveTask();
         }, Aurora.getLibConfig().getUserAutoSaveInMinutes(), TimeUnit.MINUTES);
