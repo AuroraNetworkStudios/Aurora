@@ -1,18 +1,19 @@
 package gg.auroramc.aurora.api.config.premade;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Setter
 @Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class PotionConfig {
+    @Builder.Default
     private String type = "WATER";
-
+    @Builder.Default
     private Boolean extended = false;
-
+    @Builder.Default
     private Boolean upgraded = false;
-
-    public PotionConfig() {}
 
     public PotionConfig(PotionConfig other) {
         if(other == null) return;

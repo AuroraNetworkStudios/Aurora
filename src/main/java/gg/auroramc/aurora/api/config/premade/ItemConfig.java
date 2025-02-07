@@ -1,15 +1,19 @@
 package gg.auroramc.aurora.api.config.premade;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
 @Setter
 @Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ItemConfig {
+    @Builder.Default
     private boolean refresh = false;
+    @Builder.Default
     private int priority = -1;
     private Boolean hideTooltip;
     private String tooltipStyle;
@@ -23,6 +27,7 @@ public class ItemConfig {
     private String texture;
     private Integer slot;
     private List<Integer> slots;
+    @Builder.Default
     private Integer amount = 1;
     private Integer durability;
     private SkullConfig skull;
@@ -39,12 +44,14 @@ public class ItemConfig {
 
     @Getter
     @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
     public static final class ConditionalLore {
+        @Builder.Default
         private List<String> conditions = new ArrayList<>();
+        @Builder.Default
         private List<String> lore = new ArrayList<>();
-    }
-
-    public ItemConfig() {
     }
 
     public ItemConfig merge(ItemConfig other) {
