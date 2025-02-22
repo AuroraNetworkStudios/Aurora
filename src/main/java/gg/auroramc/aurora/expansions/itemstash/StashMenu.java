@@ -60,10 +60,10 @@ public class StashMenu {
             var item = items.get(i);
             menu.addItem(ItemBuilder.item(item).amount(item.getAmount()).slot(menuSlot).build(target), (e) -> {
                 if (stashData.removeItem(item)) {
-                    var failed = target.getInventory().addItem(item);
+                    var failed = openFor.getInventory().addItem(item);
                     if (!failed.isEmpty()) {
                         Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                (task) -> failed.forEach((slot, fitem) -> target.getWorld().dropItem(target.getLocation(), fitem)));
+                                (task) -> failed.forEach((slot, fitem) -> openFor.getWorld().dropItem(openFor.getLocation(), fitem)));
 
                     }
                     if (getMaxPages() <= page) {
@@ -86,10 +86,10 @@ public class StashMenu {
                 }
             }
 
-            var failed = target.getInventory().addItem(itemsToRemove.toArray(new ItemStack[0]));
+            var failed = openFor.getInventory().addItem(itemsToRemove.toArray(new ItemStack[0]));
             if (!failed.isEmpty()) {
                 Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                        (task) -> failed.forEach((slot, fitem) -> target.getWorld().dropItem(target.getLocation(), fitem)));
+                        (task) -> failed.forEach((slot, fitem) -> openFor.getWorld().dropItem(openFor.getLocation(), fitem)));
             }
             if (getMaxPages() <= page) {
                 page = Math.max(getMaxPages() - 1, 0);
