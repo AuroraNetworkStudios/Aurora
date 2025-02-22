@@ -47,6 +47,16 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
         menus.put(player.getUniqueId(), new StashMenu(player, config, p -> menus.remove(p.getUniqueId())));
     }
 
+    public void open(Player player, Player target) {
+        if (menus.containsKey(target.getUniqueId())) {
+            target.closeInventory();
+        }
+
+        player.getScheduler().run(Aurora.getInstance(), (t) -> {
+            menus.put(target.getUniqueId(), new StashMenu(player, target, config, p -> menus.remove(p.getUniqueId())));
+        }, null);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onStashItemAdd(StashItemAddEvent event) {
         if (menus.containsKey(event.getPlayerUniqueId())) {

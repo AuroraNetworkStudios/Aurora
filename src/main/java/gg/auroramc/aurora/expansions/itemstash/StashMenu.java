@@ -14,50 +14,56 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class StashMenu {
-    private final Player player;
+    private final Player target;
+    private final Player openFor;
     private final Consumer<Player> onClose;
     private Config config;
     private AuroraMenu menu;
     private int page = 0;
 
-    public StashMenu(Player player, Config config, Consumer<Player> onClose) {
-        this.player = player;
+    public StashMenu(Player openFor, Player target, Config config, Consumer<Player> onClose) {
+        this.openFor = openFor;
+        this.target = target;
         this.onClose = onClose;
         refresh(config);
     }
 
+    public StashMenu(Player target, Config config, Consumer<Player> onClose) {
+        this(target, target, config, onClose);
+    }
+
     public void refresh(Config config) {
         this.config = config;
-        this.menu = new AuroraMenu(player, config.getMenu().getTitle(), 54, false);
-        menu.onClose((m, e) -> onClose.accept(player));
+        this.menu = new AuroraMenu(target, config.getMenu().getTitle(), 54, false);
+        menu.onClose((m, e) -> onClose.accept(target));
         var mc = config.getMenu();
 
         if (mc.getFiller().getEnabled()) {
-            menu.addFiller(ItemBuilder.of(mc.getFiller().getItem()).toItemStack(player));
+            menu.addFiller(ItemBuilder.of(mc.getFiller().getItem()).toItemStack(target));
         } else {
             menu.addFiller(ItemBuilder.filler(Material.AIR));
         }
 
         for (var customItem : mc.getCustomItems().values()) {
-            menu.addItem(ItemBuilder.of(customItem).placeholder(Placeholder.of("{player}", player.getName())).build(player));
+            menu.addItem(ItemBuilder.of(customItem).placeholder(Placeholder.of("{player}", target.getName())).build(target));
         }
 
-        var stashData = Aurora.getUserManager().getUser(player).getStashData();
+        var stashData = Aurora.getUserManager().getUser(target).getStashData();
 
         var items = getPageItems();
         for (int i = 0; i < config.getStashArea().size(); i++) {
             var menuSlot = config.getStashArea().get(i);
             if (i >= items.size()) {
-                menu.addItem(ItemBuilder.item(new ItemStack(Material.AIR)).slot(menuSlot).build(player));
+                menu.addItem(ItemBuilder.item(new ItemStack(Material.AIR)).slot(menuSlot).build(target));
                 continue;
             }
             var item = items.get(i);
-            menu.addItem(ItemBuilder.item(item).amount(item.getAmount()).slot(menuSlot).build(player), (e) -> {
+            menu.addItem(ItemBuilder.item(item).amount(item.getAmount()).slot(menuSlot).build(target), (e) -> {
                 if (stashData.removeItem(item)) {
-                    var failed = player.getInventory().addItem(item);
+                    var failed = target.getInventory().addItem(item);
                     if (!failed.isEmpty()) {
                         Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                (task) -> failed.forEach((slot, fitem) -> player.getWorld().dropItem(player.getLocation(), fitem)));
+                                (task) -> failed.forEach((slot, fitem) -> target.getWorld().dropItem(target.getLocation(), fitem)));
 
                     }
                     if (getMaxPages() <= page) {
@@ -70,7 +76,7 @@ public class StashMenu {
         }
 
         // Collect all
-        menu.addItem(ItemBuilder.of(mc.getItems().getCollectAll()).build(player), (e) -> {
+        menu.addItem(ItemBuilder.of(mc.getItems().getCollectAll()).build(target), (e) -> {
             var itemsToRemove = new ArrayList<ItemStack>();
 
             for (var item : stashData.getItems()) {
@@ -80,10 +86,10 @@ public class StashMenu {
                 }
             }
 
-            var failed = player.getInventory().addItem(itemsToRemove.toArray(new ItemStack[0]));
+            var failed = target.getInventory().addItem(itemsToRemove.toArray(new ItemStack[0]));
             if (!failed.isEmpty()) {
                 Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                        (task) -> failed.forEach((slot, fitem) -> player.getWorld().dropItem(player.getLocation(), fitem)));
+                        (task) -> failed.forEach((slot, fitem) -> target.getWorld().dropItem(target.getLocation(), fitem)));
             }
             if (getMaxPages() <= page) {
                 page = Math.max(getMaxPages() - 1, 0);
@@ -93,32 +99,32 @@ public class StashMenu {
 
         // Pagination
         if (getMaxPages() > 1) {
-            menu.addItem(ItemBuilder.of(mc.getItems().getPrevPage()).build(player), (e) -> {
+            menu.addItem(ItemBuilder.of(mc.getItems().getPrevPage()).build(target), (e) -> {
                 prevPage();
             });
 
             menu.addItem(ItemBuilder.of(mc.getItems().getCurrentPage())
                     .placeholder(Placeholder.of("{current}", page + 1))
                     .placeholder(Placeholder.of("{max}", getMaxPages()))
-                    .build(player));
+                    .build(target));
 
-            menu.addItem(ItemBuilder.of(mc.getItems().getNextPage()).build(player), (e) -> {
+            menu.addItem(ItemBuilder.of(mc.getItems().getNextPage()).build(target), (e) -> {
                 nextPage();
             });
         }
 
-        menu.open();
+        menu.open(openFor);
     }
 
     private List<ItemStack> getPageItems() {
         int pageSize = config.getStashArea().size();
-        var items = Aurora.getUserManager().getUser(player).getStashData().getItems();
+        var items = Aurora.getUserManager().getUser(target).getStashData().getItems();
         return items.subList(page * pageSize, Math.min(items.size(), (page + 1) * pageSize));
     }
 
     private int getMaxPages() {
         int pageSize = config.getStashArea().size();
-        return (int) Math.ceil((double) Aurora.getUserManager().getUser(player).getStashData().getItems().size() / pageSize);
+        return (int) Math.ceil((double) Aurora.getUserManager().getUser(target).getStashData().getItems().size() / pageSize);
     }
 
     private void nextPage() {

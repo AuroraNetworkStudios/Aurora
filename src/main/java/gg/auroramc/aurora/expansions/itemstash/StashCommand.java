@@ -26,6 +26,13 @@ public class StashCommand extends BaseCommand {
         expansion.open(player);
     }
 
+    @Subcommand("view")
+    @CommandPermission("aurora.core.admin.stash.other")
+    @CommandCompletion("@players @nothing")
+    public void onView(Player sender, @Flags("other") Player target) {
+        expansion.open(sender, target);
+    }
+
     @Subcommand("add")
     @CommandCompletion("@players * @range:1-64 true|false @nothing")
     @CommandPermission("aurora.core.admin.stash")
