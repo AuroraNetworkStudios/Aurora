@@ -123,6 +123,7 @@ public class CommandDispatcher {
 
         if (handler != null) {
             try {
+                if (action.getValue().trim().isEmpty()) throw new IllegalArgumentException("Empty command content");
                 handler.accept(player, action.getValue());
             } catch (Exception e) {
                 Aurora.logger().severe("Failed to execute action: " + action.getKey() + " with content: " + action.getValue() + " for player: " + player.getName() + " with error: " + e.getMessage());
