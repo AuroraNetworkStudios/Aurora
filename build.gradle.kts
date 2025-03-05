@@ -1,4 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import groovy.util.Node
+import groovy.util.NodeList
 import java.net.URI
 import java.util.*
 
@@ -180,6 +182,18 @@ publishing {
         version = project.version.toString()
 
         from(components["java"])
+
+        pom.withXml {
+            val dependency = (asNode().get("dependencies") as NodeList).first() as Node
+            (dependency.get("dependency") as NodeList).forEach {
+                val node = it as Node
+                val artifactIdList = node.get("artifactId") as NodeList
+                val artifactId = (artifactIdList.first() as Node).text()
+                if (artifactId in listOf("acf-paper")) {
+                    assert(it.parent().remove(it))
+                }
+            }
+        }
     }
 }
 
