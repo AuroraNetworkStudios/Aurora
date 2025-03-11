@@ -30,7 +30,17 @@ public class MoneyReward extends NumberReward {
     @Override
     public void init(ConfigurationSection args) {
         super.init(args);
-        this.economy = args.getString("economy", Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getDefaultEconomyId());
+        this.economy = args.getString("economy");
+        if (this.economy == null) {
+            var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
+            if (expansion != null) {
+                this.economy = expansion.getDefaultEconomyId();
+            } else {
+                valid = false;
+                Aurora.logger().warning("Can't create money reward, no economy provider available.");
+                return;
+            }
+        }
         this.currency = args.getString("currency", null);
         var econ = getEconomy();
 
