@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.expansions.item.resolvers;
 
 import com.willfp.eco.core.items.Items;
+import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
 import org.bukkit.NamespacedKey;
@@ -129,6 +130,7 @@ public class EcoItemsResolver implements ItemResolver {
 
         public static ArmorSlot getSlot(ItemStack itemStack) {
             if (itemStack == null) {
+                Aurora.logger().severe("Failed to parse armor slot for null item, returning null.");
                 return null;
             }
             String materialName = itemStack.getType().name();
@@ -147,7 +149,8 @@ public class EcoItemsResolver implements ItemResolver {
             } else if (name.contains("BOOTS")) {
                 return BOOTS;
             } else {
-                return null;
+                Aurora.logger().severe("Failed to parse armor slot for item: " + name + " returning HELMET instead.");
+                return HELMET;
             }
         }
     }
