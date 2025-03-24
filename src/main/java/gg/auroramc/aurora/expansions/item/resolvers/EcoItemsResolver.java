@@ -107,7 +107,11 @@ public class EcoItemsResolver implements ItemResolver {
     }
 
     private String parseArmorSlot(ItemStack item) {
-        return ArmorSlot.getSlot(item).name().toLowerCase(Locale.getDefault());
+        var slot = ArmorSlot.getSlot(item);
+        if (slot == null) {
+            return "invalid";
+        }
+        return slot.name().toLowerCase(Locale.getDefault());
     }
 
 
@@ -149,8 +153,8 @@ public class EcoItemsResolver implements ItemResolver {
             } else if (name.contains("BOOTS")) {
                 return BOOTS;
             } else {
-                Aurora.logger().severe("Failed to parse armor slot for item: " + name + " returning HELMET instead.");
-                return HELMET;
+                Aurora.logger().severe("Failed to parse armor slot for item type: " + name);
+                return null;
             }
         }
     }
