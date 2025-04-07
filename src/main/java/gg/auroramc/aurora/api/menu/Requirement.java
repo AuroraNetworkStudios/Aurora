@@ -87,17 +87,22 @@ public class Requirement {
 
         if (args[0].equalsIgnoreCase("[placeholder]")) {
             if (!DependencyManager.hasDep(Dep.PAPI)) return false;
-            var placeholderValue = PlaceholderAPI.setPlaceholders(player, args[1]);
-            return doPlaceholderCheck(player, args, placeholderValue);
+            var placeholderValue = PlaceholderAPI.setPlaceholders(player, Placeholder.execute(args[1], placeholders));
+            return doPlaceholderCheck(player, args, placeholderValue, placeholders);
         }
 
         if (args[0].equalsIgnoreCase("[arg]")) {
             var placeholderValue = Placeholder.execute("{arg_" + args[1] + "}", placeholders);
-            return doPlaceholderCheck(player, args, placeholderValue);
+            return doPlaceholderCheck(player, args, placeholderValue, placeholders);
+        }
+
+        if (args[0].equalsIgnoreCase("[meta]")) {
+            var metaKey = Placeholder.execute(args[1], placeholders);
+            return doMetaCheck(player, args, metaKey, placeholders);
         }
 
         if (args[0].equalsIgnoreCase("[has-items]")) {
-            // oraxen:example/45 oraxen:example2/32
+            // nexo:example/45 nexo:example2/32
 
             for (int i = 1; i < args.length; i++) {
                 var split = args[i].split("/");
@@ -120,8 +125,11 @@ public class Requirement {
         return false;
     }
 
-    private static boolean doPlaceholderCheck(Player player, String[] args, String placeholderValue) {
-        var compareValue = PlaceholderAPI.setPlaceholders(player, String.join(" ", Arrays.copyOfRange(args, 3, args.length)));
+    private static boolean doPlaceholderCheck(Player player, String[] args, String placeholderValue, List<Placeholder<?>> placeholders) {
+        var compareValue = Placeholder.execute(String.join(" ", Arrays.copyOfRange(args, 3, args.length)), placeholders);
+        if (DependencyManager.hasDep(Dep.PAPI)) {
+            compareValue = PlaceholderAPI.setPlaceholders(player, compareValue);
+        }
 
         return switch (args[2]) {
             case "==" -> placeholderValue.equals(compareValue);
@@ -129,6 +137,27 @@ public class Requirement {
             case "<=" -> Double.parseDouble(placeholderValue) <= Double.parseDouble(compareValue);
             case "<" -> Double.parseDouble(placeholderValue) < Double.parseDouble(compareValue);
             case ">" -> Double.parseDouble(placeholderValue) > Double.parseDouble(compareValue);
+            default -> false;
+        };
+    }
+
+    private static boolean doMetaCheck(Player player, String[] args, String metaKey, List<Placeholder<?>> placeholders) {
+        var compareValue = Placeholder.execute(String.join(" ", Arrays.copyOfRange(args, 3, args.length)), placeholders);
+        if (DependencyManager.hasDep(Dep.PAPI)) {
+            compareValue = PlaceholderAPI.setPlaceholders(player, compareValue);
+        }
+
+        var user = Aurora.getUserManager().getUser(player);
+        if (!user.isLoaded()) return false;
+        
+        var metaData = user.getMetaData();
+
+        return switch (args[2]) {
+            case "==" -> metaData.getMeta(metaKey, "").equals(compareValue);
+            case ">=" -> metaData.getMeta(metaKey, 0) >= Double.parseDouble(compareValue);
+            case "<=" -> metaData.getMeta(metaKey, 0) <= Double.parseDouble(compareValue);
+            case "<" -> metaData.getMeta(metaKey, 0) < Double.parseDouble(compareValue);
+            case ">" -> metaData.getMeta(metaKey, 0) > Double.parseDouble(compareValue);
             default -> false;
         };
     }
