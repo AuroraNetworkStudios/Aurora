@@ -133,6 +133,7 @@ public class Requirement {
 
         return switch (args[2]) {
             case "==" -> placeholderValue.equals(compareValue);
+            case "===" -> Double.parseDouble(placeholderValue) == Double.parseDouble(compareValue);
             case ">=" -> Double.parseDouble(placeholderValue) >= Double.parseDouble(compareValue);
             case "<=" -> Double.parseDouble(placeholderValue) <= Double.parseDouble(compareValue);
             case "<" -> Double.parseDouble(placeholderValue) < Double.parseDouble(compareValue);
@@ -154,6 +155,7 @@ public class Requirement {
 
         return switch (args[2]) {
             case "==" -> metaData.getMeta(metaKey, "").equals(compareValue);
+            case "===" -> metaData.getMeta(metaKey, 0) == Double.parseDouble(compareValue);
             case ">=" -> metaData.getMeta(metaKey, 0) >= Double.parseDouble(compareValue);
             case "<=" -> metaData.getMeta(metaKey, 0) <= Double.parseDouble(compareValue);
             case "<" -> metaData.getMeta(metaKey, 0) < Double.parseDouble(compareValue);
