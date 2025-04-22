@@ -40,6 +40,9 @@ public class MessageConfig extends AuroraConfig {
     private String itemRegistered = "&aItem registered with id: &2{id}!";
     private String itemUnregistered = "&aItem unregistered with id: &2{id}!";
     private String itemNotFound = "&cItem with id &4{id} &cwas not found";
+    private String leaderboardNotExists = "&cLeaderboard with id: &4{board} &cdoes not exists!";
+    private String leaderboardCleared = "&aLeaderboard with id: &2{board} &acleared and will be updated shortly!";
+    private String unknownCommand = "&cAuroraLib doesn't have a command like that.";
 
     public MessageConfig() {
         super(new File(Aurora.getInstance().getDataFolder(), "messages.yml"));

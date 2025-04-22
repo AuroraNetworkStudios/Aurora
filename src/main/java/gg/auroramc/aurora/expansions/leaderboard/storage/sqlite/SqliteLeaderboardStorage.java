@@ -176,6 +176,19 @@ public class SqliteLeaderboardStorage implements LeaderboardStorage {
     }
 
     @Override
+    public void clearBoard(String board) {
+        String query = "DELETE FROM aurora_leaderboard WHERE board = ?";
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, board);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void updateEntry(UUID uuid, Set<BoardValue> values) {
         String query = "INSERT INTO aurora_leaderboard (player_uuid, name, board, value) " +
                 "VALUES (?, ?, ?, ?) ON CONFLICT(player_uuid, board) DO UPDATE SET value = ?, name = ?";

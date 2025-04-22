@@ -19,6 +19,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -162,6 +163,16 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
             synchronized (getUpdateLock(uuid)) {
                 return storage.getPlayerEntries(uuid);
             }
+        });
+    }
+
+    public @Nullable LbDescriptor getBoardDescriptor(String board) {
+        return descriptors.get(board);
+    }
+
+    public CompletableFuture<Void> clearBoard(String board) {
+        return CompletableFuture.runAsync(() -> {
+            storage.clearBoard(board);
         });
     }
 

@@ -12,6 +12,7 @@ import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -260,5 +261,20 @@ public class AuroraCommand extends BaseCommand {
                         });
                     }
                 }, null);
+    }
+
+    @Subcommand("leaderboard clear")
+    @CommandCompletion("@leaderboards @nothing")
+    @CommandPermission("aurora.core.admin.leaderboard.clear")
+    public void onLeaderboardClear(CommandSender sender, String leaderboard) {
+        var expansion = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+
+        if (expansion.getBoardDescriptor(leaderboard) == null) {
+            Chat.sendMessage(sender, Aurora.getMessageConfig().getLeaderboardNotExists(), Placeholder.of("{board}", leaderboard));
+            return;
+        }
+
+        expansion.clearBoard(leaderboard).thenRun(() ->
+                Chat.sendMessage(sender, Aurora.getMessageConfig().getLeaderboardCleared(), Placeholder.of("{board}", leaderboard)));
     }
 }

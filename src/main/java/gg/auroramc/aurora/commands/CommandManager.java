@@ -8,6 +8,7 @@ import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
+import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 
@@ -40,6 +41,8 @@ public class CommandManager {
             commandManager.getCommandCompletions().registerCompletion("userMetaNumberKeys",
                     (c) -> Aurora.getUserManager().getUser(c.getContextValue(Player.class)).getMetaData().getMetaKeys()
                             .stream().filter((k) -> Aurora.getUserManager().getUser(c.getContextValue(Player.class)).getMetaData().getMeta(k) instanceof Number).toList());
+            commandManager.getCommandCompletions().registerCompletion("leaderboards",
+                    (c) -> Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).getBoards());
         }
 
         var msg = Aurora.getMessageConfig();
@@ -55,6 +58,7 @@ public class CommandManager {
         commandManager.getLocales().addMessage(Locale.ENGLISH, MessageKeys.ERROR_PERFORMING_COMMAND, m(msg.getCommandError()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MessageKeys.ERROR_GENERIC_LOGGED, m(msg.getCommandError()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MessageKeys.NOT_ALLOWED_ON_CONSOLE, m(msg.getPlayerOnlyCommand()));
+        commandManager.getLocales().addMessage(Locale.ENGLISH, MessageKeys.UNKNOWN_COMMAND, m(msg.getUnknownCommand()));
 
         if (!this.hasSetup) {
             this.commandManager.registerCommand(new AuroraCommand(plugin));

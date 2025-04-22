@@ -452,6 +452,19 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
     }
 
     @Override
+    public void clearBoard(String board) {
+        String query = "DELETE FROM " + leaderboardTableName + " WHERE board = ?";
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, board);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void updateEntry(UUID uuid, Set<BoardValue> values) {
         String query = "INSERT INTO " + leaderboardTableName + " (player_uuid, name, board, value) " +
                 "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?, name = ?";

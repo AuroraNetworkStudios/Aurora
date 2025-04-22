@@ -46,6 +46,7 @@ permissions:
       - aurora.core.admin.debug.itemid
       - aurora.core.admin.debug.blockremove
       - aurora.core.admin.stash.other
+      - aurora.core.admin.leaderboard.clear
   aurora.core.user:
     description: Allows the player to use user commands
     default: true
