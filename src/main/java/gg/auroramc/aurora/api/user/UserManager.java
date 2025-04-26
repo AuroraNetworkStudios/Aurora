@@ -207,13 +207,19 @@ public class UserManager implements Listener {
      * @return loaded AuroraUser
      */
     public AuroraUser getUser(UUID uuid) {
-        if (cache.getIfPresent(uuid) == null) {
-            var fakeUser = new AuroraUser(uuid, false);
+        var user = cache.getIfPresent(uuid);
+        if (user != null) return user;
+
+        // Try to compute atomically, preventing race
+        // In very rare scenarios it was possible that loadUser was put the actual
+        // loaded user into cache after the getIfPresent check here.
+        // This computeIfAbsent instead if put will hopefully prevent that
+        return cache.asMap().computeIfAbsent(uuid, (key) -> {
+            var fakeUser = new AuroraUser(key, false);
             fakeUser.initData(null, dataHolders);
-            cache.put(uuid, fakeUser);
-            Aurora.logger().debug("Created fake user " + uuid + " in cache");
-        }
-        return cache.getIfPresent(uuid);
+            Aurora.logger().debug("Created fake user " + key + " in cache");
+            return fakeUser;
+        });
     }
 
     /**
