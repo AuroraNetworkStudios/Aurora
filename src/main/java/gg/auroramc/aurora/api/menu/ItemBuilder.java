@@ -255,7 +255,7 @@ public class ItemBuilder {
         } else if (config.getMaterial().equalsIgnoreCase("main_hand")) {
             item = player.getInventory().getItemInMainHand().clone();
         } else {
-            item = new ItemStack(Material.valueOf(config.getMaterial().toUpperCase()));
+            item = new ItemStack(Material.valueOf(config.getMaterial().toUpperCase(Locale.ROOT)));
         }
 
         if (item.getType() == Material.AIR) {
@@ -398,7 +398,7 @@ public class ItemBuilder {
 
         if (meta instanceof PotionMeta potionMeta) {
             if (config.getPotion() != null) {
-                var potion = new BukkitPotionType(PotionType.valueOf(config.getPotion().getType().toUpperCase()), config.getPotion().getExtended(), config.getPotion().getUpgraded());
+                var potion = new BukkitPotionType(PotionType.valueOf(config.getPotion().getType().toUpperCase(Locale.ROOT)), config.getPotion().getExtended(), config.getPotion().getUpgraded());
                 potion.applyToMeta(potionMeta);
             }
             if (!potionEffects.isEmpty()) {

@@ -6,6 +6,8 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
+
 public class VanillaEntityResolver implements EntityResolver {
 
     @Override
@@ -20,6 +22,6 @@ public class VanillaEntityResolver implements EntityResolver {
 
     @Override
     public EntitySpawner resolveEntitySpawner(String id, @Nullable Player player) {
-        return new VanillaEntitySpawner(EntityType.valueOf(id.toUpperCase()));
+        return new VanillaEntitySpawner(EntityType.valueOf(id.toUpperCase(Locale.ROOT)));
     }
 }

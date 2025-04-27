@@ -8,6 +8,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class ItemManager {
@@ -18,7 +19,7 @@ public class ItemManager {
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver) {
-        resolvers.put(plugin.getId().toLowerCase(), resolver);
+        resolvers.put(plugin.getId().toLowerCase(Locale.ROOT), resolver);
     }
 
     public ItemResolver getResolver(String plugin) {
@@ -26,7 +27,7 @@ public class ItemManager {
     }
 
     public void unregisterResolver(String plugin) {
-        resolvers.remove(plugin.toLowerCase());
+        resolvers.remove(plugin.toLowerCase(Locale.ROOT));
     }
 
     public TypeId resolveId(ItemStack item) {
@@ -58,7 +59,7 @@ public class ItemManager {
 
     private ItemStack resolveVanilla(TypeId typeId) {
         try {
-            return new ItemStack(Material.valueOf(typeId.id().toUpperCase()));
+            return new ItemStack(Material.valueOf(typeId.id().toUpperCase(Locale.ROOT)));
         } catch (IllegalArgumentException e) {
             Aurora.logger().warning("Failed to resolve item: " + typeId + " using AIR instead.");
             return new ItemStack(Material.AIR);

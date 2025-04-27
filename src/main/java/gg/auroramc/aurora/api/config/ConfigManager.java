@@ -205,7 +205,7 @@ public final class ConfigManager {
 
 
     public static String serializeKey(String fieldName) {
-        return fieldName.replaceAll("([a-z])([A-Z]+)", "$1-$2").toLowerCase();
+        return fieldName.replaceAll("([a-z])([A-Z]+)", "$1-$2").toLowerCase(Locale.ROOT);
     }
 
     private static Object loadPrimitiveType(Object config, Field field, ConfigurationSection section, String key) throws IllegalAccessException {

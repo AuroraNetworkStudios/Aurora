@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class EntityManager {
@@ -19,7 +20,7 @@ public class EntityManager {
     }
 
     public void registerResolver(Dep plugin, EntityResolver resolver) {
-        resolvers.put(plugin.getId().toLowerCase(), resolver);
+        resolvers.put(plugin.getId().toLowerCase(Locale.ROOT), resolver);
     }
 
     public EntityResolver getResolver(String plugin) {
@@ -27,7 +28,7 @@ public class EntityManager {
     }
 
     public void unregisterResolver(String plugin) {
-        resolvers.remove(plugin.toLowerCase());
+        resolvers.remove(plugin.toLowerCase(Locale.ROOT));
     }
 
     public TypeId resolveId(Entity entity) {
