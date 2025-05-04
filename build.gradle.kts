@@ -97,6 +97,7 @@ dependencies {
     compileOnly(name = "ExecutableBlocks-5.24.11.13", group = "com.ssomar.score", version = "5.24.11.13")
     compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
     compileOnly(name = "RoyaleEconomyAPI", group = "me.qKing12", version = "1.0")
+    compileOnly(name = "ItemEdit", group = "com.github.emanondev", version = "3.7.0")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")

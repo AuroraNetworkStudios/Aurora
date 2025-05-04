@@ -33,7 +33,8 @@ public enum Dep {
     HEAD_DATABASE("HeadDatabase"),
     PLAYER_POINTS("PlayerPoints"),
     COINS_ENGINE("CoinsEngine"),
-    ECO("Eco");
+    ECO("Eco"),
+    ITEM_EDIT("ItemEdit");
 
     private String id;
 

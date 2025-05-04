@@ -55,6 +55,7 @@ item-matchers:
   - "MythicMobs"
   - "Nexo"
   - "Oraxen"
+  - "ItemEdit"
 
 # Should we try resolve IDs for items registered through /aurora registeritem <id>?
 # This is experimental and may not work for every use case.
@@ -62,4 +63,4 @@ item-matchers:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 6
+config-version: 7

@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.config;
 
+import com.google.common.collect.Lists;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.AuroraConfig;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.Setter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -104,6 +106,12 @@ public class Config extends AuroraConfig {
                     ));
                     yaml.set("config-version", null);
                     yaml.set("config-version", 6);
+                },
+                (yaml) -> {
+                    var list = new ArrayList<>(yaml.getStringList("item-matchers"));
+                    list.add("ItemEdit");
+                    yaml.set("item-matchers", list);
+                    yaml.set("config-version", 7);
                 }
         );
     }

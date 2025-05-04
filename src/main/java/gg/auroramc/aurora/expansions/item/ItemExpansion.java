@@ -73,6 +73,11 @@ public class ItemExpansion implements AuroraExpansion {
             Aurora.logger().debug("Hooked into ItemsAdder for item resolvers.");
         }
 
+        if (DependencyManager.hasDep(Dep.ITEM_EDIT) && enabledMatchers.contains(Dep.ITEM_EDIT.getId())) {
+            itemManager.registerResolver(Dep.ITEM_EDIT, new ItemEditResolver());
+            Aurora.logger().debug("Hooked into ItemEdit for item resolvers.");
+        }
+
         initAuroraItemResolver();
 
         if (DependencyManager.hasDep(Dep.HEAD_DATABASE) && enabledMatchers.contains(Dep.HEAD_DATABASE.getId())) {

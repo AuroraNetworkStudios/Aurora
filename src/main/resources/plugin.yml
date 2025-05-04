@@ -26,6 +26,7 @@ softdepend:
   - CoinsEngine
   - RoyaleEconomy
   - Nexo
+  - ItemEdit
 
 permissions:
   aurora.core.admin:
