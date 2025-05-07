@@ -27,6 +27,7 @@ softdepend:
   - RoyaleEconomy
   - Nexo
   - ItemEdit
+  - EvenMoreFish
 
 permissions:
   aurora.core.admin:

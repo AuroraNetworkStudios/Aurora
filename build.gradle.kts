@@ -63,6 +63,8 @@ repositories {
     maven("https://repo.auxilor.io/repository/maven-public/")
     // Nexo
     maven("https://repo.nexomc.com/snapshots/")
+    // CustomFishing
+    maven("https://repo.momirealms.net/releases/")
 }
 
 dependencies {
@@ -77,7 +79,7 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.lumine:Mythic-Dist:5.6.1")
-    compileOnly("com.github.Xiao-MoMi:Custom-Fishing:2.3.3")
+    compileOnly("net.momirealms:custom-fishing:2.3.7")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
@@ -98,6 +100,7 @@ dependencies {
     compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
     compileOnly(name = "RoyaleEconomyAPI", group = "me.qKing12", version = "1.0")
     compileOnly(name = "ItemEdit", group = "com.github.emanondev", version = "3.7.0")
+    compileOnly(name = "even-more-fish-2.0.0-SNAPSHOT-9", group = "com.oheers", version = "2.0.0-SNAPSHOT")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")
