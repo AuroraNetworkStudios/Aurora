@@ -100,7 +100,7 @@ dependencies {
     compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
     compileOnly(name = "RoyaleEconomyAPI", group = "me.qKing12", version = "1.0")
     compileOnly(name = "ItemEdit", group = "com.github.emanondev", version = "3.7.0")
-    compileOnly(name = "even-more-fish-2.0.0-SNAPSHOT-9", group = "com.oheers", version = "2.0.0-SNAPSHOT")
+    compileOnly(name = "even-more-fish-2.0.0-SNAPSHOT-45", group = "com.oheers", version = "2.0.0-SNAPSHOT")
 
     // Lombok
     compileOnly("org.projectlombok:lombok:1.18.30")

@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class EvenMoreFishItemResolver implements ItemResolver {
 
-    public static final String NAME = "evenmorefish";
+    public static final String NAME = "emf";
     public static final String SEPARATOR = ":";
 
     @Override

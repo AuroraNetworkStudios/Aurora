@@ -112,6 +112,12 @@ public class Config extends AuroraConfig {
                     list.add("ItemEdit");
                     yaml.set("item-matchers", list);
                     yaml.set("config-version", 7);
+                },
+                (yaml) -> {
+                    var list = new ArrayList<>(yaml.getStringList("item-matchers"));
+                    list.add("EvenMoreFish");
+                    yaml.set("item-matchers", list);
+                    yaml.set("config-version", 8);
                 }
         );
     }
