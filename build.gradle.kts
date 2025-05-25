@@ -62,7 +62,7 @@ repositories {
     // Eco plugins
     maven("https://repo.auxilor.io/repository/maven-public/")
     // Nexo
-    maven("https://repo.nexomc.com/snapshots/")
+    maven("https://repo.nexomc.com/releases/")
     // CustomFishing
     maven("https://repo.momirealms.net/releases/")
 }
@@ -90,7 +90,7 @@ dependencies {
     compileOnly("org.black_ixx:playerpoints:3.2.7")
     compileOnly("com.willfp:eco:6.74.2")
     compileOnly("com.willfp:EcoBits:1.8.4")
-    compileOnly("com.nexomc:nexo:0.1.0-dev.0")
+    compileOnly("com.nexomc:nexo:1.6.0")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
