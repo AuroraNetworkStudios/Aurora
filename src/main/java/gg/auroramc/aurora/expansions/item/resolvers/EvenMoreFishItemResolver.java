@@ -40,7 +40,7 @@ public class EvenMoreFishItemResolver implements ItemResolver {
         if (fish == null) return null;
 
         try {
-            return fish.getFactory().getItem(fish.getFactory().getMaterial().name());
+            return fish.getFactory().createItem(player, 0);
         } catch (Exception e) {
             return null;
         }
