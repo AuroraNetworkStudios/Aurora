@@ -23,7 +23,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "2.3.2"
+version = "2.3.3"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -65,6 +65,8 @@ repositories {
     maven("https://repo.nexomc.com/releases/")
     // CustomFishing
     maven("https://repo.momirealms.net/releases/")
+    // WildTools
+    maven("https://repo.bg-software.com/repository/api/")
 }
 
 dependencies {
@@ -91,6 +93,7 @@ dependencies {
     compileOnly("com.willfp:eco:6.74.2")
     compileOnly("com.willfp:EcoBits:1.8.4")
     compileOnly("com.nexomc:nexo:1.6.0")
+    compileOnly("com.bgsoftware:WildToolsAPI:2025.1")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")

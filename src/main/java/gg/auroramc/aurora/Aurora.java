@@ -22,6 +22,7 @@ import gg.auroramc.aurora.expansions.placeholder.PlaceholderExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
 import gg.auroramc.aurora.expansions.worldguard.WorldGuardExpansion;
 import gg.auroramc.aurora.hooks.LuckPermsHook;
+import gg.auroramc.aurora.hooks.WildToolsHook;
 import lombok.Getter;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bstats.bukkit.Metrics;
@@ -84,6 +85,10 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         if (DependencyManager.hasDep("LuckPerms")) {
             LuckPermsHook.registerListeners();
+        }
+
+        if (DependencyManager.hasDep("WildTools")) {
+            WildToolsHook.hook();
         }
 
         commandManager.reload();

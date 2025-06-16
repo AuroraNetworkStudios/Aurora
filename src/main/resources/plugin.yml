@@ -28,6 +28,7 @@ softdepend:
   - Nexo
   - ItemEdit
   - EvenMoreFish
+  - WildTools
 
 permissions:
   aurora.core.admin:
