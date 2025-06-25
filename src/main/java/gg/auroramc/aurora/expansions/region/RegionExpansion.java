@@ -23,6 +23,10 @@ public class RegionExpansion implements AuroraExpansion {
         return block.getChunk().getPersistentDataContainer().has(createKey(block));
     }
 
+    public boolean isPlacedBlock(Location location) {
+        return location.getChunk().getPersistentDataContainer().has(createKey(location));
+    }
+
     public void addPlacedBlock(Block block) {
         block.getChunk().getPersistentDataContainer().set(createKey(block), PersistentDataType.BYTE, (byte) 1);
     }
