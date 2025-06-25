@@ -39,6 +39,10 @@ public class RegionExpansion implements AuroraExpansion {
         block.getChunk().getPersistentDataContainer().remove(createKey(block));
     }
 
+    public void removePlacedBlock(Location location) {
+        location.getChunk().getPersistentDataContainer().remove(createKey(location));
+    }
+
     @Override
     public void hook() {
         var plugin = Aurora.getInstance();
