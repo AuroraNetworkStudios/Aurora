@@ -94,6 +94,7 @@ dependencies {
     compileOnly("com.willfp:EcoBits:1.8.4")
     compileOnly("com.nexomc:nexo:1.6.0")
     compileOnly("com.bgsoftware:WildToolsAPI:2025.1")
+    compileOnly("dev.aurelium:auraskills-api-bukkit:2.3.3")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
@@ -162,12 +163,14 @@ tasks.withType<ShadowJar> {
     exclude("acf-*.properties")
 }
 
+runPaper.folia.registerTask()
+
 tasks {
     build {
         dependsOn(shadowJar)
     }
     runServer {
-        minecraftVersion("1.20.4")
+        minecraftVersion("1.21.6")
     }
 }
 

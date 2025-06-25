@@ -31,14 +31,12 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(Player player, String message, Placeholder<?>... placeholders) {
-        player.getScheduler().run(Aurora.getInstance(), (task) -> {
-            var finalMessage = Text.fillPlaceholders(player, message, placeholders);
-            player.sendMessage(Aurora.getMiniMessage().deserialize(translateToMM(finalMessage)));
-        }, null);
+        var finalMessage = Text.fillPlaceholders(player, message, placeholders);
+        player.sendMessage(Aurora.getMiniMessage().deserialize(translateToMM(finalMessage)));
     }
 
     public static void sendMessage(Player player, Component component) {
-        player.getScheduler().run(Aurora.getInstance(), (task) -> player.sendMessage(component), null);
+        player.sendMessage(component);
     }
 
     /**
@@ -48,7 +46,7 @@ public class Chat {
      * @param message The message to be sent, possibly containing color codes.
      */
     public static void sendMessage(CommandSender sender, String message, Placeholder<?>... placeholders) {
-        if(sender instanceof Player player) {
+        if (sender instanceof Player player) {
             sendMessage(player, message, placeholders);
             return;
         }

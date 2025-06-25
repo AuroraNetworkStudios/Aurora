@@ -1,6 +1,6 @@
 package gg.auroramc.aurora.api.message;
 
-import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.hooks.AuraSkillsHook;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
@@ -10,12 +10,13 @@ public class ActionBar {
     }
 
     public static void send(Player player, String msg, Placeholder<?>... placeholders) {
-        player.getScheduler().run(Aurora.getInstance(),
-                (task) -> player.sendActionBar(Text.component(player, msg, placeholders)), null);
+        send(player, Text.component(player, msg, placeholders));
     }
 
     public static void send(Player player, Component component) {
-        player.getScheduler().run(Aurora.getInstance(),
-                (task) -> player.sendActionBar(component), null);
+        if (AuraSkillsHook.isEnabled()) {
+            AuraSkillsHook.pauseActionBar(player);
+        }
+        player.sendActionBar(component);
     }
 }
