@@ -51,11 +51,13 @@ public class ItemManager {
         if (item.getType() == Material.AIR) {
             return TypeId.from(Material.AIR);
         }
-        for (RegisteredResolver registered : resolvers) {
-            var res = registered.resolver().oneStepMatch(item);
-            if (res != null) return res;
-        }
-        return TypeId.from(item.getType());
+
+        return resolvers.stream()
+                .sorted(Comparator.comparingInt(r -> r.priority() != null ? r.priority() : Integer.MAX_VALUE))
+                .map(r -> r.resolver().oneStepMatch(item))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(TypeId.from(item.getType()));
     }
 
     public ItemStack resolveItem(TypeId typeId, @Nullable Player player) {
