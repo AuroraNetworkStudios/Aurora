@@ -13,8 +13,21 @@ number-format:
       trillion: "T"
       quadrillion: "Q"
 
-resolvers-priority:
-  nexo: 1
+item-resolver-priorities:
+  customfishing: 100
+  # ExecutableBlocks
+  eb: 90
+  # EvenMoreFish
+  emf: 80
+  #ExecutableItems
+  ei: 70
+  mmoitems: 60
+  mythicmobs: 50
+  eco: 40
+  nexo: 30
+  oraxen: 20
+  ia: 10
+  itemedit: 0
 
 user-auto-save-in-minutes: 10
 # Can be yaml or mysql
