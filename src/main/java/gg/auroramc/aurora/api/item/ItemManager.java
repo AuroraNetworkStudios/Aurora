@@ -7,38 +7,53 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedHashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class ItemManager {
-    private final Map<String, ItemResolver> resolvers = new LinkedHashMap<>();
+    private final List<RegisteredResolver> resolvers = new ArrayList<>();
+
+    public record RegisteredResolver(String plugin, ItemResolver resolver, @Nullable Integer priority) {}
 
     public void registerResolver(String plugin, ItemResolver resolver) {
-        resolvers.put(plugin, resolver);
+        int priority = Aurora.getLibConfig().getRawConfig().getInt("resolvers-priority." + plugin.toLowerCase(Locale.ROOT), Integer.MAX_VALUE);
+        Aurora.logger().info("[Aurora] Hooked in resolver " + plugin + " with priority " + priority);
+        registerResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver) {
-        resolvers.put(plugin.getId().toLowerCase(Locale.ROOT), resolver);
+        String pluginId = plugin.getId().toLowerCase(Locale.ROOT);
+        int priority = Aurora.getLibConfig().getRawConfig().getInt("resolvers-priority." + pluginId, Integer.MAX_VALUE);
+        Aurora.logger().info("[Aurora] Hooked in resolver " + pluginId + " with priority " + priority);
+        registerResolver(pluginId, resolver, priority);
     }
 
-    public ItemResolver getResolver(String plugin) {
-        return resolvers.get(plugin);
+    public void registerResolver(String plugin, ItemResolver resolver, int priority) {
+        resolvers.add(new RegisteredResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority));
+    }
+
+    public void registerResolver(Dep plugin, ItemResolver resolver, int priority) {
+        registerResolver(plugin.getId().toLowerCase(Locale.ROOT), resolver, priority);
     }
 
     public void unregisterResolver(String plugin) {
-        resolvers.remove(plugin.toLowerCase(Locale.ROOT));
+        resolvers.removeIf(r -> r.plugin().equalsIgnoreCase(plugin));
+    }
+
+    public @Nullable ItemResolver getResolver(String plugin) {
+        return resolvers.stream()
+                .filter(r -> r.plugin().equalsIgnoreCase(plugin))
+                .findFirst()
+                .map(RegisteredResolver::resolver)
+                .orElse(null);
     }
 
     public TypeId resolveId(ItemStack item) {
         if (item.getType() == Material.AIR) {
             return TypeId.from(Material.AIR);
         }
-        for (ItemResolver resolver : resolvers.values()) {
-            var res = resolver.oneStepMatch(item);
-            if (res != null) {
-                return res;
-            }
+        for (RegisteredResolver registered : resolvers) {
+            var res = registered.resolver().oneStepMatch(item);
+            if (res != null) return res;
         }
         return TypeId.from(item.getType());
     }
@@ -48,13 +63,13 @@ public class ItemManager {
             return resolveVanilla(typeId);
         }
 
-        for (var resolver : resolvers.entrySet()) {
-            if (resolver.getKey().equalsIgnoreCase(typeId.namespace())) {
-                return resolver.getValue().resolveItem(typeId.id(), player);
-            }
-        }
-
-        return resolveVanilla(typeId);
+        return resolvers.stream()
+                .filter(r -> r.plugin().equalsIgnoreCase(typeId.namespace()))
+                .sorted(Comparator.comparingInt(r -> r.priority() != null ? r.priority() : Integer.MAX_VALUE))
+                .map(r -> r.resolver().resolveItem(typeId.id(), player))
+                .filter(item -> item != null && item.getType() != Material.AIR)
+                .findFirst()
+                .orElseGet(() -> resolveVanilla(typeId));
     }
 
     private ItemStack resolveVanilla(TypeId typeId) {

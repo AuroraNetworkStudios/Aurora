@@ -13,6 +13,9 @@ number-format:
       trillion: "T"
       quadrillion: "Q"
 
+resolvers-priority:
+  nexo: 1
+
 user-auto-save-in-minutes: 10
 # Can be yaml or mysql
 # If you use mysql, your leaderboard data will be stored in mysql as well
