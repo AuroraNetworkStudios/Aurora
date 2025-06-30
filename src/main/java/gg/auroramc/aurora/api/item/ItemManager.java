@@ -41,11 +41,12 @@ public class ItemManager {
     }
 
     public @Nullable ItemResolver getResolver(String plugin) {
-        return resolvers.stream()
-                .filter(r -> r.plugin().equalsIgnoreCase(plugin))
-                .findFirst()
-                .map(RegisteredResolver::resolver)
-                .orElse(null);
+        for (RegisteredResolver r : resolvers) {
+            if (r.plugin().equalsIgnoreCase(plugin)) {
+                return r.resolver();
+            }
+        }
+        return null;
     }
 
     public TypeId resolveId(ItemStack item) {
