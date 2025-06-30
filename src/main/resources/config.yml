@@ -82,4 +82,4 @@ item-matchers:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 8
+config-version: 9
