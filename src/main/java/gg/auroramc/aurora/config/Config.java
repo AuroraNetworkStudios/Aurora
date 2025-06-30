@@ -40,7 +40,7 @@ public class Config extends AuroraConfig {
             "Oraxen"
     );
     private ItemIdResolverConfig auroraItems;
-
+    private Map<String, Integer> itemResolverPriorities;
 
     @Getter
     public final static class ItemIdResolverConfig {

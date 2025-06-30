@@ -15,20 +15,20 @@ public class ItemManager {
     public record RegisteredResolver(String plugin, ItemResolver resolver, @Nullable Integer priority) {}
 
     public void registerResolver(String plugin, ItemResolver resolver) {
-        int priority = Aurora.getLibConfig().getRawConfig().getInt("resolvers-priority." + plugin.toLowerCase(Locale.ROOT), Integer.MAX_VALUE);
-        Aurora.logger().info("[Aurora] Hooked in resolver " + plugin + " with priority " + priority);
+        int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(plugin.toLowerCase(Locale.ROOT), 0);
+        Aurora.logger().debug("[Aurora] Hooked in resolver " + plugin + " with priority " + priority);
         registerResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver) {
         String pluginId = plugin.getId().toLowerCase(Locale.ROOT);
-        int priority = Aurora.getLibConfig().getRawConfig().getInt("resolvers-priority." + pluginId, Integer.MAX_VALUE);
-        Aurora.logger().info("[Aurora] Hooked in resolver " + pluginId + " with priority " + priority);
+        int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
+        Aurora.logger().debug("[Aurora] Hooked in resolver " + pluginId + " with priority " + priority);
         registerResolver(pluginId, resolver, priority);
     }
 
     public void registerResolver(String plugin, ItemResolver resolver, int priority) {
-        resolvers.add(new RegisteredResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority));
+        insertSorted(new RegisteredResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority));
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver, int priority) {
@@ -53,7 +53,6 @@ public class ItemManager {
         }
 
         return resolvers.stream()
-                .sorted(Comparator.comparingInt(r -> r.priority() != null ? r.priority() : Integer.MAX_VALUE))
                 .map(r -> r.resolver().oneStepMatch(item))
                 .filter(Objects::nonNull)
                 .findFirst()
@@ -67,7 +66,6 @@ public class ItemManager {
 
         return resolvers.stream()
                 .filter(r -> r.plugin().equalsIgnoreCase(typeId.namespace()))
-                .sorted(Comparator.comparingInt(r -> r.priority() != null ? r.priority() : Integer.MAX_VALUE))
                 .map(r -> r.resolver().resolveItem(typeId.id(), player))
                 .filter(item -> item != null && item.getType() != Material.AIR)
                 .findFirst()
@@ -86,5 +84,18 @@ public class ItemManager {
 
     public ItemStack resolveItem(TypeId typeId) {
         return resolveItem(typeId, null);
+    }
+
+    private void insertSorted(RegisteredResolver newResolver) {
+        for (int i = 0; i < resolvers.size(); i++) {
+            int existingPriority = Optional.ofNullable(resolvers.get(i).priority()).orElse(0);
+            int newPriority = Optional.ofNullable(newResolver.priority()).orElse(0);
+
+            if (newPriority > existingPriority) {
+                resolvers.add(i, newResolver);
+                return;
+            }
+        }
+        resolvers.add(newResolver);
     }
 }
