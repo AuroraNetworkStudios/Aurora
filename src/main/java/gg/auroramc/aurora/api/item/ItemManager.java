@@ -16,14 +16,14 @@ public class ItemManager {
 
     public void registerResolver(String plugin, ItemResolver resolver) {
         int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(plugin.toLowerCase(Locale.ROOT), 0);
-        Aurora.logger().debug("[Aurora] Hooked in resolver " + plugin + " with priority " + priority);
+        Aurora.logger().debug("Hooked in resolver " + plugin + " with priority " + priority);
         registerResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver) {
         String pluginId = plugin.getId().toLowerCase(Locale.ROOT);
         int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
-        Aurora.logger().debug("[Aurora] Hooked in resolver " + pluginId + " with priority " + priority);
+        Aurora.logger().debug("Hooked in resolver " + pluginId + " with priority " + priority);
         registerResolver(pluginId, resolver, priority);
     }
 
