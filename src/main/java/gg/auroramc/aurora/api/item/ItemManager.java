@@ -91,8 +91,8 @@ public class ItemManager {
 
     private void insertSorted(RegisteredResolver newResolver) {
         for (int i = 0; i < resolvers.size(); i++) {
-            int existingPriority = Optional.ofNullable(resolvers.get(i).priority()).orElse(0);
-            int newPriority = Optional.ofNullable(newResolver.priority()).orElse(0);
+            int existingPriority = resolvers.get(i).priority();
+            int newPriority = newResolver.priority();
 
             if (newPriority > existingPriority) {
                 resolvers.add(i, newResolver);
