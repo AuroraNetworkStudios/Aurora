@@ -14,20 +14,20 @@ number-format:
       quadrillion: "Q"
 
 item-resolver-priorities:
-  customfishing: 100
+  customfishing: 200
   # ExecutableBlocks
-  eb: 90
+  eb: 190
   # EvenMoreFish
-  emf: 80
+  emf: 180
   #ExecutableItems
-  ei: 70
-  mmoitems: 60
-  mythicmobs: 50
-  eco: 40
-  nexo: 30
-  oraxen: 20
-  ia: 10
-  itemedit: 0
+  ei: 170
+  mmoitems: 160
+  mythicmobs: 150
+  eco: 140
+  nexo: 130
+  oraxen: 120
+  ia: 110
+  itemedit: 100
 
 user-auto-save-in-minutes: 10
 # Can be yaml or mysql
