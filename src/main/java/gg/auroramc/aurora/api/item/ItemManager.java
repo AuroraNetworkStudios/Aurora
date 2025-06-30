@@ -52,11 +52,11 @@ public class ItemManager {
             return TypeId.from(Material.AIR);
         }
 
-        return resolvers.stream()
-                .map(r -> r.resolver().oneStepMatch(item))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(TypeId.from(item.getType()));
+        for (RegisteredResolver r : resolvers) {
+            TypeId res = r.resolver().oneStepMatch(item);
+            if (res != null) return res;
+        }
+        return TypeId.from(item.getType());
     }
 
     public ItemStack resolveItem(TypeId typeId, @Nullable Player player) {
@@ -64,12 +64,15 @@ public class ItemManager {
             return resolveVanilla(typeId);
         }
 
-        return resolvers.stream()
-                .filter(r -> r.plugin().equalsIgnoreCase(typeId.namespace()))
-                .map(r -> r.resolver().resolveItem(typeId.id(), player))
-                .filter(item -> item != null && item.getType() != Material.AIR)
-                .findFirst()
-                .orElseGet(() -> resolveVanilla(typeId));
+        for (RegisteredResolver r : resolvers) {
+            if (!r.plugin().equalsIgnoreCase(typeId.namespace())) continue;
+
+            ItemStack item = r.resolver().resolveItem(typeId.id(), player);
+            if (item != null && item.getType() != Material.AIR) {
+                return item;
+            }
+        }
+        return resolveVanilla(typeId);
     }
 
     private ItemStack resolveVanilla(TypeId typeId) {
