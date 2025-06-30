@@ -13,6 +13,8 @@ number-format:
       trillion: "T"
       quadrillion: "Q"
 
+
+# Resolver with the highest number will run first
 item-resolver-priorities:
   customfishing: 200
   # ExecutableBlocks

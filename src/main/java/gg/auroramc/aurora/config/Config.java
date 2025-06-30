@@ -8,10 +8,7 @@ import lombok.Setter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -40,7 +37,19 @@ public class Config extends AuroraConfig {
             "Oraxen"
     );
     private ItemIdResolverConfig auroraItems;
-    private Map<String, Integer> itemResolverPriorities;
+    private Map<String, Integer> itemResolverPriorities = new HashMap<>() {{
+        put("customfishing", 200);
+        put("eb", 190);
+        put("emf", 180);
+        put("ei", 170);
+        put("mmoitems", 160);
+        put("mythicmobs", 150);
+        put("eco", 140);
+        put("nexo", 130);
+        put("oraxen", 120);
+        put("ia", 110);
+        put("itemedit", 100);
+    }};
 
     @Getter
     public final static class ItemIdResolverConfig {
