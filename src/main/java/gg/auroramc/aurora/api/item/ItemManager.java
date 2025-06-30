@@ -12,7 +12,7 @@ import java.util.*;
 public class ItemManager {
     private final List<RegisteredResolver> resolvers = new ArrayList<>();
 
-    public record RegisteredResolver(String plugin, ItemResolver resolver, @Nullable Integer priority) {}
+    public record RegisteredResolver(String plugin, ItemResolver resolver, Integer priority) {}
 
     public void registerResolver(String plugin, ItemResolver resolver) {
         int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(plugin.toLowerCase(Locale.ROOT), 0);
