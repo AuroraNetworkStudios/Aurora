@@ -127,6 +127,22 @@ public class Config extends AuroraConfig {
                     list.add("EvenMoreFish");
                     yaml.set("item-matchers", list);
                     yaml.set("config-version", 8);
+                },
+                (yaml) -> {
+                    yaml.set("item-resolver-priorities", Map.ofEntries(
+                            Map.entry("customfishing", 200),
+                            Map.entry("eb", 190),
+                            Map.entry("emf", 180),
+                            Map.entry("ei", 170),
+                            Map.entry("mmoitems", 160),
+                            Map.entry("mythicmobs", 150),
+                            Map.entry("eco", 140),
+                            Map.entry("nexo", 130),
+                            Map.entry("oraxen", 120),
+                            Map.entry("ia", 110),
+                            Map.entry("itemedit", 100)
+                    ));
+                    yaml.set("config-version", 9);
                 }
         );
     }
