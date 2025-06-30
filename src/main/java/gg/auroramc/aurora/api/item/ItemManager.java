@@ -15,20 +15,21 @@ public class ItemManager {
     public record RegisteredResolver(String plugin, ItemResolver resolver, Integer priority) {}
 
     public void registerResolver(String plugin, ItemResolver resolver) {
-        int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(plugin.toLowerCase(Locale.ROOT), 0);
-        Aurora.logger().debug("Hooked in resolver " + plugin + " with priority " + priority);
-        registerResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority);
+        String pluginId = plugin.toLowerCase(Locale.ROOT);
+        int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
+        registerResolver(pluginId, resolver, priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver) {
         String pluginId = plugin.getId().toLowerCase(Locale.ROOT);
         int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
-        Aurora.logger().debug("Hooked in resolver " + pluginId + " with priority " + priority);
         registerResolver(pluginId, resolver, priority);
     }
 
     public void registerResolver(String plugin, ItemResolver resolver, int priority) {
-        insertSorted(new RegisteredResolver(plugin.toLowerCase(Locale.ROOT), resolver, priority));
+        String pluginId = plugin.toLowerCase(Locale.ROOT);
+        insertSorted(new RegisteredResolver(pluginId, resolver, priority));
+        Aurora.logger().debug("Hooked in resolver " + pluginId + " with priority " + priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver, int priority) {
