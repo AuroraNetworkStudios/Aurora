@@ -28,59 +28,48 @@ public class ItemExpansion implements AuroraExpansion {
 
         if (DependencyManager.hasDep(Dep.CUSTOMFISHING) && enabledMatchers.contains(Dep.CUSTOMFISHING.getId())) {
             itemManager.registerResolver(Dep.CUSTOMFISHING, new CustomFishingItemResolver());
-            Aurora.logger().debug("Hooked into CustomFishing for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.EXECUTABLE_BLOCKS) && enabledMatchers.contains(Dep.EXECUTABLE_BLOCKS.getId())) {
             // Use short name for plugin since it would be way too long
             itemManager.registerResolver("eb", new ExecutableBlocksResolver());
-            Aurora.logger().debug("Hooked into ExecutableBlocks for item resolvers.");
         }
 
         if(DependencyManager.hasDep(Dep.EVEN_MORE_FISH) && enabledMatchers.contains(Dep.EVEN_MORE_FISH.getId())) {
             itemManager.registerResolver(EvenMoreFishItemResolver.NAME, new EvenMoreFishItemResolver());
-            Aurora.logger().debug("Hooked into EvenMoreFish for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.EXECUTABLE_ITEMS) && enabledMatchers.contains(Dep.EXECUTABLE_ITEMS.getId())) {
             // Use short name for plugin since it would be way too long
             itemManager.registerResolver("ei", new ExecutableItemsResolver());
-            Aurora.logger().debug("Hooked into ExecutableItems for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.MMOITEMS) && enabledMatchers.contains(Dep.MMOITEMS.getId())) {
             itemManager.registerResolver(Dep.MMOITEMS, new MMOItemResolver());
-            Aurora.logger().debug("Hooked into MMOItems for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.MYTHICMOBS) && enabledMatchers.contains(Dep.MYTHICMOBS.getId())) {
             itemManager.registerResolver(Dep.MYTHICMOBS, new MythicItemResolver());
-            Aurora.logger().debug("Hooked into MythicMobs for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.ECO) && enabledMatchers.contains(Dep.ECO.getId())) {
             itemManager.registerResolver(Dep.ECO, new EcoItemsResolver());
-            Aurora.logger().debug("Hooked into EcoItems for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.NEXO) && enabledMatchers.contains(Dep.NEXO.getId())) {
             itemManager.registerResolver(Dep.NEXO, new NexoItemResolver());
-            Aurora.logger().debug("Hooked into Nexo for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.ORAXEN) && enabledMatchers.contains(Dep.ORAXEN.getId())) {
             itemManager.registerResolver(Dep.ORAXEN, new OraxenItemResolver());
-            Aurora.logger().debug("Hooked into Oraxen for item resolvers.");
         }
 
         if (DependencyManager.hasDep("ItemsAdder") && enabledMatchers.contains("ItemsAdder")) {
             itemManager.registerResolver("ia", new ItemsAdderResolver());
-            Aurora.logger().debug("Hooked into ItemsAdder for item resolvers.");
         }
 
         if (DependencyManager.hasDep(Dep.ITEM_EDIT) && enabledMatchers.contains(Dep.ITEM_EDIT.getId())) {
             itemManager.registerResolver(Dep.ITEM_EDIT, new ItemEditResolver());
-            Aurora.logger().debug("Hooked into ItemEdit for item resolvers.");
         }
 
         initAuroraItemResolver();
@@ -89,7 +78,6 @@ public class ItemExpansion implements AuroraExpansion {
             var hdbResolver = new HdbItemResolver();
             Bukkit.getPluginManager().registerEvents(hdbResolver, Aurora.getInstance());
             itemManager.registerResolver("hdb", hdbResolver);
-            Aurora.logger().debug("Hooked into HeadDatabase for item resolvers.");
         }
     }
 
