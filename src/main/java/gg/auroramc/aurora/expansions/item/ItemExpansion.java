@@ -83,6 +83,10 @@ public class ItemExpansion implements AuroraExpansion {
             Bukkit.getPluginManager().registerEvents(hdbResolver, Aurora.getInstance());
             itemManager.registerResolver("hdb", hdbResolver);
         }
+
+        Bukkit.getGlobalRegionScheduler().runDelayed(Aurora.getInstance(), (t) -> {
+            Aurora.logger().info("Registered resolvers: " + String.join(", ", itemManager.getResolvers().stream().map(r -> r.plugin() + ":" + r.priority()).toList()));
+        }, 20);
     }
 
     @Override

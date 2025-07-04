@@ -89,6 +89,10 @@ public class ItemManager {
         return resolveItem(typeId, null);
     }
 
+    public List<RegisteredResolver> getResolvers() {
+        return Collections.unmodifiableList(this.resolvers);
+    }
+
     private void insertSorted(RegisteredResolver newResolver) {
         resolverMap.put(newResolver.plugin(), newResolver);
 
