@@ -40,6 +40,7 @@ public class ItemManager {
 
     public void unregisterResolver(String plugin) {
         resolvers.removeIf(r -> r.plugin().equalsIgnoreCase(plugin));
+        resolverMap.remove(plugin);
     }
 
     public @Nullable ItemResolver getResolver(String plugin) {
