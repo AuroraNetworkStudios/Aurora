@@ -49,6 +49,7 @@ public class Config extends AuroraConfig {
         put("oraxen", 120);
         put("ia", 110);
         put("itemedit", 100);
+        put("kgenerators", 95);
         put("hdb", 90);
         put("aurora", 80);
     }};
@@ -131,6 +132,19 @@ public class Config extends AuroraConfig {
                     yaml.set("config-version", 8);
                 },
                 (yaml) -> {
+                    yaml.set("item-matchers", List.of(
+                            "CustomFishing",
+                            "Eco",
+                            "ExecutableItems",
+                            "ExecutableBlocks",
+                            "HeadDatabase",
+                            "ItemsAdder",
+                            "MMOItems",
+                            "MythicMobs",
+                            "Nexo",
+                            "Oraxen",
+                            "KGenerators"
+                    ));
                     yaml.set("item-resolver-priorities", Map.ofEntries(
                             Map.entry("customfishing", 200),
                             Map.entry("eb", 190),
@@ -143,6 +157,7 @@ public class Config extends AuroraConfig {
                             Map.entry("oraxen", 120),
                             Map.entry("ia", 110),
                             Map.entry("itemedit", 100),
+                            Map.entry("kgenerators", 95),
                             Map.entry("hdb", 90),
                             Map.entry("aurora", 80)
                     ));

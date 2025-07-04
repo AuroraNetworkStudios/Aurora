@@ -67,6 +67,8 @@ repositories {
     maven("https://repo.momirealms.net/releases/")
     // WildTools
     maven("https://repo.bg-software.com/repository/api/")
+    // KGenerators
+    maven("https://repo.codemc.org/repository/maven-public/")
 }
 
 dependencies {
@@ -95,6 +97,9 @@ dependencies {
     compileOnly("com.nexomc:nexo:1.6.0")
     compileOnly("com.bgsoftware:WildToolsAPI:2025.1")
     compileOnly("dev.aurelium:auraskills-api-bukkit:2.3.3")
+    compileOnly("me.kryniowesegryderiusz:kgenerators-core:7.3") {
+        exclude(group = "com.iridium", module = "IridiumSkyblock")
+    }
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")

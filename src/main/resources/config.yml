@@ -57,6 +57,7 @@ item-matchers:
   - "Oraxen"
   - "ItemEdit"
   - "EvenMoreFish"
+  - "KGenerators"
 
 # Resolver with the highest number will run first
 item-resolver-priorities:
@@ -75,6 +76,7 @@ item-resolver-priorities:
   # ItemsAdder
   ia: 110
   itemedit: 100
+  kgenerators: 95
   # HeadDatabase
   hdb: 90
   aurora: 80

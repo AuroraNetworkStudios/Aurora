@@ -29,6 +29,7 @@ softdepend:
   - ItemEdit
   - EvenMoreFish
   - WildTools
+  - KGenerators
 
 permissions:
   aurora.core.admin:

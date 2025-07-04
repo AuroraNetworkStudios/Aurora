@@ -35,7 +35,7 @@ public class ItemExpansion implements AuroraExpansion {
             itemManager.registerResolver("eb", new ExecutableBlocksResolver());
         }
 
-        if(DependencyManager.hasDep(Dep.EVEN_MORE_FISH) && enabledMatchers.contains(Dep.EVEN_MORE_FISH.getId())) {
+        if (DependencyManager.hasDep(Dep.EVEN_MORE_FISH) && enabledMatchers.contains(Dep.EVEN_MORE_FISH.getId())) {
             itemManager.registerResolver(EvenMoreFishItemResolver.NAME, new EvenMoreFishItemResolver());
         }
 
@@ -70,6 +70,10 @@ public class ItemExpansion implements AuroraExpansion {
 
         if (DependencyManager.hasDep(Dep.ITEM_EDIT) && enabledMatchers.contains(Dep.ITEM_EDIT.getId())) {
             itemManager.registerResolver(Dep.ITEM_EDIT, new ItemEditResolver());
+        }
+
+        if (DependencyManager.hasDep("KGenerators") && enabledMatchers.contains("KGenerators")) {
+            itemManager.registerResolver(KGeneratorsResolver.PREFIX, new KGeneratorsResolver());
         }
 
         initAuroraItemResolver();
