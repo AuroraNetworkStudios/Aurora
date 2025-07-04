@@ -11,25 +11,27 @@ import java.util.*;
 
 public class ItemManager {
     private final List<RegisteredResolver> resolvers = new ArrayList<>();
+    private final Map<String, RegisteredResolver> resolverMap = new HashMap<>();
 
-    public record RegisteredResolver(String plugin, ItemResolver resolver, Integer priority) {}
+    public record RegisteredResolver(String plugin, ItemResolver resolver, Integer priority) {
+    }
 
     public void registerResolver(String plugin, ItemResolver resolver) {
         String pluginId = plugin.toLowerCase(Locale.ROOT);
-        int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
+        int priority = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
         registerResolver(pluginId, resolver, priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver) {
         String pluginId = plugin.getId().toLowerCase(Locale.ROOT);
-        int priority  = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
+        int priority = Aurora.getLibConfig().getItemResolverPriorities().getOrDefault(pluginId, 0);
         registerResolver(pluginId, resolver, priority);
     }
 
     public void registerResolver(String plugin, ItemResolver resolver, int priority) {
         String pluginId = plugin.toLowerCase(Locale.ROOT);
         insertSorted(new RegisteredResolver(pluginId, resolver, priority));
-        Aurora.logger().debug("Hooked in resolver " + pluginId + " with priority " + priority);
+        Aurora.logger().info("Registered item resolver " + pluginId + " with priority " + priority);
     }
 
     public void registerResolver(Dep plugin, ItemResolver resolver, int priority) {
@@ -41,12 +43,7 @@ public class ItemManager {
     }
 
     public @Nullable ItemResolver getResolver(String plugin) {
-        for (RegisteredResolver r : resolvers) {
-            if (r.plugin().equalsIgnoreCase(plugin)) {
-                return r.resolver();
-            }
-        }
-        return null;
+        return resolverMap.get(plugin).resolver;
     }
 
     public TypeId resolveId(ItemStack item) {
@@ -66,14 +63,14 @@ public class ItemManager {
             return resolveVanilla(typeId);
         }
 
-        for (RegisteredResolver r : resolvers) {
-            if (!r.plugin().equalsIgnoreCase(typeId.namespace())) continue;
-
-            ItemStack item = r.resolver().resolveItem(typeId.id(), player);
+        if (resolverMap.containsKey(typeId.namespace())) {
+            var r = resolverMap.get(typeId.namespace());
+            var item = r.resolver().resolveItem(typeId.id(), player);
             if (item != null && item.getType() != Material.AIR) {
                 return item;
             }
         }
+
         return resolveVanilla(typeId);
     }
 
@@ -92,6 +89,8 @@ public class ItemManager {
     }
 
     private void insertSorted(RegisteredResolver newResolver) {
+        resolverMap.put(newResolver.plugin(), newResolver);
+
         for (int i = 0; i < resolvers.size(); i++) {
             int existingPriority = resolvers.get(i).priority();
             int newPriority = newResolver.priority();
@@ -101,6 +100,7 @@ public class ItemManager {
                 return;
             }
         }
+
         resolvers.add(newResolver);
     }
 }
