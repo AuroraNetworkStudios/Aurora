@@ -20,12 +20,12 @@ public class KGeneratorsResolver implements ItemResolver {
         var id = Main.getGenerators().get(item);
         if (id == null) return null;
 
-        return new TypeId("kgenerators", id.getId());
+        return new TypeId(PREFIX, id.getId());
     }
 
     @Override
     public TypeId resolveId(ItemStack item) {
-        return new TypeId("kgenerators", Main.getGenerators().get(item).getId());
+        return new TypeId(PREFIX, Main.getGenerators().get(item).getId());
     }
 
     @Override
