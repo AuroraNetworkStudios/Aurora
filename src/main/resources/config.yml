@@ -13,24 +13,6 @@ number-format:
       trillion: "T"
       quadrillion: "Q"
 
-
-# Resolver with the highest number will run first
-item-resolver-priorities:
-  customfishing: 200
-  # ExecutableBlocks
-  eb: 190
-  # EvenMoreFish
-  emf: 180
-  #ExecutableItems
-  ei: 170
-  mmoitems: 160
-  mythicmobs: 150
-  eco: 140
-  nexo: 130
-  oraxen: 120
-  ia: 110
-  itemedit: 100
-
 user-auto-save-in-minutes: 10
 # Can be yaml or mysql
 # If you use mysql, your leaderboard data will be stored in mysql as well
@@ -75,6 +57,27 @@ item-matchers:
   - "Oraxen"
   - "ItemEdit"
   - "EvenMoreFish"
+
+# Resolver with the highest number will run first
+item-resolver-priorities:
+  customfishing: 200
+  # ExecutableBlocks
+  eb: 190
+  # EvenMoreFish
+  emf: 180
+  # ExecutableItems
+  ei: 170
+  mmoitems: 160
+  mythicmobs: 150
+  eco: 140
+  nexo: 130
+  oraxen: 120
+  # ItemsAdder
+  ia: 110
+  itemedit: 100
+  # HeadDatabase
+  hdb: 90
+  aurora: 80
 
 # Should we try resolve IDs for items registered through /aurora registeritem <id>?
 # This is experimental and may not work for every use case.

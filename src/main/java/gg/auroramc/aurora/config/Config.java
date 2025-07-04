@@ -49,6 +49,8 @@ public class Config extends AuroraConfig {
         put("oraxen", 120);
         put("ia", 110);
         put("itemedit", 100);
+        put("hdb", 90);
+        put("aurora", 80);
     }};
 
     @Getter
@@ -140,7 +142,9 @@ public class Config extends AuroraConfig {
                             Map.entry("nexo", 130),
                             Map.entry("oraxen", 120),
                             Map.entry("ia", 110),
-                            Map.entry("itemedit", 100)
+                            Map.entry("itemedit", 100),
+                            Map.entry("hdb", 90),
+                            Map.entry("aurora", 80)
                     ));
                     yaml.set("config-version", 9);
                 }
