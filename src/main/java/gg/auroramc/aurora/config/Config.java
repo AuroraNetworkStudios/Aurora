@@ -145,22 +145,22 @@ public class Config extends AuroraConfig {
                             "Oraxen",
                             "KGenerators"
                     ));
-                    yaml.set("item-resolver-priorities", Map.ofEntries(
-                            Map.entry("customfishing", 200),
-                            Map.entry("eb", 190),
-                            Map.entry("emf", 180),
-                            Map.entry("ei", 170),
-                            Map.entry("mmoitems", 160),
-                            Map.entry("mythicmobs", 150),
-                            Map.entry("eco", 140),
-                            Map.entry("nexo", 130),
-                            Map.entry("oraxen", 120),
-                            Map.entry("ia", 110),
-                            Map.entry("itemedit", 100),
-                            Map.entry("kgenerators", 95),
-                            Map.entry("hdb", 90),
-                            Map.entry("aurora", 80)
-                    ));
+                    yaml.set("item-resolver-priorities", new LinkedHashMap<String, Integer>() {{
+                        put("customfishing", 200);
+                        put("eb", 190);
+                        put("emf", 180);
+                        put("ei", 170);
+                        put("mmoitems", 160);
+                        put("mythicmobs", 150);
+                        put("eco", 140);
+                        put("nexo", 130);
+                        put("oraxen", 120);
+                        put("ia", 110);
+                        put("itemedit", 100);
+                        put("kgenerators", 95);
+                        put("hdb", 90);
+                        put("aurora", 80);
+                    }});
                     yaml.set("config-version", 9);
                 }
         );
