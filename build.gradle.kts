@@ -82,7 +82,7 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("net.luckperms:api:5.4")
-    compileOnly("io.lumine:Mythic-Dist:5.6.1")
+    compileOnly("io.lumine:Mythic-Dist:5.9.5")
     compileOnly("net.momirealms:custom-fishing:2.3.7")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
@@ -94,7 +94,7 @@ dependencies {
     compileOnly("org.black_ixx:playerpoints:3.2.7")
     compileOnly("com.willfp:eco:6.74.2")
     compileOnly("com.willfp:EcoBits:1.8.4")
-    compileOnly("com.nexomc:nexo:1.6.0")
+    compileOnly("com.nexomc:nexo:1.8.0")
     compileOnly("com.bgsoftware:WildToolsAPI:2025.1")
     compileOnly("dev.aurelium:auraskills-api-bukkit:2.3.3")
     compileOnly("me.kryniowesegryderiusz:kgenerators-core:7.3") {
@@ -168,7 +168,7 @@ tasks.withType<ShadowJar> {
     exclude("acf-*.properties")
 }
 
-runPaper.folia.registerTask()
+//runPaper.folia.registerTask()
 
 tasks {
     build {
