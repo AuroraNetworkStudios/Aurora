@@ -51,10 +51,6 @@ public class UserManager implements Listener {
     private final Cache<UUID, AuroraUser> cache = CacheBuilder.newBuilder().build();
 
 
-    // Stores user data for offline players that are loaded for some reason
-    private final Cache<UUID, AuroraUser> offlineCache = CacheBuilder.newBuilder()
-            .expireAfterAccess(10, TimeUnit.MINUTES).build();
-
     public UserManager() {
         Bukkit.getPluginManager().registerEvents(this, Aurora.getInstance());
 
@@ -74,7 +70,6 @@ public class UserManager implements Listener {
         return CompletableFuture.supplyAsync(() -> {
             stopTasksAndSaveAllData(false);
             cache.invalidateAll();
-            offlineCache.invalidateAll();
 
             Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
                 Bukkit.getOnlinePlayers().forEach(player -> player.kick(Text.component(Aurora.getMessageConfig().getKickedByDbMigration())));
@@ -265,23 +260,12 @@ public class UserManager implements Listener {
      * @param uuid player's uuid to load data for
      */
     public CompletableFuture<AuroraUser> loadUserFromStorage(UUID uuid) {
-        if (offlineCache.getIfPresent(uuid) != null) {
-            return CompletableFuture.completedFuture(offlineCache.getIfPresent(uuid));
-        }
-
-        return CompletableFuture.supplyAsync(() -> {
-            var user = storage.loadUser(uuid, dataHolders);
-            offlineCache.put(uuid, user);
-            return user;
-        });
+        return CompletableFuture.supplyAsync(() -> storage.loadUser(uuid, dataHolders));
     }
 
     public void purgeUserData(UUID uuid) {
         CompletableFuture.runAsync(() -> {
             synchronized (getPlayerLock(uuid)) {
-                if (offlineCache.getIfPresent(uuid) != null) {
-                    offlineCache.invalidate(uuid);
-                }
                 if (cache.getIfPresent(uuid) != null) {
                     var oldUser = cache.getIfPresent(uuid);
                     cache.invalidate(uuid);
