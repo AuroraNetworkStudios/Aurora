@@ -50,6 +50,14 @@ public class AuroraCommand extends BaseCommand {
         Chat.sendMessage(player, "&eBlock placed by a player");
     }
 
+    @Subcommand("debug latency")
+    @CommandPermission("aurora.core.admin.debug.latency")
+    public void onLatencyInfo(CommandSender sender) {
+        Chat.sendMessage(sender, "Save: " + Aurora.getUserManager().getSaveLatencyMeasure().prettyPrint());
+        Chat.sendMessage(sender, "Load: " + Aurora.getUserManager().getLoadLatencyMeasure().prettyPrint());
+        Chat.sendMessage(sender, "Sync flag create: " + Aurora.getUserManager().getSyncFlagLatencyMeasure().prettyPrint());
+    }
+
     @Subcommand("debug blockremove")
     @CommandPermission("aurora.core.admin.debug.blockremove")
     public void onBlockRemove(Player player) {
