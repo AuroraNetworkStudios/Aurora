@@ -49,7 +49,7 @@ public class NumberFormatExpansion implements AuroraExpansion {
             return intFormats.get(locale).format(number);
         } else {
             var config = Aurora.getLibConfig().getNumberFormat();
-            var formatter = new NumberFormat(locale.toString().replace("_", "-"), config.getIntFormat());
+            var formatter = new NumberFormat(locale.toLanguageTag(), config.getIntFormat());
             intFormats.put(locale, formatter);
             return formatter.format(number);
         }
@@ -60,7 +60,7 @@ public class NumberFormatExpansion implements AuroraExpansion {
             return doubleFormats.get(locale).format(number);
         } else {
             var config = Aurora.getLibConfig().getNumberFormat();
-            var formatter = new NumberFormat(locale.toString().replace("_", "-"), config.getDoubleFormat());
+            var formatter = new NumberFormat(locale.toLanguageTag(), config.getDoubleFormat());
             doubleFormats.put(locale, formatter);
             return formatter.format(number);
         }
@@ -74,7 +74,7 @@ public class NumberFormatExpansion implements AuroraExpansion {
             shortFormat = shortFormats.get(locale);
         } else {
             var config = Aurora.getLibConfig().getNumberFormat();
-            var formatter = new NumberFormat(locale.toString().replace("_", "-"), config.getShortNumberFormat().getFormat());
+            var formatter = new NumberFormat(locale.toLanguageTag(), config.getShortNumberFormat().getFormat());
             shortFormats.put(locale, formatter);
             shortFormat = formatter;
         }

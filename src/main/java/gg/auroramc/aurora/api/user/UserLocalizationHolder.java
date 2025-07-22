@@ -28,7 +28,7 @@ public class UserLocalizationHolder extends UserDataHolder {
     public void serializeInto(ConfigurationSection data) {
         var locale = localization.get();
         if (locale != Locale.ROOT) {
-            data.set("language", locale.toString().replace('_', '-'));
+            data.set("language", locale.toLanguageTag());
         } else {
             data.set("language", null);
         }

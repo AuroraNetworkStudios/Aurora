@@ -44,7 +44,7 @@ public class CommandManager {
             commandManager.getCommandCompletions().registerCompletion("leaderboards",
                     (c) -> Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).getBoards());
             commandManager.getCommandCompletions().registerCompletion("languages",
-                    (c) -> Aurora.getLanguageProvider().getSupportedLocales().stream().map(l -> l.toString().replace("_", "-")).toList());
+                    (c) -> Aurora.getLanguageProvider().getSupportedLocales().stream().map(Locale::toLanguageTag).toList());
         }
 
         var msg = Aurora.getMessageConfigs().get(Locale.forLanguageTag(Aurora.getLibConfig().getFallbackLocale()));
