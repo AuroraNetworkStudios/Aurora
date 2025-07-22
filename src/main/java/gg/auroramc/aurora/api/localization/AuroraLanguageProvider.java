@@ -19,7 +19,9 @@ public class AuroraLanguageProvider implements LanguageProvider {
     public Locale getPlayerLocale(Player player) {
         var user = Aurora.getUserManager().getUser(player);
         if (!user.isLoaded()) return fallbackLocale;
-        return user.getLocalizationData().getLocalization();
+        var locale = user.getLocalizationData().getLocalization();
+        if (locale == Locale.ROOT) return fallbackLocale;
+        return locale;
     }
 
     @Override
