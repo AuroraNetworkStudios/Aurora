@@ -1,6 +1,7 @@
 package gg.auroramc.aurora.api.menu;
 
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.localization.LocalizationProvider;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.NamespacedId;
@@ -29,6 +30,7 @@ public class AuroraMenu implements InventoryHolder {
     private Consumer<Inventory> freeSlotUpdateHandler;
     private Set<Integer> managedSlots;
     private BiConsumer<InventoryClickEvent, Integer> managedSlotClickHandler;
+    private LocalizationProvider localizationProvider;
 
     private List<ItemStack> freeItems;
     private BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler;
@@ -39,6 +41,14 @@ public class AuroraMenu implements InventoryHolder {
     private NamespacedId id;
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder<?>... placeholders) {
+        this(player, title, size, refreshEnabled, (LocalizationProvider) null, placeholders);
+    }
+
+    public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, LocalizationProvider localizationProvider, Placeholder<?>... placeholders) {
+        if (localizationProvider != null) {
+            title = localizationProvider.fillVariables(player, title);
+        }
+        this.localizationProvider = localizationProvider;
         this.player = player;
         this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
         this.filler = ItemBuilder.filler();
@@ -48,13 +58,12 @@ public class AuroraMenu implements InventoryHolder {
     }
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, NamespacedId id, Placeholder<?>... placeholders) {
-        this.player = player;
-        this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
-        this.filler = ItemBuilder.filler();
+        this(player, title, size, refreshEnabled, id, null, placeholders);
+    }
+
+    public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, NamespacedId id, LocalizationProvider localizationProvider, Placeholder<?>... placeholders) {
+        this(player, title, size, refreshEnabled, localizationProvider, placeholders);
         this.id = id;
-        if (refreshEnabled) {
-            Aurora.getMenuManager().getRefresher().add(this);
-        }
     }
 
     public AuroraMenu onClose(BiConsumer<AuroraMenu, InventoryCloseEvent> closeHandler) {

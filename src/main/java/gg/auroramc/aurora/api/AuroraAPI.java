@@ -5,6 +5,7 @@ import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.entity.EntityManager;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
 import gg.auroramc.aurora.api.item.ItemManager;
+import gg.auroramc.aurora.api.localization.LanguageProvider;
 import gg.auroramc.aurora.api.menu.Requirement;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandler;
 import gg.auroramc.aurora.api.placeholder.PlaceholderHandlerRegistry;
@@ -22,7 +23,6 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class AuroraAPI {
@@ -161,5 +161,9 @@ public class AuroraAPI {
 
     public static void registerCommandDispatcherActionHandler(String id, BiConsumer<Player, String> handler) {
         CommandDispatcher.registerActionHandler(id, handler);
+    }
+
+    public static void setLanguageProvider(LanguageProvider provider) {
+        Aurora.setLanguageProvider(provider);
     }
 }

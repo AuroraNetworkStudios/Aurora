@@ -34,7 +34,7 @@ public class StashMenu {
 
     public void refresh(Config config) {
         this.config = config;
-        this.menu = new AuroraMenu(target, config.getMenu().getTitle(), 54, false);
+        this.menu = new AuroraMenu(target, config.getMenu().getTitle(), 54, false, Aurora.getLocalizationProvider());
         menu.onClose((m, e) -> onClose.accept(target));
         var mc = config.getMenu();
 

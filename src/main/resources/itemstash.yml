@@ -17,7 +17,7 @@ stash-area: [
 ]
 
 menu:
-  title: "Item stash"
+  title: "{{stash-title}}"
   filler:
     enabled: true
     item:
@@ -28,33 +28,33 @@ menu:
     prev-page:
       material: arrow
       slot: 48
-      name: "&fPrevious Page"
+      name: "{{prev-page}}"
       lore:
-        - "&7Click to go to the previous page"
+        - "{{prev-page-lore}}"
     next-page:
       material: arrow
-      name: "&fNext Page"
+      name: "{{next-page}}"
       slot: 50
       lore:
-        - "&7Click to go to the next page"
+        - "{{next-page-lore}}"
     current-page:
       material: paper
-      name: "&fCurrent Page &7({current}/{max})"
+      name: "{{current-page}}"
       slot: 49
       lore:
-        - "&7You are currently on page {current}"
+        - "{{current-page-lore}}"
     collect-all:
       material: chest
-      name: "&aCollect all"
+      name: "{{stash-collect-all}}"
       slot: 45
       lore:
-        - "&7Click to collect all items"
+        - "{{stash-collect-all-lore}}"
   custom-items:
     close:
       material: barrier
-      name: "&cClose"
+      name: "{{close}}"
       slot: 53
       lore:
-        - "&7Click to close the menu"
+        - "{{close-lore}}"
       on-click:
         - "[close]"

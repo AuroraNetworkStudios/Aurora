@@ -112,6 +112,10 @@ public class AuroraUser {
         return getData(UserStashHolder.class);
     }
 
+    public UserLocalizationHolder getLocalizationData() {
+        return getData(UserLocalizationHolder.class);
+    }
+
     public YamlConfiguration serializeData() {
         synchronized (serializeLock) {
             if (configuration == null) {

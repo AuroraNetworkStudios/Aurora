@@ -54,6 +54,9 @@ public class Config extends AuroraConfig {
         put("aurora", 80);
     }};
 
+    private List<String> supportedLanguages = Lists.newArrayList("en");
+    private String fallbackLocale = "en";
+
     @Getter
     public final static class ItemIdResolverConfig {
         private Boolean enableIdResolver = false;
@@ -162,6 +165,12 @@ public class Config extends AuroraConfig {
                         put("aurora", 80);
                     }});
                     yaml.set("config-version", 9);
+                },
+                (yaml) -> {
+                    yaml.set("supported-languages", List.of("en"));
+                    yaml.set("fallback-locale", "en");
+                    yaml.set("config-version", null);
+                    yaml.set("config-version", 10);
                 }
         );
     }

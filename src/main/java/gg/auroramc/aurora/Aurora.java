@@ -4,7 +4,11 @@ import gg.auroramc.aurora.api.AuroraLogger;
 import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.expansions.ExpansionManager;
+import gg.auroramc.aurora.api.localization.AuroraLanguageProvider;
+import gg.auroramc.aurora.api.localization.LanguageProvider;
+import gg.auroramc.aurora.api.localization.LocalizationProvider;
 import gg.auroramc.aurora.api.menu.MenuManager;
+import gg.auroramc.aurora.api.user.UserLocalizationHolder;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.api.user.UserMetaHolder;
 import gg.auroramc.aurora.commands.CommandManager;
@@ -25,11 +29,22 @@ import gg.auroramc.aurora.hooks.LuckPermsHook;
 import gg.auroramc.aurora.hooks.MythicMobsHook;
 import gg.auroramc.aurora.hooks.WildToolsHook;
 import lombok.Getter;
+import lombok.Setter;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.SimplePie;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public final class Aurora extends JavaPlugin implements Listener {
 
@@ -41,7 +56,7 @@ public final class Aurora extends JavaPlugin implements Listener {
     @Getter
     private static Config libConfig;
     @Getter
-    private static MessageConfig messageConfig;
+    private static Map<Locale, MessageConfig> messageConfigs = new HashMap<>();
     @Getter
     private static MenuManager menuManager;
     @Getter
@@ -50,6 +65,11 @@ public final class Aurora extends JavaPlugin implements Listener {
     private static UserManager userManager;
     @Getter
     private static ExpansionManager expansionManager;
+    @Getter
+    @Setter
+    private static LanguageProvider languageProvider;
+    @Getter
+    private static LocalizationProvider localizationProvider;
     @Getter
     private static boolean disabling = false;
 
@@ -61,25 +81,57 @@ public final class Aurora extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
-        expansionManager = new ExpansionManager();
-        expansionManager.preloadExpansion(LeaderboardExpansion.class);
-    }
+        languageProvider = new AuroraLanguageProvider();
 
-    @Override
-    public void onEnable() {
         saveDefaultConfig();
         instance = this;
         libConfig = new Config();
         libConfig.load();
-        MessageConfig.saveDefault();
-        messageConfig = new MessageConfig();
-        messageConfig.load();
+
+        var oldFile = new File(getDataFolder(), "messages.yml");
+        if (oldFile.exists()) {
+            try {
+                Files.move(oldFile.toPath(), getDataPath().resolve("messages_en.yml"));
+            } catch (IOException ignored) {
+            }
+        }
+
+        var locales = new ArrayList<Locale>();
+
+        for (var lang : libConfig.getSupportedLanguages()) {
+            var locale = Locale.forLanguageTag(lang);
+            MessageConfig.saveDefault(lang);
+            var messageConfig = new MessageConfig(lang);
+            messageConfig.load();
+            messageConfigs.put(locale, messageConfig);
+            locales.add(locale);
+        }
+
+        languageProvider.setSupportedLocales(locales);
+        languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getFallbackLocale()));
+
+        expansionManager = new ExpansionManager();
+        expansionManager.preloadExpansion(LeaderboardExpansion.class);
+
+    }
+
+    @Override
+    public void onEnable() {
+
+
+        // Plugins who wish to override languageProvider, should do it in their onLoad lifecycle method.
+        localizationProvider = new LocalizationProvider(languageProvider);
+
+        for (var msg : messageConfigs.entrySet()) {
+            localizationProvider.setLocaleValues(msg.getKey(), msg.getValue().toFlatMap());
+        }
 
         commandManager = new CommandManager(this);
 
         userManager = new UserManager();
         userManager.registerUserDataHolder(UserMetaHolder.class);
         userManager.registerUserDataHolder(UserStashHolder.class);
+        userManager.registerUserDataHolder(UserLocalizationHolder.class);
 
         menuManager = new MenuManager(this);
         setupExpansions();
@@ -132,9 +184,43 @@ public final class Aurora extends JavaPlugin implements Listener {
         // Reloading lib config is considered unsafe if storage options are changed
         libConfig = new Config();
         libConfig.load();
-        messageConfig = new MessageConfig();
-        messageConfig.load();
+
+        var locales = new ArrayList<Locale>();
+
+        for (var lang : libConfig.getSupportedLanguages()) {
+            var locale = Locale.forLanguageTag(lang);
+            MessageConfig.saveDefault(lang);
+            var messageConfig = new MessageConfig(lang);
+            messageConfig.load();
+            messageConfigs.put(locale, messageConfig);
+            locales.add(locale);
+        }
+
+        if (languageProvider instanceof AuroraLanguageProvider) {
+            languageProvider.setSupportedLocales(locales);
+            languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getFallbackLocale()));
+        }
+
+        localizationProvider.clear();
+
+        for (var msg : messageConfigs.entrySet()) {
+            localizationProvider.setLocaleValues(msg.getKey(), msg.getValue().toFlatMap());
+        }
+
+
         commandManager.reload();
         expansionManager.reloadExpansions();
+    }
+
+    public static MessageConfig getMsg(Player player) {
+        return messageConfigs.get(languageProvider.getPlayerLocale(player));
+    }
+
+    public static MessageConfig getMsg(CommandSender sender) {
+        if (sender instanceof Player player) {
+            return getMsg(player);
+        } else {
+            return messageConfigs.get(Locale.forLanguageTag(Aurora.getLibConfig().getFallbackLocale()));
+        }
     }
 }

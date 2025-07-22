@@ -66,9 +66,11 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onUserLoaded(AuroraUserLoadedEvent event) {
+        var messages = Aurora.getMsg(event.getUser().getPlayer());
+
         var user = event.getUser();
         if (config.getNotifyOnJoin() && user.getPlayer() != null && !user.getStashData().getItems().isEmpty()) {
-            Chat.sendMessage(user.getPlayer(), Aurora.getMessageConfig().getStashAvailable());
+            Chat.sendMessage(user.getPlayer(), messages.getStashAvailable());
         }
     }
 

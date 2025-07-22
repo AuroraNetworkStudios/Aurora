@@ -43,9 +43,11 @@ public class CommandManager {
                             .stream().filter((k) -> Aurora.getUserManager().getUser(c.getContextValue(Player.class)).getMetaData().getMeta(k) instanceof Number).toList());
             commandManager.getCommandCompletions().registerCompletion("leaderboards",
                     (c) -> Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).getBoards());
+            commandManager.getCommandCompletions().registerCompletion("languages",
+                    (c) -> Aurora.getLanguageProvider().getSupportedLocales().stream().map(l -> l.toString().replace("_", "-")).toList());
         }
 
-        var msg = Aurora.getMessageConfig();
+        var msg = Aurora.getMessageConfigs().get(Locale.forLanguageTag(Aurora.getLibConfig().getFallbackLocale()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MinecraftMessageKeys.NO_PLAYER_FOUND, m(msg.getPlayerNotFound()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MinecraftMessageKeys.NO_PLAYER_FOUND_OFFLINE, m(msg.getPlayerNotFound()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MinecraftMessageKeys.NO_PLAYER_FOUND_SERVER, m(msg.getPlayerNotFound()));
@@ -62,6 +64,7 @@ public class CommandManager {
 
         if (!this.hasSetup) {
             this.commandManager.registerCommand(new AuroraCommand(plugin));
+            this.commandManager.registerCommand(new LanguageCommand());
             this.hasSetup = true;
         }
     }

@@ -10,6 +10,7 @@ import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.util.ItemUtils;
+import gg.auroramc.aurora.config.MessageConfig;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
@@ -20,6 +21,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 @CommandAlias("aurora")
@@ -34,7 +36,8 @@ public class AuroraCommand extends BaseCommand {
     @CommandPermission("aurora.core.admin.reload")
     public void onReload(CommandSender sender) {
         plugin.reload();
-        Chat.sendMessage(sender, Aurora.getMessageConfig().getReloaded());
+        var messages = Aurora.getMsg(sender);
+        Chat.sendMessage(sender, messages.getReloaded());
     }
 
     @Subcommand("debug blockinfo")
@@ -94,10 +97,12 @@ public class AuroraCommand extends BaseCommand {
     @CommandCompletion("@range:1-16")
     @CommandPermission("aurora.core.admin.dbmigrate")
     public void onDBMigrate(CommandSender sender, @Default("5") Integer threadCount) {
-        Chat.sendMessage(sender, Aurora.getMessageConfig().getDbMigrateStarted());
+        var messages = Aurora.getMsg(sender);
+
+        Chat.sendMessage(sender, messages.getDbMigrateStarted());
 
         Aurora.getUserManager().attemptMigration(threadCount).thenAccept(success -> {
-            var msg = success ? Aurora.getMessageConfig().getDbMigrateFinished() : Aurora.getMessageConfig().getDbMigrateFailed();
+            var msg = success ? messages.getDbMigrateFinished() : messages.getDbMigrateFailed();
             if (sender instanceof Player player) {
                 if (player.isOnline()) {
                     Chat.sendMessage(player, msg);
@@ -105,9 +110,9 @@ public class AuroraCommand extends BaseCommand {
             }
 
             if (success) {
-                Aurora.logger().info(Aurora.getMessageConfig().getDbMigrateFinished());
+                Aurora.logger().info(messages.getDbMigrateFinished());
             } else {
-                Aurora.logger().severe(Aurora.getMessageConfig().getDbMigrateFailed());
+                Aurora.logger().severe(messages.getDbMigrateFailed());
             }
         });
     }
@@ -122,15 +127,18 @@ public class AuroraCommand extends BaseCommand {
     @Subcommand("gui reload")
     @CommandPermission("aurora.core.admin.gui")
     public void onGuiReload(CommandSender sender) {
+        var messages = Aurora.getMsg(sender);
+
         var guiExpansion = Aurora.getExpansionManager().getExpansion(GuiExpansion.class);
         guiExpansion.reload();
-        Chat.sendMessage(sender, Aurora.getMessageConfig().getGuiReloaded(), Placeholder.of("{amount}", guiExpansion.getGuiIds().size()));
+        Chat.sendMessage(sender, messages.getGuiReloaded(), Placeholder.of("{amount}", guiExpansion.getGuiIds().size()));
     }
 
     @Subcommand("meta set")
     @CommandCompletion("@players @userMetaKeys @nothing true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaSet(CommandSender sender, @Flags("other") Player player, String key, String value, @Default("false") Boolean silent) {
+        var messages = Aurora.getMsg(sender);
         var user = Aurora.getUserManager().getUser(player);
         boolean success;
         try {
@@ -141,9 +149,9 @@ public class AuroraCommand extends BaseCommand {
         }
         if (!silent) {
             if (success) {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getMetaSet(), Placeholder.of("{key}", key), Placeholder.of("{value}", value));
+                Chat.sendMessage(sender, messages.getMetaSet(), Placeholder.of("{key}", key), Placeholder.of("{value}", value));
             } else {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getDataNotLoadedYet());
+                Chat.sendMessage(sender, messages.getDataNotLoadedYet());
             }
         }
     }
@@ -152,16 +160,18 @@ public class AuroraCommand extends BaseCommand {
     @CommandCompletion("@players @userMetaKeys @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaGet(CommandSender sender, @Flags("other") Player player, String key) {
+        var messages = Aurora.getMsg(sender);
+
         var user = Aurora.getUserManager().getUser(player);
         if (!user.isLoaded()) {
-            Chat.sendMessage(sender, Aurora.getMessageConfig().getDataNotLoadedYet());
+            Chat.sendMessage(sender, messages.getDataNotLoadedYet());
             return;
         }
 
         var value = user.getMetaData().getMeta(key);
         if (key == null || key.isEmpty()) return;
         if (value == null) {
-            Chat.sendMessage(sender, Aurora.getMessageConfig().getMetaNotFound(), Placeholder.of("{key}", key));
+            Chat.sendMessage(sender, messages.getMetaNotFound(), Placeholder.of("{key}", key));
             return;
         }
         sender.sendMessage(value.toString());
@@ -171,13 +181,16 @@ public class AuroraCommand extends BaseCommand {
     @CommandCompletion("@players @userMetaKeys true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaRemove(CommandSender sender, @Flags("other") Player player, String key, @Default("false") Boolean silent) {
+        var messages = Aurora.getMsg(sender);
+
         var user = Aurora.getUserManager().getUser(player);
         var success = user.getMetaData().removeMeta(key);
+
         if (!silent) {
             if (success) {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getMetaRemoved(), Placeholder.of("{key}", key));
+                Chat.sendMessage(sender, messages.getMetaRemoved(), Placeholder.of("{key}", key));
             } else {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getDataNotLoadedYet());
+                Chat.sendMessage(sender, messages.getDataNotLoadedYet());
             }
         }
     }
@@ -186,16 +199,19 @@ public class AuroraCommand extends BaseCommand {
     @CommandCompletion("@players @userMetaKeys @range:1-100 true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaIncrement(CommandSender sender, @Flags("other") Player player, String key, @Default("1") Double value, @Default("false") Boolean silent) {
+        var messages = Aurora.getMsg(sender);
+
         var user = Aurora.getUserManager().getUser(player);
         if (key == null || key.isEmpty()) return;
         var success = user.getMetaData().incrementMeta(key, value);
+
         if (!silent) {
             if (success) {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getMetaIncremented(),
+                Chat.sendMessage(sender, messages.getMetaIncremented(),
                         Placeholder.of("{key}", key), Placeholder.of("{value}", value),
                         Placeholder.of("{current}", user.getMetaData().getMeta(key, 0.0)));
             } else {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getDataNotLoadedYet());
+                Chat.sendMessage(sender, messages.getDataNotLoadedYet());
             }
         }
     }
@@ -204,16 +220,19 @@ public class AuroraCommand extends BaseCommand {
     @CommandCompletion("@players @userMetaKeys @range:1-100 true|false true|false @nothing")
     @CommandPermission("aurora.core.admin.meta")
     public void onMetaDecrement(CommandSender sender, @Flags("other") Player player, String key, @Default("1") Double value, @Default("false") Boolean allowNegative, @Default("false") Boolean silent) {
+        var messages = Aurora.getMsg(sender);
+
         var user = Aurora.getUserManager().getUser(player);
         if (key == null || key.isEmpty()) return;
         var success = user.getMetaData().decrementMeta(key, value, allowNegative);
+
         if (!silent) {
             if (success) {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getMetaDecremented(),
+                Chat.sendMessage(sender, messages.getMetaDecremented(),
                         Placeholder.of("{key}", key), Placeholder.of("{value}", value),
                         Placeholder.of("{current}", user.getMetaData().getMeta(key, 0.0)));
             } else {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getDataNotLoadedYet());
+                Chat.sendMessage(sender, messages.getDataNotLoadedYet());
             }
         }
     }
@@ -224,12 +243,14 @@ public class AuroraCommand extends BaseCommand {
     public void onRegisterItem(Player player, String id) {
         if (id == null || id.isEmpty()) return;
 
+        var messages = Aurora.getMsg(player);
+
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
             var item = player.getInventory().getItemInMainHand();
             var expansion = Aurora.getExpansionManager().getExpansion(ItemExpansion.class);
             expansion.getItemStore().addItem(id, item);
             expansion.getItemStore().saveItems();
-            Chat.sendMessage(player, Aurora.getMessageConfig().getItemRegistered(), Placeholder.of("{id}", "aurora:" + id));
+            Chat.sendMessage(player, messages.getItemRegistered(), Placeholder.of("{id}", "aurora:" + id));
         }, null);
     }
 
@@ -238,10 +259,11 @@ public class AuroraCommand extends BaseCommand {
     @CommandPermission("aurora.core.admin.unregisteritem")
     public void onUnRegisterItem(CommandSender sender, String id) {
         if (id == null || id.isEmpty()) return;
+        var messages = Aurora.getMsg(sender);
         var expansion = Aurora.getExpansionManager().getExpansion(ItemExpansion.class);
         expansion.getItemStore().removeItem(id);
         expansion.getItemStore().saveItems();
-        Chat.sendMessage(sender, Aurora.getMessageConfig().getItemUnregistered(), Placeholder.of("{id}", "aurora:" + id));
+        Chat.sendMessage(sender, messages.getItemUnregistered(), Placeholder.of("{id}", "aurora:" + id));
     }
 
     @Subcommand("giveitem")
@@ -276,13 +298,14 @@ public class AuroraCommand extends BaseCommand {
     @CommandPermission("aurora.core.admin.leaderboard.clear")
     public void onLeaderboardClear(CommandSender sender, String leaderboard) {
         var expansion = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+        var messages = Aurora.getMsg(sender);
 
         if (expansion.getBoardDescriptor(leaderboard) == null) {
-            Chat.sendMessage(sender, Aurora.getMessageConfig().getLeaderboardNotExists(), Placeholder.of("{board}", leaderboard));
+            Chat.sendMessage(sender, messages.getLeaderboardNotExists(), Placeholder.of("{board}", leaderboard));
             return;
         }
 
         expansion.clearBoard(leaderboard).thenRun(() ->
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getLeaderboardCleared(), Placeholder.of("{board}", leaderboard)));
+                Chat.sendMessage(sender, messages.getLeaderboardCleared(), Placeholder.of("{board}", leaderboard)));
     }
 }

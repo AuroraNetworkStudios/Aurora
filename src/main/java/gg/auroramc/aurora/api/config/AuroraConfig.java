@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -23,14 +24,14 @@ public abstract class AuroraConfig {
     @Getter
     private int configVersion = 0;
 
-    public AuroraConfig(File file) {
+    public AuroraConfig(File file, Map<String, Object> migrationParams) {
         this.file = file;
         this.rawConfiguration = new YamlConfiguration();
 
         try {
             this.rawConfiguration.load(file);
 
-            var migrationSteps = getApplicableMigrationSteps(rawConfiguration.getInt("config-version", 0));
+            var migrationSteps = getApplicableMigrationSteps(rawConfiguration.getInt("config-version", 0), migrationParams);
 
             for (var migration : migrationSteps) {
                 migration.accept(rawConfiguration);
@@ -53,12 +54,26 @@ public abstract class AuroraConfig {
         }
     }
 
-    private List<Consumer<YamlConfiguration>> getApplicableMigrationSteps(int from) {
-        if (getMigrationSteps().size() < from) return List.of();
-        return getMigrationSteps().subList(from, getMigrationSteps().size());
+    public AuroraConfig(File file) {
+        this(file, null);
+    }
+
+    private List<Consumer<YamlConfiguration>> getApplicableMigrationSteps(int from, Map<String, Object> migrationParams) {
+        if (migrationParams == null) {
+            if (getMigrationSteps().size() < from) return List.of();
+            return getMigrationSteps().subList(from, getMigrationSteps().size());
+        } else {
+            if (getMigrationSteps(migrationParams).size() < from) return List.of();
+            return getMigrationSteps(migrationParams).subList(from, getMigrationSteps(migrationParams).size());
+        }
+
     }
 
     protected List<Consumer<YamlConfiguration>> getMigrationSteps() {
+        return List.of();
+    }
+
+    protected List<Consumer<YamlConfiguration>> getMigrationSteps(Map<String, Object> params) {
         return List.of();
     }
 

@@ -37,12 +37,14 @@ public class StashCommand extends BaseCommand {
     @CommandCompletion("@players * @range:1-64 true|false @nothing")
     @CommandPermission("aurora.core.admin.stash")
     public void onAdd(CommandSender sender, @Flags("other") Player player, String itemId, @Default("1") Integer amount, @Default("false") Boolean silent) {
+        var messages = Aurora.getMsg(sender);
+
         var item = Aurora.getExpansionManager().getExpansion(ItemExpansion.class)
                 .getItemManager().resolveItem(TypeId.fromDefault(itemId));
 
         if (item == null || item.getType() == Material.AIR) {
             if (!silent) {
-                Chat.sendMessage(sender, Aurora.getMessageConfig().getItemNotFound(), Placeholder.of("{id}", itemId));
+                Chat.sendMessage(sender, messages.getItemNotFound(), Placeholder.of("{id}", itemId));
             }
             return;
         }
@@ -55,7 +57,7 @@ public class StashCommand extends BaseCommand {
         }
 
         if (!silent) {
-            Chat.sendMessage(sender, Aurora.getMessageConfig().getStashItemAdded(), Placeholder.of("{player}", player.getName()));
+            Chat.sendMessage(sender, messages.getStashItemAdded(), Placeholder.of("{player}", player.getName()));
         }
     }
 
@@ -63,9 +65,10 @@ public class StashCommand extends BaseCommand {
     @CommandCompletion("@players @nothing")
     @CommandPermission("aurora.core.admin.stash")
     public void onClear(CommandSender sender, @Flags("other") Player player) {
+        var messages = Aurora.getMsg(sender);
         player.closeInventory();
         Aurora.getUserManager().getUser(player).getStashData().clear();
 
-        Chat.sendMessage(sender, Aurora.getMessageConfig().getStashItemsCleared());
+        Chat.sendMessage(sender, messages.getStashItemsCleared());
     }
 }

@@ -1,5 +1,12 @@
 debug: false
 
+# Must be valid language codes
+supported-languages:
+  - en
+
+# Must be a valid language code
+fallback-locale: en
+
 number-format:
   locale: en-US
   int-format: '#,###'
@@ -87,4 +94,4 @@ item-resolver-priorities:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 9
+config-version: 10

@@ -3,11 +3,12 @@ package gg.auroramc.aurora.config;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.AuroraConfig;
 import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -43,34 +44,68 @@ public class MessageConfig extends AuroraConfig {
     private String leaderboardNotExists = "&cLeaderboard with id: &4{board} &cdoes not exists!";
     private String leaderboardCleared = "&aLeaderboard with id: &2{board} &acleared and will be updated shortly!";
     private String unknownCommand = "&cAuroraLib doesn't have a command like that.";
+    private String localeNotSupported = "&cThis language isn't supported at the moment";
+    private String localeInvalid = "&cInvalid language code";
+    private String localeChanged = "&cLocale changed to english.";
 
-    public MessageConfig() {
-        super(new File(Aurora.getInstance().getDataFolder(), "messages.yml"));
+    public MessageConfig(String language) {
+        super(new File(Aurora.getInstance().getDataFolder(), "messages_" + language + ".yml"), Map.of("language", language));
     }
 
-    public static void saveDefault() {
-        var file = new File(Aurora.getInstance().getDataFolder(), "messages.yml");
+    public static void saveDefault(String language) {
+        var file = new File(Aurora.getInstance().getDataFolder(), "messages_" + language + ".yml");
         if (!file.exists()) {
-            Aurora.getInstance().saveResource("messages.yml", false);
+            try {
+                Aurora.getInstance().saveResource("messages_" + language + ".yml", false);
+            } catch (IllegalArgumentException e) {
+
+            }
         }
     }
 
     @Override
-    protected List<Consumer<YamlConfiguration>> getMigrationSteps() {
+    protected List<Consumer<YamlConfiguration>> getMigrationSteps(Map<String, Object> params) {
         return List.of(
                 (yaml) -> {
-                    try (var in = Aurora.getInstance().getResource("messages.yml")) {
+                    var language = (String) params.get("language");
+
+                    try (var in = getInternalFile(language)) {
                         var original = YamlConfiguration.loadConfiguration(new InputStreamReader(in));
 
-                        for(var key : original.getKeys(false)) {
+                        for (var key : original.getKeys(false)) {
                             if (yaml.contains(key)) continue;
                             yaml.set(key, original.get(key));
                         }
                     } catch (Exception e) {
-                        Aurora.logger().severe("Failed to run migrations on messages.yml");
+                        Aurora.logger().severe("Failed to run migrations on messages_" + language + ".yml");
                         e.printStackTrace();
                     }
                 }
         );
+    }
+
+    private InputStream getInternalFile(String language) {
+        var in = Aurora.getInstance().getResource("messages_" + language + ".yml");
+        if (in == null) {
+            return Aurora.getInstance().getResource("messages_en.yml");
+        }
+        return in;
+    }
+
+    public Map<String, String> toFlatMap() {
+        var map = new HashMap<String, String>();
+
+        for (var key : getRawConfig().getKeys(false)) {
+            if (key.equals("custom")) {
+                for (var customKey : getRawConfig().getConfigurationSection("custom").getKeys(false)) {
+                    map.put(customKey, getRawConfig().getString("custom." + customKey));
+                }
+            } else {
+                map.put(key, getRawConfig().getString(key));
+            }
+
+        }
+
+        return map;
     }
 }

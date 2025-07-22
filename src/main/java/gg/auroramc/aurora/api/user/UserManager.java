@@ -72,7 +72,9 @@ public class UserManager implements Listener {
             cache.invalidateAll();
 
             Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                Bukkit.getOnlinePlayers().forEach(player -> player.kick(Text.component(Aurora.getMessageConfig().getKickedByDbMigration())));
+                Bukkit.getOnlinePlayers().forEach(player -> player.kick(
+                        Text.component(Aurora.getMsg(player).getKickedByDbMigration())
+                ));
             });
 
             UserStorage newStorage = this.storage;

@@ -58,3 +58,4 @@ permissions:
     children:
       - aurora.core.user.stash.open
       - aurora.core.user.merchant.open
+      - aurora.core.user.language

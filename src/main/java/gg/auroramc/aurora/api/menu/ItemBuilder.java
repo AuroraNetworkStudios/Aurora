@@ -8,6 +8,7 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.config.premade.SkullConfig;
 import gg.auroramc.aurora.api.item.TypeId;
+import gg.auroramc.aurora.api.localization.LocalizationProvider;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.BukkitPotionType;
@@ -34,6 +35,7 @@ import java.util.function.Supplier;
 public class ItemBuilder {
     @Getter
     private final ItemConfig config;
+    private LocalizationProvider localization;
 
     @Getter
     private final List<Placeholder<?>> placeholders = new ArrayList<>();
@@ -90,6 +92,11 @@ public class ItemBuilder {
 
     public static ItemStack fromType(TypeId typeId, @Nullable Player player) {
         return Aurora.getExpansionManager().getExpansion(ItemExpansion.class).getItemManager().resolveItem(typeId, player);
+    }
+
+    public ItemBuilder localization(LocalizationProvider localization) {
+        this.localization = localization;
+        return this;
     }
 
     public ItemBuilder enableRefreshing() {
@@ -266,6 +273,8 @@ public class ItemBuilder {
     }
 
     public ItemStack toItemStack(ItemStack item, Player player) {
+        var lang = localization == null ? Aurora.getLocalizationProvider() : localization;
+
         item.setAmount(Math.max(config.getAmount(), 1));
 
         var meta = item.getItemMeta();
@@ -285,11 +294,11 @@ public class ItemBuilder {
         var placeholders = this.placeholders.toArray(Placeholder[]::new);
 
         if (config.getName() != null) {
-            meta.displayName(Text.component(player, config.getName(), placeholders));
+            meta.displayName(Text.component(player, lang.fillVariables(player, config.getName()), placeholders));
         }
 
         if (!config.getLore().isEmpty()) {
-            meta.lore(config.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+            meta.lore(config.getLore().stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
         }
 
         if (loreBuilder != null) {
@@ -301,7 +310,7 @@ public class ItemBuilder {
             if (lore == null) {
                 lore = new ArrayList<>();
             }
-            lore.addAll(config.getAppendLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+            lore.addAll(config.getAppendLore().stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
             meta.lore(lore);
         }
 
@@ -312,7 +321,7 @@ public class ItemBuilder {
             }
             for (var conditional : config.getConditionalLore()) {
                 if (Requirement.isAllMet(player, conditional.getConditions(), this.placeholders)) {
-                    lore.addAll(conditional.getLore().stream().map(l -> Text.component(player, l, placeholders)).toList());
+                    lore.addAll(conditional.getLore().stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
                 }
             }
             meta.lore(lore);
@@ -323,7 +332,7 @@ public class ItemBuilder {
             if (lore == null) {
                 lore = new ArrayList<>();
             }
-            lore.addAll(extraLore.stream().map(l -> Text.component(player, l, placeholders)).toList());
+            lore.addAll(extraLore.stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
             meta.lore(lore);
         }
 
