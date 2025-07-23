@@ -97,7 +97,7 @@ public class MessageConfig extends AuroraConfig {
 
         for (var key : getRawConfig().getKeys(false)) {
             if (key.equals("custom")) {
-                for (var customKey : getRawConfig().getConfigurationSection("custom").getKeys(false)) {
+                for (var customKey : getRawConfig().getConfigurationSection("custom").getKeys(true)) {
                     map.put(customKey, getRawConfig().getString("custom." + customKey));
                 }
             } else {
