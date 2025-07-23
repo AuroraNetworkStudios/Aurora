@@ -58,4 +58,6 @@ permissions:
     children:
       - aurora.core.user.stash.open
       - aurora.core.user.merchant.open
-      - aurora.core.user.language
+  aurora.core.user.language:
+    description: Allows player to use the language command
+    default: false
