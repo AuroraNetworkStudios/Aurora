@@ -9,6 +9,7 @@ import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.config.premade.SkullConfig;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.localization.LocalizationProvider;
+import gg.auroramc.aurora.api.message.ComponentWrapper;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.BukkitPotionType;
@@ -298,7 +299,11 @@ public class ItemBuilder {
         }
 
         if (!config.getLore().isEmpty()) {
-            meta.lore(config.getLore().stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
+            var lore = new ArrayList<Component>();
+            for (var line : config.getLore()) {
+                lore.addAll(wrapLoreLine(player, line, lang));
+            }
+            meta.lore(lore);
         }
 
         if (loreBuilder != null) {
@@ -310,7 +315,9 @@ public class ItemBuilder {
             if (lore == null) {
                 lore = new ArrayList<>();
             }
-            lore.addAll(config.getAppendLore().stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
+            for (var line : config.getAppendLore()) {
+                lore.addAll(wrapLoreLine(player, line, lang));
+            }
             meta.lore(lore);
         }
 
@@ -321,7 +328,9 @@ public class ItemBuilder {
             }
             for (var conditional : config.getConditionalLore()) {
                 if (Requirement.isAllMet(player, conditional.getConditions(), this.placeholders)) {
-                    lore.addAll(conditional.getLore().stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
+                    for (var line : conditional.getLore()) {
+                        lore.addAll(wrapLoreLine(player, line, lang));
+                    }
                 }
             }
             meta.lore(lore);
@@ -446,5 +455,19 @@ public class ItemBuilder {
         }
 
         return null;
+    }
+
+    private List<Component> wrapLoreLine(Player player, String line, LocalizationProvider lang) {
+        var lore = new ArrayList<Component>();
+
+        if (line.startsWith("[wrap:")) {
+            var endIndex = line.indexOf("]");
+            int length = Integer.parseInt(line.substring("[wrap:".length(), endIndex));
+            lore.addAll(ComponentWrapper.wrap(Text.component(player, lang.fillVariables(player, line.substring(endIndex + 1)), placeholders), length));
+        } else {
+            lore.add(Text.component(player, lang.fillVariables(player, line), placeholders));
+        }
+
+        return lore;
     }
 }

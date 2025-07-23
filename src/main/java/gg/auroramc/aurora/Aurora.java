@@ -11,6 +11,7 @@ import gg.auroramc.aurora.api.menu.MenuManager;
 import gg.auroramc.aurora.api.user.UserLocalizationHolder;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.api.user.UserMetaHolder;
+import gg.auroramc.aurora.api.user.UserStashHolder;
 import gg.auroramc.aurora.commands.CommandManager;
 import gg.auroramc.aurora.config.Config;
 import gg.auroramc.aurora.config.MessageConfig;
@@ -18,7 +19,6 @@ import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.entity.EntityExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
-import gg.auroramc.aurora.api.user.UserStashHolder;
 import gg.auroramc.aurora.expansions.itemstash.ItemStashExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.numberformat.NumberFormatExpansion;
@@ -117,8 +117,6 @@ public final class Aurora extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-
-
         // Plugins who wish to override languageProvider, should do it in their onLoad lifecycle method.
         localizationProvider = new LocalizationProvider(languageProvider);
 
