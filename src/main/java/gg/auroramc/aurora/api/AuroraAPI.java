@@ -126,6 +126,39 @@ public class AuroraAPI {
     }
 
     /**
+     * Format a whole number into a human-readable format.
+     *
+     * @param number the number to format
+     * @return the formatted number
+     */
+    public static String formatNumber(Player player, long number) {
+        var locale = Aurora.getLanguageProvider().getPlayerLocale(player);
+        return Aurora.getExpansionManager().getExpansion(NumberFormatExpansion.class).formatWholeNumber(locale, number);
+    }
+
+    /**
+     * Format a decimal number into a human-readable format.
+     *
+     * @param number the number to format
+     * @return the formatted number
+     */
+    public static String formatNumber(Player player, double number) {
+        var locale = Aurora.getLanguageProvider().getPlayerLocale(player);
+        return Aurora.getExpansionManager().getExpansion(NumberFormatExpansion.class).formatDecimalNumber(locale, number);
+    }
+
+    /**
+     * Format a decimal number into its human-readable short format.
+     *
+     * @param number the number to format
+     * @return the formatted number
+     */
+    public static String formatNumberShort(Player player, double number) {
+        var locale = Aurora.getLanguageProvider().getPlayerLocale(player);
+        return Aurora.getExpansionManager().getExpansion(NumberFormatExpansion.class).formatNumberShort(locale, number);
+    }
+
+    /**
      * Register a placeholder handler.
      *
      * @param handler the handler to register
