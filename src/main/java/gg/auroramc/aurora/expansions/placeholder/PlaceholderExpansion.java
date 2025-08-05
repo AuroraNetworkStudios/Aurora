@@ -11,6 +11,7 @@ public class PlaceholderExpansion implements AuroraExpansion {
         new AuroraPapiExpansion().register();
         PlaceholderHandlerRegistry.addHandler(new MetaHandler());
         PlaceholderHandlerRegistry.addHandler(new ColorHandler());
+        PlaceholderHandlerRegistry.addHandler(new LangHandler());
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
             PlaceholderHandlerRegistry.addHandler(new InRegionHandler());
