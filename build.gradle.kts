@@ -104,8 +104,8 @@ dependencies {
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
     //compileOnly(name = "eco-6.73.1-all", group = "com.willfp", version = "6.73.1")
-    compileOnly(name = "SCore-5.24.11.13", group = "com.ssomar.score", version = "5.24.11.13")
-    compileOnly(name = "ExecutableBlocks-5.24.11.13", group = "com.ssomar.score", version = "5.24.11.13")
+    compileOnly(name = "SCore-5.25.8.7", group = "com.ssomar.score", version = "5.25.8.7")
+    compileOnly(name = "ExecutableBlocks-5.25.8.7", group = "com.ssomar.score", version = "5.25.8.7")
     compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
     compileOnly(name = "RoyaleEconomyAPI", group = "me.qKing12", version = "1.0")
     compileOnly(name = "ItemEdit", group = "com.github.emanondev", version = "3.7.0")
