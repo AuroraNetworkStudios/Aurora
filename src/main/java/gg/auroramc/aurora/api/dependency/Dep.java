@@ -26,6 +26,7 @@ public enum Dep {
     GANGSPLUS("GangsPlus"),
     CHESTSORT("ChestSort"),
     REGIONAPI("RegionAPI"),
+    CRACKSHOT("CrackShot"),
     ITEM_EDIT("ItemEdit"),
     MMOITEMS("MMOItems"),
     CITIZENS("Citizens"),

@@ -107,6 +107,7 @@ dependencies {
     compileOnly(name = "SCore-5.24.11.13", group = "com.ssomar.score", version = "5.24.11.13")
     compileOnly(name = "ExecutableBlocks-5.24.11.13", group = "com.ssomar.score", version = "5.24.11.13")
     compileOnly(name = "CoinsEngine-2.3.5", group = "su.nightexpress.coinsengine", version = "2.3.5")
+    compileOnly(name = "CrackShot", group = "com.shampaggon.crackshot", version = "0.98.13")
     compileOnly(name = "RoyaleEconomyAPI", group = "me.qKing12", version = "1.0")
     compileOnly(name = "ItemEdit", group = "com.github.emanondev", version = "3.7.0")
     compileOnly(name = "even-more-fish-2.0.0-SNAPSHOT-45", group = "com.oheers", version = "2.0.0-SNAPSHOT")
@@ -177,6 +178,7 @@ tasks {
     runServer {
         downloadPlugins {
             hangar("PlaceholderAPI", "2.11.6")
+            // url("https://www.spigotmc.org/resources/crackshot-guns.48301/download?version=592852")
         }
         minecraftVersion("1.21.5")
     }

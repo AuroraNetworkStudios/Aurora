@@ -65,6 +65,7 @@ item-matchers:
   - "ItemEdit"
   - "EvenMoreFish"
   - "KGenerators"
+  - "CrackShot"
 
 # Resolver with the highest number will run first
 item-resolver-priorities:
@@ -86,6 +87,7 @@ item-resolver-priorities:
   kgenerators: 95
   # HeadDatabase
   hdb: 90
+  crackshot: 85
   aurora: 80
 
 # Should we try resolve IDs for items registered through /aurora registeritem <id>?
@@ -94,4 +96,4 @@ item-resolver-priorities:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 10
+config-version: 11

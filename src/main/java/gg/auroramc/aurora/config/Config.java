@@ -34,7 +34,11 @@ public class Config extends AuroraConfig {
             "MMOItems",
             "MythicMobs",
             "Nexo",
-            "Oraxen"
+            "Oraxen",
+            "ItemEdit",
+            "EvenMoreFish",
+            "KGenerators",
+            "CrackShot"
     );
     private ItemIdResolverConfig auroraItems;
     private Map<String, Integer> itemResolverPriorities = new HashMap<>() {{
@@ -51,6 +55,7 @@ public class Config extends AuroraConfig {
         put("itemedit", 100);
         put("kgenerators", 95);
         put("hdb", 90);
+        put("crackshot", 85);
         put("aurora", 80);
     }};
 
@@ -171,7 +176,14 @@ public class Config extends AuroraConfig {
                     yaml.set("fallback-locale", "en");
                     yaml.set("config-version", null);
                     yaml.set("config-version", 10);
-                }
-        );
+                },
+                (yaml) -> {
+                    var list = new ArrayList<>(yaml.getStringList("item-matchers"));
+                    list.add("CrackShot");
+                    yaml.set("item-matchers", list);
+                    yaml.set("item-resolver-priorities.crackshot", 85);
+                    yaml.set("config-version", 11);
+                })
+                ;
     }
 }
