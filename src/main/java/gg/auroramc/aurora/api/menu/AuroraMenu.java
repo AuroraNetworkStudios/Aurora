@@ -46,11 +46,11 @@ public class AuroraMenu implements InventoryHolder {
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, LocalizationProvider localizationProvider, Placeholder<?>... placeholders) {
         if (localizationProvider != null) {
-            title = localizationProvider.fillVariables(player, title);
+            title = localizationProvider.fillVariables(player, title, placeholders);
         }
         this.localizationProvider = localizationProvider;
         this.player = player;
-        this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
+        this.inventory = Bukkit.createInventory(this, size, Text.component(player, title));
         this.filler = ItemBuilder.filler();
         if (refreshEnabled) {
             Aurora.getMenuManager().getRefresher().add(this);

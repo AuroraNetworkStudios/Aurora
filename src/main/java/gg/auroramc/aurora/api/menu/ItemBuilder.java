@@ -292,10 +292,8 @@ public class ItemBuilder {
             }
         }
 
-        var placeholders = this.placeholders.toArray(Placeholder[]::new);
-
         if (config.getName() != null) {
-            meta.displayName(Text.component(player, lang.fillVariables(player, config.getName()), placeholders));
+            meta.displayName(Text.component(player, lang.fillVariables(player, config.getName(), placeholders)));
         }
 
         if (!config.getLore().isEmpty()) {
@@ -327,7 +325,7 @@ public class ItemBuilder {
                 lore = new ArrayList<>();
             }
             for (var conditional : config.getConditionalLore()) {
-                if (Requirement.isAllMet(player, conditional.getConditions(), this.placeholders)) {
+                if (Requirement.isAllMet(player, conditional.getConditions(), placeholders)) {
                     for (var line : conditional.getLore()) {
                         lore.addAll(wrapLoreLine(player, line, lang));
                     }
@@ -341,7 +339,7 @@ public class ItemBuilder {
             if (lore == null) {
                 lore = new ArrayList<>();
             }
-            lore.addAll(extraLore.stream().map(l -> Text.component(player, lang.fillVariables(player, l), placeholders)).toList());
+            lore.addAll(extraLore.stream().map(l -> Text.component(player, lang.fillVariables(player, l, placeholders))).toList());
             meta.lore(lore);
         }
 
@@ -463,9 +461,9 @@ public class ItemBuilder {
         if (line.startsWith("[wrap:")) {
             var endIndex = line.indexOf("]");
             int length = Integer.parseInt(line.substring("[wrap:".length(), endIndex));
-            lore.addAll(ComponentWrapper.wrap(Text.component(player, lang.fillVariables(player, line.substring(endIndex + 1)), placeholders), length));
+            lore.addAll(ComponentWrapper.wrap(Text.component(player, lang.fillVariables(player, line.substring(endIndex + 1), placeholders)), length));
         } else {
-            lore.add(Text.component(player, lang.fillVariables(player, line), placeholders));
+            lore.add(Text.component(player, lang.fillVariables(player, line, placeholders)));
         }
 
         return lore;

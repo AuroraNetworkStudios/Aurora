@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.localization;
 
+import gg.auroramc.aurora.api.message.Placeholder;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
@@ -54,56 +55,131 @@ public class LocalizationProvider implements LanguageProvider {
         this.values.put(locale, values);
     }
 
-    public String fillVariables(Player player, String input) {
-        return fillVariables(getPlayerLocale(player), input);
+    public String fillVariables(Player player, String input, Placeholder<?>... placeholders) {
+        return fillVariables(getPlayerLocale(player), input, placeholders);
     }
 
-    public String fillVariables(Locale locale, String input) {
+    public String fillVariables(Locale locale, String input, Placeholder<?>... placeholders) {
         if (input == null || input.isEmpty()) {
             return input;
         }
 
         Map<String, String> primary = values.get(locale != Locale.ROOT ? locale : languageProvider.getFallbackLocale());
         Map<String, String> fallback = values.get(languageProvider.getFallbackLocale());
-        if (primary == null) {
-            primary = Collections.emptyMap();
+        if (primary == null) primary = Collections.emptyMap();
+        if (fallback == null) fallback = Collections.emptyMap();
+
+        return resolveRecursive(input, primary, fallback, placeholders, 0);
+    }
+
+    public String fillVariables(Player player, String input, List<Placeholder<?>> placeholders) {
+        return fillVariables(getPlayerLocale(player), input, placeholders);
+    }
+
+    public String fillVariables(Locale locale, String input, List<Placeholder<?>> placeholders) {
+        if (input == null || input.isEmpty()) {
+            return input;
         }
-        if (fallback == null) {
-            fallback = Collections.emptyMap();
+
+        Map<String, String> primary = values.get(locale != Locale.ROOT ? locale : languageProvider.getFallbackLocale());
+        Map<String, String> fallback = values.get(languageProvider.getFallbackLocale());
+        if (primary == null) primary = Collections.emptyMap();
+        if (fallback == null) fallback = Collections.emptyMap();
+
+        return resolveRecursive(input, primary, fallback, placeholders, 0);
+    }
+
+    private static final int MAX_RECURSION = 10;
+
+    private String resolveRecursive(String input,
+                                    Map<String, String> primary,
+                                    Map<String, String> fallback,
+                                    Placeholder<?>[] placeholders,
+                                    int depth) {
+        if (depth > MAX_RECURSION || input == null || input.isEmpty()) {
+            return input; // safety stop
         }
 
         StringBuilder out = new StringBuilder(input.length());
+        boolean replaced = false;
         int len = input.length();
-        int i = 0;
 
-        while (i < len) {
-            // look for opening {{
-            if (input.charAt(i) == '{' && i + 1 < len && input.charAt(i + 1) == '{') {
+        for (int i = 0; i < len; ) {
+            char c = input.charAt(i);
+
+            // --- Language placeholder: {{key}} ---
+            if (c == '{' && i + 1 < len && input.charAt(i + 1) == '{') {
                 int close = input.indexOf("}}", i + 2);
                 if (close != -1) {
-                    // extract the key
                     String key = input.substring(i + 2, close);
-                    // try primary, then fallback
-                    String val = primary.get(key);
-                    if (val == null) {
-                        val = fallback.get(key);
-                    }
+                    String val = primary.getOrDefault(key, fallback.get(key));
                     if (val != null) {
                         out.append(val);
+                        replaced = true;
                     } else {
-                        // leave placeholder intact
                         out.append("{{").append(key).append("}}");
                     }
                     i = close + 2;
                     continue;
                 }
-                // no closing }}, treat as literal
             }
-            // normal character
-            out.append(input.charAt(i));
+
+            // --- Normal char ---
+            out.append(c);
             i++;
         }
 
-        return out.toString();
+        String result = out.toString();
+        String newResult = Placeholder.execute(result, placeholders);
+        replaced = replaced || !newResult.equals(result);
+        result = newResult;
+
+        return replaced ? resolveRecursive(result, primary, fallback, placeholders, depth + 1) : result;
+    }
+
+    private String resolveRecursive(String input,
+                                    Map<String, String> primary,
+                                    Map<String, String> fallback,
+                                    List<Placeholder<?>> placeholders,
+                                    int depth) {
+        if (depth > MAX_RECURSION || input == null || input.isEmpty()) {
+            return input; // safety stop
+        }
+
+        StringBuilder out = new StringBuilder(input.length());
+        boolean replaced = false;
+        int len = input.length();
+
+        for (int i = 0; i < len; ) {
+            char c = input.charAt(i);
+
+            // --- Language placeholder: {{key}} ---
+            if (c == '{' && i + 1 < len && input.charAt(i + 1) == '{') {
+                int close = input.indexOf("}}", i + 2);
+                if (close != -1) {
+                    String key = input.substring(i + 2, close);
+                    String val = primary.getOrDefault(key, fallback.get(key));
+                    if (val != null) {
+                        out.append(val);
+                        replaced = true;
+                    } else {
+                        out.append("{{").append(key).append("}}");
+                    }
+                    i = close + 2;
+                    continue;
+                }
+            }
+
+            // --- Normal char ---
+            out.append(c);
+            i++;
+        }
+
+        String result = out.toString();
+        String newResult = Placeholder.execute(result, placeholders);
+        replaced = replaced || !newResult.equals(result);
+        result = newResult;
+
+        return replaced ? resolveRecursive(result, primary, fallback, placeholders, depth + 1) : result;
     }
 }
