@@ -12,9 +12,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LocalizationProvider implements LanguageProvider {
     private final Map<Locale, Map<String, String>> values = new ConcurrentHashMap<>();
     private final LanguageProvider languageProvider;
+    private boolean usePerPlayerLocale = false;
+
+    public LocalizationProvider(LanguageProvider languageProvider, boolean usePerPlayerLocale) {
+        this.languageProvider = languageProvider;
+        this.usePerPlayerLocale = usePerPlayerLocale;
+    }
 
     public LocalizationProvider(LanguageProvider languageProvider) {
-        this.languageProvider = languageProvider;
+        this(languageProvider, false);
     }
 
     @Override
@@ -73,7 +79,7 @@ public class LocalizationProvider implements LanguageProvider {
     }
 
     public String fillVariables(Player player, String input, List<Placeholder<?>> placeholders) {
-        return fillVariables(getPlayerLocale(player), input, placeholders);
+        return fillVariables(usePerPlayerLocale ? getPlayerLocale(player) : getFallbackLocale(), input, placeholders);
     }
 
     public String fillVariables(Locale locale, String input, List<Placeholder<?>> placeholders) {

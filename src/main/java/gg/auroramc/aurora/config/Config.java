@@ -55,7 +55,8 @@ public class Config extends AuroraConfig {
     }};
 
     private List<String> supportedLanguages = Lists.newArrayList("en");
-    private String fallbackLocale = "en";
+    private String locale = "en";
+    private Boolean usePerPlayerLocale = false;
 
     @Getter
     public final static class ItemIdResolverConfig {
@@ -171,6 +172,12 @@ public class Config extends AuroraConfig {
                     yaml.set("fallback-locale", "en");
                     yaml.set("config-version", null);
                     yaml.set("config-version", 10);
+                },
+                (yaml) -> {
+                    yaml.set("locale", yaml.getString("fallback-locale", "en"));
+                    yaml.set("fallback-locale", null);
+                    yaml.set("use-per-player-locale", false);
+                    yaml.set("config-version", 11);
                 }
         );
     }

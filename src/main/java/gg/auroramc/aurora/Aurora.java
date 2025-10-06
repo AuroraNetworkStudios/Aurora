@@ -108,7 +108,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         }
 
         languageProvider.setSupportedLocales(locales);
-        languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getFallbackLocale()));
+        languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getLocale()));
 
         expansionManager = new ExpansionManager();
         expansionManager.preloadExpansion(LeaderboardExpansion.class);
@@ -196,7 +196,7 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         if (languageProvider instanceof AuroraLanguageProvider) {
             languageProvider.setSupportedLocales(locales);
-            languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getFallbackLocale()));
+            languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getLocale()));
         }
 
         localizationProvider.clear();
@@ -205,20 +205,22 @@ public final class Aurora extends JavaPlugin implements Listener {
             localizationProvider.setLocaleValues(msg.getKey(), msg.getValue().toFlatMap());
         }
 
-
         commandManager.reload();
         expansionManager.reloadExpansions();
     }
 
     public static MessageConfig getMsg(Player player) {
-        return messageConfigs.get(languageProvider.getPlayerLocale(player));
+        if (libConfig.getUsePerPlayerLocale()) {
+            return messageConfigs.get(languageProvider.getPlayerLocale(player));
+        }
+        return messageConfigs.get(Locale.forLanguageTag(libConfig.getLocale()));
     }
 
     public static MessageConfig getMsg(CommandSender sender) {
         if (sender instanceof Player player) {
             return getMsg(player);
         } else {
-            return messageConfigs.get(Locale.forLanguageTag(Aurora.getLibConfig().getFallbackLocale()));
+            return messageConfigs.get(Locale.forLanguageTag(libConfig.getLocale()));
         }
     }
 }

@@ -5,7 +5,11 @@ supported-languages:
   - en
 
 # Must be a valid language code
-fallback-locale: en
+locale: en
+
+# You must grant permission for the /language command to allow users choosing from supported languages
+# See wiki for more details
+use-per-player-locale: false
 
 number-format:
   locale: en-US
@@ -94,4 +98,4 @@ item-resolver-priorities:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 10
+config-version: 11

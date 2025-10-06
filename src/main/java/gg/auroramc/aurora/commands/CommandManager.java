@@ -47,7 +47,7 @@ public class CommandManager {
                     (c) -> Aurora.getLanguageProvider().getSupportedLocales().stream().map(Locale::toLanguageTag).toList());
         }
 
-        var msg = Aurora.getMessageConfigs().get(Locale.forLanguageTag(Aurora.getLibConfig().getFallbackLocale()));
+        var msg = Aurora.getMessageConfigs().get(Locale.forLanguageTag(Aurora.getLibConfig().getLocale()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MinecraftMessageKeys.NO_PLAYER_FOUND, m(msg.getPlayerNotFound()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MinecraftMessageKeys.NO_PLAYER_FOUND_OFFLINE, m(msg.getPlayerNotFound()));
         commandManager.getLocales().addMessage(Locale.ENGLISH, MinecraftMessageKeys.NO_PLAYER_FOUND_SERVER, m(msg.getPlayerNotFound()));
