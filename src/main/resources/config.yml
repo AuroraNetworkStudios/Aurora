@@ -11,6 +11,7 @@ locale: en
 # See wiki for more details
 use-per-player-locale: false
 
+# When per player locale is enabled, locale will be automatically set to the player's locale
 number-format:
   locale: en-US
   int-format: '#,###'

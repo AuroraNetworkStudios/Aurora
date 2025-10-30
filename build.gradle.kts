@@ -23,7 +23,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "2.4.0-SNAPSHOT"
+version = "2.4.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -178,7 +178,7 @@ tasks {
         downloadPlugins {
             hangar("PlaceholderAPI", "2.11.6")
         }
-        minecraftVersion("1.21.5")
+        minecraftVersion("1.21.10")
     }
 }
 
