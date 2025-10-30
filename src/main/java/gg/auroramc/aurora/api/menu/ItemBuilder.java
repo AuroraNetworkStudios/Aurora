@@ -176,7 +176,9 @@ public class ItemBuilder {
 
     public ItemBuilder defaultSlot(int slot) {
         if (config.getSlot() == null || config.getSlot() < 0) {
-            config.setSlot(slot);
+            if (config.getSlots() == null || config.getSlots().isEmpty()) {
+                config.setSlot(slot);
+            }
         }
         return this;
     }
