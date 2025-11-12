@@ -61,6 +61,7 @@ public class WorldGuardExpansion implements AuroraExpansion, Listener {
             var oldLocation = teleportMoves.get(playerUUID);
             removeTeleportMove(playerUUID);
             if (oldLocation == null) return false;
+            if (!oldLocation.isWorldLoaded()) return false;
             if (oldLocation.getWorld() != location.getWorld()) return false;
             return oldLocation.distance(location) <= 5;
         }
