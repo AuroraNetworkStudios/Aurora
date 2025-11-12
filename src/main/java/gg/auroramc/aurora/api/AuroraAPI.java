@@ -199,4 +199,8 @@ public class AuroraAPI {
     public static void setLanguageProvider(LanguageProvider provider) {
         Aurora.setLanguageProvider(provider);
     }
+
+    public static LanguageProvider getLanguageProvider() {
+        return Aurora.getLanguageProvider();
+    }
 }
