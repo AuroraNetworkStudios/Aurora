@@ -91,7 +91,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         var oldFile = new File(getDataFolder(), "messages.yml");
         if (oldFile.exists()) {
             try {
-                Files.move(oldFile.toPath(), getDataPath().resolve("messages_en.yml"));
+                Files.move(oldFile.toPath(), getDataFolder().toPath().resolve("messages_en.yml"));
             } catch (IOException ignored) {
             }
         }
