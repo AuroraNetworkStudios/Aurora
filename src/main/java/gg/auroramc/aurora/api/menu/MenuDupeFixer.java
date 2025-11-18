@@ -7,7 +7,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class MenuDupeFixer implements Listener {
@@ -40,7 +40,7 @@ public class MenuDupeFixer implements Listener {
     }
 
     @EventHandler
-    private void onLogin(PlayerLoginEvent event) {
+    private void onLogin(PlayerJoinEvent event) {
         event.getPlayer().getScheduler().runDelayed(this.plugin, (task) -> {
             for (ItemStack itemStack : event.getPlayer().getInventory().getContents()) {
                 if (itemStack != null && this.marker.isMarked(itemStack)) {

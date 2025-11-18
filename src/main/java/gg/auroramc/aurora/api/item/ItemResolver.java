@@ -21,4 +21,8 @@ public interface ItemResolver {
     default ItemStack resolveItem(String id) {
         return resolveItem(id, null);
     }
+
+    default boolean isPluginEnabled() {
+        return true;
+    }
 }

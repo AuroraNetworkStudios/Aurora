@@ -1,8 +1,10 @@
 package gg.auroramc.aurora.expansions.item.resolvers;
 
 import com.nexomc.nexo.api.NexoItems;
+import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -21,5 +23,10 @@ public class NexoItemResolver implements ItemResolver {
     @Override
     public ItemStack resolveItem(String id, @Nullable Player player) {
         return NexoItems.itemFromId(id).build();
+    }
+
+    @Override
+    public boolean isPluginEnabled() {
+        return Bukkit.getPluginManager().isPluginEnabled(Dep.NEXO.getId());
     }
 }

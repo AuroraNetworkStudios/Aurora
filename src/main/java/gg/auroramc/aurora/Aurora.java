@@ -135,21 +135,36 @@ public final class Aurora extends JavaPlugin implements Listener {
         setupExpansions();
 
         if (DependencyManager.hasDep("LuckPerms")) {
-            LuckPermsHook.registerListeners();
+            runInSafeMode(() -> LuckPermsHook.registerListeners(), "Failed to register LuckPerms listeners.");
         }
 
         if (DependencyManager.hasDep("WildTools")) {
-            WildToolsHook.hook();
+            runInSafeMode(() -> WildToolsHook.hook(), "Failed to hook into WildTools.");
         }
 
         if (DependencyManager.hasDep(Dep.MYTHICMOBS)) {
-            MythicMobsHook.hook();
+            runInSafeMode(() -> MythicMobsHook.hook(), "Failed to hook into MythicMobs.");
         }
 
         commandManager.reload();
 
         var metrics = new Metrics(this, 23780);
         metrics.addCustomChart(new SimplePie("storage_type", () -> libConfig.getStorageType().equals("mysql") ? "mysql" : "yaml"));
+    }
+
+    public static void runInSafeMode(Runnable runnable, String errorMessage) {
+        try {
+            runnable.run();
+        } catch (Throwable throwable) {
+            if(errorMessage != null) {
+                logger().warning(errorMessage);
+            }
+            throwable.printStackTrace();
+        }
+    }
+
+    public static void runInSafeMode(Runnable runnable) {
+        runInSafeMode(runnable, null);
     }
 
     @Override
@@ -170,7 +185,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         expansionManager.loadExpansion(ItemStashExpansion.class);
 
         if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
-            expansionManager.loadExpansion(WorldGuardExpansion.class);
+            runInSafeMode(() -> expansionManager.loadExpansion(WorldGuardExpansion.class), "Failed to hook into WorldGuard.");
         }
 
         if (libConfig.getBlockTracker().getEnabled()) {

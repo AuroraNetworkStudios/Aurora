@@ -23,7 +23,7 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "2.4.3"
+version = "2.4.4"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -82,7 +82,7 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.9")
     compileOnly("net.luckperms:api:5.4")
-    compileOnly("io.lumine:Mythic-Dist:5.9.5")
+    compileOnly("io.lumine:Mythic-Dist:5.10.0")
     compileOnly("net.momirealms:custom-fishing:2.3.7")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")

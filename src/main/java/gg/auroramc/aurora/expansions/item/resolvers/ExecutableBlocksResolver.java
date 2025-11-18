@@ -1,8 +1,10 @@
 package gg.auroramc.aurora.expansions.item.resolvers;
 
 import com.ssomar.executableblocks.api.ExecutableBlocksAPI;
+import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -24,5 +26,10 @@ public class ExecutableBlocksResolver implements ItemResolver {
     public ItemStack resolveItem(String id, @Nullable Player player) {
         return ExecutableBlocksAPI.getExecutableBlocksManager().getExecutableBlock(id).get()
                 .buildItem(1, player != null ? Optional.of(player) : Optional.empty());
+    }
+
+    @Override
+    public boolean isPluginEnabled() {
+        return Bukkit.getPluginManager().isPluginEnabled(Dep.EXECUTABLE_BLOCKS.getId());
     }
 }

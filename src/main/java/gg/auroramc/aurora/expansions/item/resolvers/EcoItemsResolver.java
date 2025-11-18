@@ -2,8 +2,11 @@ package gg.auroramc.aurora.expansions.item.resolvers;
 
 import com.willfp.eco.core.items.Items;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
+import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
@@ -115,6 +118,7 @@ public class EcoItemsResolver implements ItemResolver {
     }
 
 
+    @Getter
     public enum ArmorSlot {
         HELMET(EquipmentSlot.HEAD),
         CHESTPLATE(EquipmentSlot.CHEST),
@@ -126,10 +130,6 @@ public class EcoItemsResolver implements ItemResolver {
 
         ArmorSlot(EquipmentSlot slot) {
             this.slot = slot;
-        }
-
-        public EquipmentSlot getSlot() {
-            return slot;
         }
 
         public static ArmorSlot getSlot(ItemStack itemStack) {
@@ -157,5 +157,10 @@ public class EcoItemsResolver implements ItemResolver {
                 return null;
             }
         }
+    }
+
+    @Override
+    public boolean isPluginEnabled() {
+        return Bukkit.getPluginManager().isPluginEnabled(Dep.ECO.getId());
     }
 }

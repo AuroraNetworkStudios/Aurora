@@ -64,7 +64,7 @@ public class ItemExpansion implements AuroraExpansion {
             itemManager.registerResolver(Dep.ORAXEN, new OraxenItemResolver());
         }
 
-        if (DependencyManager.hasDep("ItemsAdder") && enabledMatchers.contains("ItemsAdder")) {
+        if (DependencyManager.hasDep(Dep.ITEMS_ADDER) && enabledMatchers.contains(Dep.ITEMS_ADDER.getId())) {
             itemManager.registerResolver("ia", new ItemsAdderResolver());
         }
 
@@ -72,7 +72,7 @@ public class ItemExpansion implements AuroraExpansion {
             itemManager.registerResolver(Dep.ITEM_EDIT, new ItemEditResolver());
         }
 
-        if (DependencyManager.hasDep("KGenerators") && enabledMatchers.contains("KGenerators")) {
+        if (DependencyManager.hasDep(Dep.K_GENERATORS) && enabledMatchers.contains(Dep.K_GENERATORS.getId())) {
             itemManager.registerResolver(KGeneratorsResolver.PREFIX, new KGeneratorsResolver());
         }
 

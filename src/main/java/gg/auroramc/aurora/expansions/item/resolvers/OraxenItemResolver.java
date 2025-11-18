@@ -1,8 +1,10 @@
 package gg.auroramc.aurora.expansions.item.resolvers;
 
+import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
 import io.th0rgal.oraxen.api.OraxenItems;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -21,5 +23,10 @@ public class OraxenItemResolver implements ItemResolver {
     @Override
     public ItemStack resolveItem(String id, @Nullable Player player) {
         return OraxenItems.getItemById(id).build();
+    }
+
+    @Override
+    public boolean isPluginEnabled() {
+        return Bukkit.getPluginManager().isPluginEnabled(Dep.ORAXEN.getId());
     }
 }

@@ -6,6 +6,8 @@ public enum Dep {
     EXECUTABLE_BLOCKS("ExecutableBlocks"),
     WILDREGENERATION("WildRegeneration"),
     EXECUTABLE_ITEMS("ExecutableItems"),
+    ITEMS_ADDER("ItemsAdder"),
+    K_GENERATORS("KGenerators"),
     MULTIVERSECORE("Multiverse-Core"),
     AURELIUMSKILLS("AureliumSkills"),
     ECONOMYSHOPGUI("EconomyShopGUI"),

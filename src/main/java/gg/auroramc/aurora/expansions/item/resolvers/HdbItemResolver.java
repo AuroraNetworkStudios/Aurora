@@ -1,9 +1,11 @@
 package gg.auroramc.aurora.expansions.item.resolvers;
 
+import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.item.ItemResolver;
 import gg.auroramc.aurora.api.item.TypeId;
 import me.arcaniax.hdb.api.DatabaseLoadEvent;
 import me.arcaniax.hdb.api.HeadDatabaseAPI;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -32,5 +34,10 @@ public class HdbItemResolver implements ItemResolver, Listener {
     @EventHandler
     public void onDatabaseLoad(DatabaseLoadEvent e) {
         this.api = new HeadDatabaseAPI();
+    }
+
+    @Override
+    public boolean isPluginEnabled() {
+        return Bukkit.getPluginManager().isPluginEnabled(Dep.HEAD_DATABASE.getId());
     }
 }

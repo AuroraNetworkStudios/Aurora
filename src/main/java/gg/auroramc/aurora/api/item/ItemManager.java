@@ -8,10 +8,12 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ItemManager {
-    private final List<RegisteredResolver> resolvers = new ArrayList<>();
-    private final Map<String, RegisteredResolver> resolverMap = new HashMap<>();
+    private final List<RegisteredResolver> resolvers = new CopyOnWriteArrayList<>();
+    private final Map<String, RegisteredResolver> resolverMap = new ConcurrentHashMap<>();
 
     public record RegisteredResolver(String plugin, ItemResolver resolver, Integer priority) {
     }
@@ -53,8 +55,15 @@ public class ItemManager {
         }
 
         for (RegisteredResolver r : resolvers) {
-            TypeId res = r.resolver().oneStepMatch(item);
-            if (res != null) return res;
+            try {
+                TypeId res = r.resolver().oneStepMatch(item);
+                if (res != null) return res;
+            } catch (IncompatibleClassChangeError | NoClassDefFoundError e) {
+                Aurora.logger().severe("Failed to resolve item id using resolver: " + r.plugin() + ", removing resolver!");
+                Aurora.logger().severe(r.resolver().isPluginEnabled() ? "Integration is probably outdated!" : ("Plugin: " + r.plugin() + " is disabled, check your startup logs!"));
+                Aurora.logger().severe(e.getClass().getSimpleName() + ": " + e.getMessage());
+                unregisterResolver(r.plugin());
+            }
         }
         return TypeId.from(item.getType());
     }
@@ -66,10 +75,18 @@ public class ItemManager {
 
         if (resolverMap.containsKey(typeId.namespace())) {
             var r = resolverMap.get(typeId.namespace());
-            var item = r.resolver().resolveItem(typeId.id(), player);
-            if (item != null && item.getType() != Material.AIR) {
-                return item;
+            try {
+                var item = r.resolver().resolveItem(typeId.id(), player);
+                if (item != null && item.getType() != Material.AIR) {
+                    return item;
+                }
+            } catch (IncompatibleClassChangeError | NoClassDefFoundError e) {
+                Aurora.logger().severe("Failed to resolve item: " + typeId + " using resolver: " + r.plugin() + ", removing resolver!");
+                Aurora.logger().severe(r.resolver().isPluginEnabled() ? "Integration is probably outdated!" : ("Plugin: " + r.plugin() + " is disabled, check your startup logs!"));
+                Aurora.logger().severe(e.getClass().getSimpleName() + ": " + e.getMessage());
+                unregisterResolver(r.plugin());
             }
+
         }
 
         return resolveVanilla(typeId);
