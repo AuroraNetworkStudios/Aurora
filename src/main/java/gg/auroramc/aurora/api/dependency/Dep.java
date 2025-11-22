@@ -12,6 +12,7 @@ public enum Dep {
     AURELIUMSKILLS("AureliumSkills"),
     ECONOMYSHOPGUI("EconomyShopGUI"),
     CUSTOMFISHING("CustomFishing"),
+    CRAFT_ENGINE("CraftEngine"),
     EVEN_MORE_FISH("EvenMoreFish"),
     HEAD_DATABASE("HeadDatabase"),
     PLAYER_POINTS("PlayerPoints"),

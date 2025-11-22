@@ -26,6 +26,7 @@ public class Config extends AuroraConfig {
     private String defaultEconomyProvider = "auto-detect";
     private Set<String> itemMatchers = Set.of(
             "CustomFishing",
+            "CraftEngine",
             "Eco",
             "ExecutableItems",
             "ExecutableBlocks",
@@ -39,6 +40,7 @@ public class Config extends AuroraConfig {
     private ItemIdResolverConfig auroraItems;
     private Map<String, Integer> itemResolverPriorities = new HashMap<>() {{
         put("customfishing", 200);
+        put("craftengine", 195);
         put("eb", 190);
         put("emf", 180);
         put("ei", 170);
@@ -178,6 +180,20 @@ public class Config extends AuroraConfig {
                     yaml.set("fallback-locale", null);
                     yaml.set("use-per-player-locale", false);
                     yaml.set("config-version", 11);
+                },
+                (yaml) -> {
+                    var matcherList = yaml.getStringList("item-matchers");
+                    matcherList.add("CraftEngine");
+                    yaml.set("item-matchers", matcherList);
+
+                    var priorities = yaml.getConfigurationSection("item-resolver-priorities");
+                    if(priorities == null) {
+                        priorities = yaml.createSection("item-resolver-priorities");
+                    }
+                    priorities.set("craftengine", 195);
+                    yaml.set("item-resolver-priorities", priorities);
+                    yaml.set("config-version", null);
+                    yaml.set("config-version", 12);
                 }
         );
     }

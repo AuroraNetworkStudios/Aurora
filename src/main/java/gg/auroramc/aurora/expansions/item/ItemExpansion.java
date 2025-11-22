@@ -30,6 +30,10 @@ public class ItemExpansion implements AuroraExpansion {
             itemManager.registerResolver(Dep.CUSTOMFISHING, new CustomFishingItemResolver());
         }
 
+        if (DependencyManager.hasDep(Dep.CRAFT_ENGINE) && enabledMatchers.contains(Dep.CRAFT_ENGINE.getId())) {
+            itemManager.registerResolver(Dep.CRAFT_ENGINE, new CraftEngineItemResolver());
+        }
+
         if (DependencyManager.hasDep(Dep.EXECUTABLE_BLOCKS) && enabledMatchers.contains(Dep.EXECUTABLE_BLOCKS.getId())) {
             // Use short name for plugin since it would be way too long
             itemManager.registerResolver("eb", new ExecutableBlocksResolver());

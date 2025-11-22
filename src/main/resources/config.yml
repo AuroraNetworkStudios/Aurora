@@ -70,10 +70,12 @@ item-matchers:
   - "ItemEdit"
   - "EvenMoreFish"
   - "KGenerators"
+  - "CraftEngine"
 
 # Resolver with the highest number will run first
 item-resolver-priorities:
   customfishing: 200
+  craftengine: 195
   # ExecutableBlocks
   eb: 190
   # EvenMoreFish
@@ -99,4 +101,4 @@ item-resolver-priorities:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 11
+config-version: 12

@@ -30,6 +30,7 @@ softdepend:
   - EvenMoreFish
   - WildTools
   - KGenerators
+  - CraftEngine
 
 permissions:
   aurora.core.admin:

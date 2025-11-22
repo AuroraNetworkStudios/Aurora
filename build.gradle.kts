@@ -63,7 +63,7 @@ repositories {
     maven("https://repo.auxilor.io/repository/maven-public/")
     // Nexo
     maven("https://repo.nexomc.com/releases/")
-    // CustomFishing
+    // CustomFishing, CraftEngine
     maven("https://repo.momirealms.net/releases/")
     // WildTools
     maven("https://repo.bg-software.com/repository/api/")
@@ -84,6 +84,8 @@ dependencies {
     compileOnly("net.luckperms:api:5.4")
     compileOnly("io.lumine:Mythic-Dist:5.10.0")
     compileOnly("net.momirealms:custom-fishing:2.3.7")
+    compileOnly("net.momirealms:craft-engine-core:0.0.65")
+    compileOnly("net.momirealms:craft-engine-bukkit:0.0.65")
     compileOnly("io.lumine:MythicLib-dist:1.6.2-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10-SNAPSHOT")
     compileOnly("io.th0rgal:oraxen:2.0-SNAPSHOT")
