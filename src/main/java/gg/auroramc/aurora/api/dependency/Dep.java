@@ -39,6 +39,7 @@ public enum Dep {
     NEXO("Nexo"),
     ECO("Eco"),
     CMI("CMI"),
+    CRACKSHOT("CrackShot"),
     ;
 
     private String id;

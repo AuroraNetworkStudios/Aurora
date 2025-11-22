@@ -26,6 +26,10 @@ public class ItemExpansion implements AuroraExpansion {
 
         var enabledMatchers = Aurora.getLibConfig().getItemMatchers();
 
+        if (DependencyManager.hasDep(Dep.CRACKSHOT) && enabledMatchers.contains(Dep.CRACKSHOT.getId())) {
+            itemManager.registerResolver(Dep.CRACKSHOT, new CrackShotItemResolver());
+        }
+
         if (DependencyManager.hasDep(Dep.CUSTOMFISHING) && enabledMatchers.contains(Dep.CUSTOMFISHING.getId())) {
             itemManager.registerResolver(Dep.CUSTOMFISHING, new CustomFishingItemResolver());
         }

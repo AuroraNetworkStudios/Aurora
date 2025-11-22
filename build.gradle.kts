@@ -102,6 +102,7 @@ dependencies {
     compileOnly("me.kryniowesegryderiusz:kgenerators-core:7.3") {
         exclude(group = "com.iridium", module = "IridiumSkyblock")
     }
+    compileOnly(name = "CrackShot", group = "com.shampaggon.crackshot", version = "0.98.13")
 
     // 3rd party local
     compileOnly(name = "CMI9.0.0.0API", group = "com.Zrips.CMI", version = "9.0.0.0")
