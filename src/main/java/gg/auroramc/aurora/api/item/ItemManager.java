@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.item;
 
+import com.google.common.collect.Lists;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.dependency.Dep;
 import org.bukkit.Material;
@@ -66,6 +67,32 @@ public class ItemManager {
             }
         }
         return TypeId.from(item.getType());
+    }
+
+    public List<TypeId> resolveEveryId(ItemStack item) {
+        if (item.getType() == Material.AIR) {
+            return Lists.newArrayList(TypeId.from(Material.AIR));
+        }
+
+        var list = new ArrayList<TypeId>(resolvers.size());
+
+        for (RegisteredResolver r : resolvers) {
+            try {
+                TypeId res = r.resolver().oneStepMatch(item);
+                if (res != null) {
+                    list.add(res);
+                }
+            } catch (IncompatibleClassChangeError | NoClassDefFoundError e) {
+                Aurora.logger().severe("Failed to resolve item id using resolver: " + r.plugin() + ", removing resolver!");
+                Aurora.logger().severe(r.resolver().isPluginEnabled() ? "Integration is probably outdated!" : ("Plugin: " + r.plugin() + " is disabled, check your startup logs!"));
+                Aurora.logger().severe(e.getClass().getSimpleName() + ": " + e.getMessage());
+                unregisterResolver(r.plugin());
+            }
+        }
+
+        list.add(TypeId.from(item.getType()));
+
+        return list;
     }
 
     public ItemStack resolveItem(TypeId typeId, @Nullable Player player) {

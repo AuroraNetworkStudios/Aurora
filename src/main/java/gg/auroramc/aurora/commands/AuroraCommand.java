@@ -9,20 +9,18 @@ import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.ItemUtils;
-import gg.auroramc.aurora.config.MessageConfig;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import gg.auroramc.aurora.expansions.leaderboard.LeaderboardExpansion;
 import gg.auroramc.aurora.expansions.region.RegionExpansion;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
 
 @CommandAlias("aurora")
 public class AuroraCommand extends BaseCommand {
@@ -76,10 +74,70 @@ public class AuroraCommand extends BaseCommand {
     }
 
     @Subcommand("debug itemid")
+    @CommandCompletion("@range:1-3")
     @CommandPermission("aurora.core.admin.debug.itemid")
-    public void onItemId(Player player) {
-        var id = AuroraAPI.getItemManager().resolveId(player.getInventory().getItemInMainHand());
-        Chat.sendMessage(player, "&aItem id: " + id.toString());
+    public void onItemId(Player player, @Default("1") Integer logLevel) {
+        var prefix = "<gold>[-]</gold>";
+        var item = player.getInventory().getItemInMainHand();
+        var ids = AuroraAPI.getItemManager().resolveEveryId(item);
+
+        var component = Component.text("---------------------------------------")
+                .append(Component.newline())
+                .append(Text.component(player, String.format("%s <white>Primary id:</white>", prefix)))
+                .append(Component.newline())
+                .append(Text.component(String.format("     <color:#ffdd00><hover:show_text:'Click to copy'><click:copy_to_clipboard:'%s'>%s</click></hover></color>", ids.getFirst(), ids.getFirst())))
+                .append(Component.newline())
+                .append(Component.newline());
+
+
+        if (logLevel >= 2) {
+            if (ids.size() > 1) {
+                component = component.append(Text.component(String.format("%s <white>Other matched resolvers:</white>", prefix)));
+
+                for (var id : ids.subList(1, ids.size())) {
+                    component = component.append(Component.newline())
+                            .append(Text.component(String.format("     <white>-</white> <color:#ffdd00><hover:show_text:'Click to copy'><click:copy_to_clipboard:'%s'>%s</click></hover></color>", id, id)));
+                }
+            } else {
+                component = component.append(Text.component(String.format("%s <white>No other matched resolvers.</white>", prefix)));
+            }
+
+            component = component.append(Component.newline()).append(Component.newline());
+        }
+
+        if (logLevel >= 3) {
+            var data = extractCustomData(item.getItemMeta().getAsComponentString());
+
+            if (data != null) {
+                component = component.append(Text.component(String.format("<color:#d3d3d3><hover:show_text:'Click to copy'><click:copy_to_clipboard:'%s'>%s</click></hover></color>", data, data)));
+            } else {
+                component = component.append(Text.component("<color:#d3d3d3>No custom data found.</color>"));
+            }
+
+            component = component.append(Component.newline()).append(Component.newline());
+        }
+
+        component = component.append(Text.component(String.format("%s <white>Copy things by clicking on them</white>", prefix)));
+
+        player.sendMessage(component);
+    }
+
+    private static String extractCustomData(String s) {
+        int start = s.indexOf("custom_data={");
+        if (start == -1) return null;
+
+        int i = start + "custom_data={".length();
+        int depth = 1;
+
+        while (i < s.length() && depth > 0) {
+            char c = s.charAt(i);
+            if (c == '{') depth++;
+            else if (c == '}') depth--;
+            i++;
+        }
+
+        if (depth != 0) return null;
+        return s.substring(start, i);
     }
 
     @Subcommand("dispatch")
