@@ -1,6 +1,8 @@
 package gg.auroramc.aurora.api.reward;
 
+import com.google.common.collect.Lists;
 import gg.auroramc.aurora.Aurora;
+import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.ThreadSafety;
@@ -15,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PermissionReward extends AbstractReward {
+public class PermissionReward extends NumberReward {
     @Getter
     private List<String> permissions;
     private boolean value;
@@ -60,14 +62,23 @@ public class PermissionReward extends AbstractReward {
     }
 
     public List<Node> buildNodes(Player player, List<Placeholder<?>> placeholders) {
+        var numberValue = getValue(placeholders);
+        List<Placeholder<?>> numberPlaceholders = Lists.newArrayList(
+                Placeholder.of("{value}", numberValue),
+                Placeholder.of("{value_int}", numberValue.longValue()),
+                Placeholder.of("{value_formatted}", AuroraAPI.formatNumber(numberValue))
+        );
+
+        numberPlaceholders.addAll(placeholders);
+
         return permissions.stream().map(permission -> {
-            var builder = Node.builder(Text.fillPlaceholders(player, permission, placeholders)).value(value);
+            var builder = Node.builder(Text.fillPlaceholders(player, permission, numberPlaceholders)).value(value);
 
             if (!contexts.isEmpty()) {
                 var contextSet = MutableContextSet.create();
 
                 for (var entry : contexts.entrySet())
-                    contextSet.add(entry.getKey(), Text.fillPlaceholders(player, entry.getValue(), placeholders));
+                    contextSet.add(entry.getKey(), Text.fillPlaceholders(player, entry.getValue(), numberPlaceholders));
 
                 builder.withContext(contextSet);
             }

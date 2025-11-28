@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
-public class ItemReward extends AbstractReward {
+public class ItemReward extends NumberReward {
     enum StashHandle {
         NONE,
         OVERFLOW,
@@ -88,7 +88,10 @@ public class ItemReward extends AbstractReward {
     }
 
     private ItemStack[] getItems(Player player, List<Placeholder<?>> placeholders) {
-        var amount = itemConfig.getAmount();
+        var amount = getValue(placeholders).intValue();
+        if (amount <= 0) {
+            amount = itemConfig.getAmount();
+        }
         var item = ItemBuilder.of(itemConfig).placeholder(placeholders).amount(1).toItemStack(player);
 
         if (item == null || item.getType() == Material.AIR) {
