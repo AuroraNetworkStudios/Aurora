@@ -13,28 +13,24 @@ public class CraftEngineItemResolver implements ItemResolver {
     @Override
     public boolean matches(ItemStack item) {
         var id = CraftEngineItems.getCustomItemId(item);
-        if (id == null) return false;
-        return id.namespace().equals(Key.DEFAULT_NAMESPACE);
+        return id != null;
     }
 
     @Override
     public TypeId resolveId(ItemStack item) {
-        return new TypeId("craftengine", CraftEngineItems.getCustomItemId(item).value());
+        return new TypeId("craftengine", CraftEngineItems.getCustomItemId(item).asString());
     }
 
     @Override
     public ItemStack resolveItem(String id, Player player) {
-        return CraftEngineItems.byId(Key.withDefaultNamespace(id)).buildItemStack();
+        return CraftEngineItems.byId(Key.from(id)).buildItemStack();
     }
 
     @Override
     public TypeId oneStepMatch(ItemStack item) {
         var id = CraftEngineItems.getCustomItemId(item);
         if (id == null) return null;
-        if (!id.namespace().equals(Key.DEFAULT_NAMESPACE)) {
-            return null;
-        }
-        return new TypeId("craftengine", id.value());
+        return new TypeId("craftengine", id.asString());
     }
 
     @Override
