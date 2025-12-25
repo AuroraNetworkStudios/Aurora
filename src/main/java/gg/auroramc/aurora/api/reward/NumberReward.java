@@ -21,10 +21,6 @@ public abstract class NumberReward extends AbstractReward {
             amount = args.getDouble("amount");
         }
         formula =  args.getString("formula", null);
-
-        if (amount == null && formula == null) {
-            Aurora.logger().warning("NumberReward has neither the amount or the formula key");
-        }
     }
 
     public Double getValue(List<Placeholder<?>> placeholders) {
