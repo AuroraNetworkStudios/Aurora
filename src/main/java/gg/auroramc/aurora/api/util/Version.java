@@ -51,23 +51,34 @@ public class Version {
     public static int getMinorVersion(String version) {
         if (version != null) {
             int lastDot = version.lastIndexOf('.');
-            if (version.indexOf('.') != lastDot) {
-                return Integer.parseInt(version.substring(lastDot + 1));
+            if(version.startsWith("1.")) {
+                if (version.indexOf('.') != lastDot) {
+                    return Integer.parseInt(version.substring(lastDot + 1));
+                } else {
+                    return 0;
+                }
             } else {
-                return 0;
+                // New mojang versioning: 26.1.1 -> year.drop.hotfix
+                return Integer.parseInt(version.substring(version.indexOf('.') + 1, lastDot));
             }
+
         }
         throw new IllegalArgumentException("Failed to parse minor version from version string");
     }
 
     public static int getMajorVersion(String version) {
         if (version != null) {
-            int lastDot = version.lastIndexOf(".");
-            int firstDot = version.indexOf(".");
-            if (firstDot != lastDot) {
-                return Integer.parseInt(version.substring(firstDot + 1, lastDot));
+            if(version.startsWith("1.")) {
+                int lastDot = version.lastIndexOf(".");
+                int firstDot = version.indexOf(".");
+                if (firstDot != lastDot) {
+                    return Integer.parseInt(version.substring(firstDot + 1, lastDot));
+                } else {
+                    return Integer.parseInt(version.substring(firstDot + 1));
+                }
             } else {
-                return Integer.parseInt(version.substring(firstDot + 1));
+                // New mojang versioning: 26.1.1 -> year.drop.hotfix
+                return Integer.parseInt(version.substring(0, version.indexOf('.')));
             }
         }
         throw new IllegalArgumentException("Failed to parse major version from version string");
