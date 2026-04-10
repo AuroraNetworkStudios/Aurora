@@ -73,6 +73,7 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    //compileOnly("io.papermc.paper:paper-api:26.1.1.build.+")
 
     // 3rd party
     compileOnly("net.essentialsx:EssentialsX:2.21.0-SNAPSHOT") {
