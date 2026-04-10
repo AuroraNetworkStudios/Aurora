@@ -50,18 +50,22 @@ public class Version {
 
     public static int getMinorVersion(String version) {
         if (version != null) {
+            int firstDot = version.indexOf(".");
             int lastDot = version.lastIndexOf('.');
             if(version.startsWith("1.")) {
-                if (version.indexOf('.') != lastDot) {
+                if (firstDot != lastDot) {
                     return Integer.parseInt(version.substring(lastDot + 1));
                 } else {
                     return 0;
                 }
             } else {
                 // New mojang versioning: 26.1.1 -> year.drop.hotfix
-                return Integer.parseInt(version.substring(version.indexOf('.') + 1, lastDot));
+                if (firstDot != lastDot) {
+                    return Integer.parseInt(version.substring(firstDot + 1, lastDot));
+                } else {
+                    return Integer.parseInt(version.substring(firstDot + 1));
+                }
             }
-
         }
         throw new IllegalArgumentException("Failed to parse minor version from version string");
     }
