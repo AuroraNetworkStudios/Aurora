@@ -17,17 +17,20 @@ fun loadProperties(filename: String): Properties {
 
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "8.3.3"
+    id("com.gradleup.shadow") version "9.4.2"
     id("maven-publish")
-    id("xyz.jpenilla.run-paper") version "2.3.0"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = "gg.auroramc"
 version = "2.5.3"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 repositories {
@@ -69,11 +72,12 @@ repositories {
     maven("https://repo.bg-software.com/repository/api/")
     // KGenerators
     maven("https://repo.codemc.org/repository/maven-public/")
+    // NightCore
+    maven("https://repo.nightexpressdev.com/releases/")
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
-    //compileOnly("io.papermc.paper:paper-api:26.1.1.build.+")
+    compileOnly("io.papermc.paper:paper-api:26.2.build.31-alpha")
 
     // 3rd party
     compileOnly("net.essentialsx:EssentialsX:2.21.0-SNAPSHOT") {
@@ -100,6 +104,7 @@ dependencies {
     compileOnly("com.nexomc:nexo:1.8.0")
     compileOnly("com.bgsoftware:WildToolsAPI:2025.1")
     compileOnly("dev.aurelium:auraskills-api-bukkit:2.3.3")
+    compileOnly("su.nightexpress.nightcore:main:2.16.2")
     compileOnly("me.kryniowesegryderiusz:kgenerators-core:7.3") {
         exclude(group = "com.iridium", module = "IridiumSkyblock")
     }
@@ -116,8 +121,8 @@ dependencies {
     compileOnly(name = "even-more-fish-2.0.0-SNAPSHOT-45", group = "com.oheers", version = "2.0.0-SNAPSHOT")
 
     // Lombok
-    compileOnly("org.projectlombok:lombok:1.18.30")
-    annotationProcessor("org.projectlombok:lombok:1.18.30")
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // HikariCP
     implementation("com.zaxxer:HikariCP:5.1.0") {
@@ -134,9 +139,9 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
 
     // JUnit Jupiter API and Engine dependencies
-    testImplementation("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.0")
+    testImplementation("io.papermc.paper:paper-api:26.2.build.31-alpha")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.0")
 }
 
 tasks.test {
@@ -179,10 +184,10 @@ tasks {
         dependsOn(shadowJar)
     }
     runServer {
-        downloadPlugins {
-            hangar("PlaceholderAPI", "2.11.6")
-        }
-        minecraftVersion("1.21.10")
+        // downloadPlugins {
+        //     hangar("PlaceholderAPI", "2.12.2")
+        // }
+        minecraftVersion("26.2")
     }
 }
 
@@ -228,7 +233,7 @@ publishing {
 tasks.withType<AbstractRun>().configureEach {
 //    javaLauncher = javaToolchains.launcherFor {
 //        vendor.set(JvmVendorSpec.JETBRAINS)
-//        languageVersion.set(JavaLanguageVersion.of(21))
+//        languageVersion.set(JavaLanguageVersion.of(25))
 //    }
     jvmArgs(
         // "-XX:+AllowEnhancedClassRedefinition", //
