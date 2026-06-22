@@ -50,7 +50,7 @@ leaderboards:
   empty-placeholder: "---"
 
 # Use "auto-detect" to automatically detect the economy provider. Otherwise use the plugin name you want.
-# Supported plugins: Vault, Essentials, CMI, PlayerPoints, CoinsEngine, EcoBits, EliteMobs
+# Supported plugins: Vault, Essentials, CMI, PlayerPoints, ExcellentEconomy, CoinsEngine, EcoBits, EliteMobs
 # Changing this requires a full restart
 default-economy-provider: "auto-detect"
 
@@ -103,4 +103,4 @@ item-resolver-priorities:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 13
+config-version: 14

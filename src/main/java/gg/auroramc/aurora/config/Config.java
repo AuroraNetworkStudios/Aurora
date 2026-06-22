@@ -99,7 +99,7 @@ public class Config extends AuroraConfig {
                     yaml.set("default-economy-provider", "auto-detect");
                     yaml.setComments("default-economy-provider", List.of(
                             "Use 'auto-detect' to automatically detect the economy provider. Otherwise use the plugin name you want.",
-                            "Supported plugins: Vault, Essentials, CMI, PlayerPoints, CoinsEngine, EcoBits, EliteMobs", "RoyaleEconomy", "RoyaleEconomyBank",
+                            "Supported plugins: Vault, Essentials, CMI, PlayerPoints, ExcellentEconomy, CoinsEngine, EcoBits, EliteMobs", "RoyaleEconomy", "RoyaleEconomyBank",
                             "Changing this requires a full restart"));
                     yaml.set("config-version", null);
                     yaml.set("config-version", 4);
@@ -206,6 +206,13 @@ public class Config extends AuroraConfig {
                     yaml.set("item-matchers", matcherList);
                     yaml.set("item-resolver-priorities.crackshot", 210);
                     yaml.set("config-version", 13);
+                },
+                (yaml) -> {
+                    yaml.setComments("default-economy-provider", List.of(
+                            "Use 'auto-detect' to automatically detect the economy provider. Otherwise use the plugin name you want.",
+                            "Supported plugins: Vault, Essentials, CMI, PlayerPoints, ExcellentEconomy, CoinsEngine, EcoBits, EliteMobs", "RoyaleEconomy", "RoyaleEconomyBank",
+                            "Changing this requires a full restart"));
+                    yaml.set("config-version", 14);
                 }
         );
     }

@@ -16,6 +16,7 @@ public enum Dep {
     EVEN_MORE_FISH("EvenMoreFish"),
     HEAD_DATABASE("HeadDatabase"),
     PLAYER_POINTS("PlayerPoints"),
+    EXCELLENT_ECONOMY("ExcellentEconomy"),
     COINS_ENGINE("CoinsEngine"),
     TRADESYSTEM("TradeSystem"),
     SHOPKEEPERS("Shopkeepers"),

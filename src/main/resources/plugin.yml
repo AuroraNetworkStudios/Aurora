@@ -23,6 +23,7 @@ softdepend:
   - HeadDatabase
   - EliteMobs
   - PlayerPoints
+  - ExcellentEconomy
   - CoinsEngine
   - nightcore
   - RoyaleEconomy

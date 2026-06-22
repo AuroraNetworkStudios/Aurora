@@ -48,8 +48,6 @@ repositories {
     // EssentialsX
     maven("https://repo.essentialsx.net/releases/")
     maven("https://repo.essentialsx.net/snapshots/")
-    // MultiVerse-Core
-    maven("https://repo.onarandombox.com/content/groups/public/")
     // MMO plugins
     maven("https://nexus.phoenixdevt.fr/repository/maven-public/")
     // Oraxen
@@ -72,7 +70,7 @@ repositories {
     maven("https://repo.bg-software.com/repository/api/")
     // KGenerators
     maven("https://repo.codemc.org/repository/maven-public/")
-    // NightCore
+    // NightCore, ExcellentEconomy
     maven("https://repo.nightexpressdev.com/releases/")
 }
 
@@ -105,6 +103,7 @@ dependencies {
     compileOnly("com.bgsoftware:WildToolsAPI:2025.1")
     compileOnly("dev.aurelium:auraskills-api-bukkit:2.3.3")
     compileOnly("su.nightexpress.nightcore:main:2.16.2")
+    compileOnly("su.nightexpress.excellenteconomy:ExcellentEconomy:2.8.0")
     compileOnly("me.kryniowesegryderiusz:kgenerators-core:7.3") {
         exclude(group = "com.iridium", module = "IridiumSkyblock")
     }

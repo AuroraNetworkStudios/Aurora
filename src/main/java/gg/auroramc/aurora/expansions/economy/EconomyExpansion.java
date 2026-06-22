@@ -45,6 +45,15 @@ public class EconomyExpansion implements AuroraExpansion {
             if (defaultEconomy == null) defaultEconomy = Dep.PLAYER_POINTS.getId();
         }
 
+        if (DependencyManager.hasDep(Dep.EXCELLENT_ECONOMY)) {
+            if (ExcellentEconomyEconomy.isApiAvailable()) {
+                economies.put(Dep.EXCELLENT_ECONOMY.getId(), new ExcellentEconomyEconomy());
+                if (defaultEconomy == null) defaultEconomy = Dep.EXCELLENT_ECONOMY.getId();
+            } else {
+                Aurora.logger().warning("ExcellentEconomy is installed, but its API service is not available.");
+            }
+        }
+
         if (DependencyManager.hasDep(Dep.COINS_ENGINE)) {
             economies.put(Dep.COINS_ENGINE.getId(), new CoinsEngineEconomy());
             if (defaultEconomy == null) defaultEconomy = Dep.COINS_ENGINE.getId();
@@ -77,6 +86,7 @@ public class EconomyExpansion implements AuroraExpansion {
                 Dep.VAULT,
                 Dep.ELITEMOBS,
                 Dep.PLAYER_POINTS,
+                Dep.EXCELLENT_ECONOMY,
                 Dep.COINS_ENGINE
             ) || DependencyManager.hasAnyDep(
         "EcoBits",
