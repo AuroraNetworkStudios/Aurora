@@ -59,10 +59,7 @@ jobs:
 
           plugin_version=$(basename "$artifact_path" .jar)
           plugin_version=${plugin_version#Aurora-}
-          is_dev=false
-          if [[ "$plugin_version" == *SNAPSHOT* ]]; then
-            is_dev=true
-          fi
+          is_dev=true
 
           supported_minecraft_versions=$(
             awk -F= '{
