@@ -23,7 +23,14 @@ public class CraftEngineItemResolver implements ItemResolver {
 
     @Override
     public ItemStack resolveItem(String id, Player player) {
-        return CraftEngineItems.byId(Key.from(id)).buildItemStack();
+        var item = CraftEngineItems.byId(Key.from(id));
+        if (item == null) {
+            return ItemStack.empty();
+        }
+        if (player != null) {
+            item.buildBukkitItem(player);
+        }
+        return item.buildBukkitItem();
     }
 
     @Override
