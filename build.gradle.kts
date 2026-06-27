@@ -23,7 +23,27 @@ plugins {
 }
 
 group = "gg.auroramc"
-version = "2.6.0-SNAPSHOT"
+
+val baseVersion = providers.gradleProperty("baseVersion").get()
+val supportedMinecraftVersions = providers.gradleProperty("supportedMinecraftVersions")
+    .map { versions ->
+        versions.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+    .get()
+val ciBuildNumber = providers.gradleProperty("buildNumber")
+    .orElse(providers.environmentVariable("GITHUB_RUN_NUMBER"))
+    .map { it.trim() }
+    .orNull
+
+version = if (ciBuildNumber.isNullOrBlank()) {
+    baseVersion
+} else if (baseVersion.endsWith("-SNAPSHOT")) {
+    "${baseVersion.removeSuffix("-SNAPSHOT")}-b$ciBuildNumber-SNAPSHOT"
+} else {
+    "$baseVersion-b$ciBuildNumber"
+}
 
 java {
     toolchain {
@@ -153,6 +173,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.processResources {
     filteringCharset = "UTF-8"
+    inputs.property("version", project.version)
     filesMatching("plugin.yml") {
         expand("version" to project.version)
     }
@@ -186,7 +207,7 @@ tasks {
         // downloadPlugins {
         //     hangar("PlaceholderAPI", "2.12.2")
         // }
-        minecraftVersion("26.2")
+        minecraftVersion(supportedMinecraftVersions.last())
     }
 }
 
@@ -239,5 +260,3 @@ tasks.withType<AbstractRun>().configureEach {
         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" // Enable remote debugging
     )
 }
-
-
