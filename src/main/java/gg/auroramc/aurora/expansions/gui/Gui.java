@@ -95,13 +95,19 @@ public class Gui implements AuroraGui {
 
         config.getItems().forEach((id, itemConfig) ->
                 menu.addItem(ItemBuilder.of(itemConfig).placeholder(placeholders).build(player), (e) -> {
-                    if (itemConfig.getOnClick() != null && !itemConfig.getOnClick().isEmpty() && !itemConfig.getOnClick().contains("[close]")) {
+                    if (shouldRefreshAfter(itemConfig.getOnClick())) {
                         return MenuAction.REFRESH_MENU_DELAYED;
                     }
-                    if (e.isLeftClick() && itemConfig.getOnLeftClick() != null && !itemConfig.getOnLeftClick().isEmpty() && !itemConfig.getOnLeftClick().contains("[close]")) {
+                    if (e.isShiftClick() && e.isLeftClick() && itemConfig.hasShiftLeftClickConfig()) {
+                        return shouldRefreshAfter(itemConfig.getOnShiftLeftClick()) ? MenuAction.REFRESH_MENU_DELAYED : MenuAction.NONE;
+                    }
+                    if (e.isShiftClick() && e.isRightClick() && itemConfig.hasShiftRightClickConfig()) {
+                        return shouldRefreshAfter(itemConfig.getOnShiftRightClick()) ? MenuAction.REFRESH_MENU_DELAYED : MenuAction.NONE;
+                    }
+                    if (e.isLeftClick() && shouldRefreshAfter(itemConfig.getOnLeftClick())) {
                         return MenuAction.REFRESH_MENU_DELAYED;
                     }
-                    if (e.isRightClick() && itemConfig.getOnRightClick() != null && !itemConfig.getOnRightClick().isEmpty() && !itemConfig.getOnRightClick().contains("[close]")) {
+                    if (e.isRightClick() && shouldRefreshAfter(itemConfig.getOnRightClick())) {
                         return MenuAction.REFRESH_MENU_DELAYED;
                     }
                     return MenuAction.NONE;
@@ -125,5 +131,9 @@ public class Gui implements AuroraGui {
                 }
             }
         }, null);
+    }
+
+    private static boolean shouldRefreshAfter(List<String> actions) {
+        return actions != null && !actions.isEmpty() && !actions.contains("[close]");
     }
 }

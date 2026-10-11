@@ -39,16 +39,30 @@ public class MenuEntry {
     }
 
     public MenuAction handleEvent(InventoryClickEvent event) {
-        if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getClickRequirements(), item.getPlaceholders())) {
+        var config = item.getItemBuilder().getConfig();
+
+        if (!Requirement.passes(item.getPlayer(), config.getClickRequirements(), item.getPlaceholders())) {
             return MenuAction.NONE;
         }
 
-        if (event.isLeftClick()) {
-            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getLeftClickRequirements(), item.getPlaceholders())) {
+        // Shift clicks only get special handling if they are configured, otherwise they act as normal left/right clicks
+        var shiftLeft = event.isShiftClick() && event.isLeftClick() && config.hasShiftLeftClickConfig();
+        var shiftRight = event.isShiftClick() && event.isRightClick() && config.hasShiftRightClickConfig();
+
+        if (shiftLeft) {
+            if (!Requirement.passes(item.getPlayer(), config.getShiftLeftClickRequirements(), item.getPlaceholders())) {
+                return MenuAction.NONE;
+            }
+        } else if (shiftRight) {
+            if (!Requirement.passes(item.getPlayer(), config.getShiftRightClickRequirements(), item.getPlaceholders())) {
+                return MenuAction.NONE;
+            }
+        } else if (event.isLeftClick()) {
+            if (!Requirement.passes(item.getPlayer(), config.getLeftClickRequirements(), item.getPlaceholders())) {
                 return MenuAction.NONE;
             }
         } else if (event.isRightClick()) {
-            if (!Requirement.passes(item.getPlayer(), item.getItemBuilder().getConfig().getRightClickRequirements(), item.getPlaceholders())) {
+            if (!Requirement.passes(item.getPlayer(), config.getRightClickRequirements(), item.getPlaceholders())) {
                 return MenuAction.NONE;
             }
         }
@@ -63,7 +77,11 @@ public class MenuEntry {
 
         item.runOnClickCommands(item.getPlayer());
 
-        if (event.isLeftClick()) {
+        if (shiftLeft) {
+            item.runOnShiftLeftClickCommands(item.getPlayer());
+        } else if (shiftRight) {
+            item.runOnShiftRightClickCommands(item.getPlayer());
+        } else if (event.isLeftClick()) {
             item.runOnLeftClickCommands(item.getPlayer());
         } else if (event.isRightClick()) {
             item.runOnRightClickCommands(item.getPlayer());

@@ -51,6 +51,16 @@ public class MenuItem {
         itemBuilder.getConfig().getOnRightClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
     }
 
+    public void runOnShiftLeftClickCommands(Player player) {
+        if (itemBuilder.getConfig().getOnShiftLeftClick() == null) return;
+        itemBuilder.getConfig().getOnShiftLeftClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+    }
+
+    public void runOnShiftRightClickCommands(Player player) {
+        if (itemBuilder.getConfig().getOnShiftRightClick() == null) return;
+        itemBuilder.getConfig().getOnShiftRightClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+    }
+
     public void refresh() {
         itemStack = itemBuilder.build(player).getItemStack();
         var placeholders = new ArrayList<>(itemBuilder.getPlaceholders());

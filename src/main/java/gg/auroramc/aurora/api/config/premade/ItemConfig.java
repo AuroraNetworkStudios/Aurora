@@ -37,10 +37,14 @@ public class ItemConfig {
     private List<String> onClick;
     private List<String> onLeftClick;
     private List<String> onRightClick;
+    private List<String> onShiftLeftClick;
+    private List<String> onShiftRightClick;
     private List<String> viewRequirements;
     private List<RequirementConfig> clickRequirements;
     private List<RequirementConfig> leftClickRequirements;
     private List<RequirementConfig> rightClickRequirements;
+    private List<RequirementConfig> shiftLeftClickRequirements;
+    private List<RequirementConfig> shiftRightClickRequirements;
 
     @Getter
     @Setter
@@ -52,6 +56,24 @@ public class ItemConfig {
         private List<String> conditions = new ArrayList<>();
         @Builder.Default
         private List<String> lore = new ArrayList<>();
+    }
+
+    /**
+     * Whether shift + left click has its own actions or requirements configured.
+     * If not, shift + left click falls back to the regular left click actions and requirements.
+     */
+    public boolean hasShiftLeftClickConfig() {
+        return (onShiftLeftClick != null && !onShiftLeftClick.isEmpty())
+                || (shiftLeftClickRequirements != null && !shiftLeftClickRequirements.isEmpty());
+    }
+
+    /**
+     * Whether shift + right click has its own actions or requirements configured.
+     * If not, shift + right click falls back to the regular right click actions and requirements.
+     */
+    public boolean hasShiftRightClickConfig() {
+        return (onShiftRightClick != null && !onShiftRightClick.isEmpty())
+                || (shiftRightClickRequirements != null && !shiftRightClickRequirements.isEmpty());
     }
 
     public ItemConfig merge(ItemConfig other) {
@@ -120,6 +142,14 @@ public class ItemConfig {
             ret.rightClickRequirements = new ArrayList<>(other.rightClickRequirements);
         }
 
+        if (other.shiftLeftClickRequirements != null && !other.shiftLeftClickRequirements.isEmpty()) {
+            ret.shiftLeftClickRequirements = new ArrayList<>(other.shiftLeftClickRequirements);
+        }
+
+        if (other.shiftRightClickRequirements != null && !other.shiftRightClickRequirements.isEmpty()) {
+            ret.shiftRightClickRequirements = new ArrayList<>(other.shiftRightClickRequirements);
+        }
+
         if (other.onClick != null && !other.onClick.isEmpty()) {
             ret.onClick = new ArrayList<>(other.onClick);
         }
@@ -130,6 +160,14 @@ public class ItemConfig {
 
         if (other.onRightClick != null && !other.onRightClick.isEmpty()) {
             ret.onRightClick = new ArrayList<>(other.onRightClick);
+        }
+
+        if (other.onShiftLeftClick != null && !other.onShiftLeftClick.isEmpty()) {
+            ret.onShiftLeftClick = new ArrayList<>(other.onShiftLeftClick);
+        }
+
+        if (other.onShiftRightClick != null && !other.onShiftRightClick.isEmpty()) {
+            ret.onShiftRightClick = new ArrayList<>(other.onShiftRightClick);
         }
 
         return ret;
@@ -143,6 +181,8 @@ public class ItemConfig {
             this.onClick = new ArrayList<>();
             this.onLeftClick = new ArrayList<>();
             this.onRightClick = new ArrayList<>();
+            this.onShiftLeftClick = new ArrayList<>();
+            this.onShiftRightClick = new ArrayList<>();
             return;
         }
         this.refresh = other.refresh;
@@ -227,6 +267,18 @@ public class ItemConfig {
             this.rightClickRequirements = new ArrayList<>();
         }
 
+        if (other.shiftLeftClickRequirements != null) {
+            this.shiftLeftClickRequirements = new ArrayList<>(other.shiftLeftClickRequirements);
+        } else {
+            this.shiftLeftClickRequirements = new ArrayList<>();
+        }
+
+        if (other.shiftRightClickRequirements != null) {
+            this.shiftRightClickRequirements = new ArrayList<>(other.shiftRightClickRequirements);
+        } else {
+            this.shiftRightClickRequirements = new ArrayList<>();
+        }
+
         if (other.onClick != null) {
             this.onClick = new ArrayList<>(other.onClick);
         } else {
@@ -243,6 +295,18 @@ public class ItemConfig {
             this.onRightClick = new ArrayList<>(other.onRightClick);
         } else {
             this.onRightClick = new ArrayList<>();
+        }
+
+        if (other.onShiftLeftClick != null) {
+            this.onShiftLeftClick = new ArrayList<>(other.onShiftLeftClick);
+        } else {
+            this.onShiftLeftClick = new ArrayList<>();
+        }
+
+        if (other.onShiftRightClick != null) {
+            this.onShiftRightClick = new ArrayList<>(other.onShiftRightClick);
+        } else {
+            this.onShiftRightClick = new ArrayList<>();
         }
     }
 }
