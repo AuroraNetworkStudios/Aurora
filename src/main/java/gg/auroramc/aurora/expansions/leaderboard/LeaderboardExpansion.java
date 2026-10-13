@@ -31,6 +31,7 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
     private final Map<String, LbDescriptor> descriptors = Maps.newConcurrentMap();
     private final Map<String, Long> boardSizes = Maps.newConcurrentMap();
     private volatile LeaderboardStorage storage;
+    private volatile boolean hooked = false;
 
     public record LbDescriptor(String name, Function<AuroraUser, Double> valueMapper,
                                Function<LbEntry, String> formatMapper, int cacheSize, double minValue) {
@@ -52,14 +53,10 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
         PlaceholderHandlerRegistry.addHandler(new LbPlaceholderHandler(this));
 
 
-        var wildcard = new Permission("aurora.leaderboard.prevent.*", PermissionDefault.FALSE);
-        Bukkit.getPluginManager().addPermission(wildcard);
-
         for (var board : descriptors.keySet()) {
-            var perm = new Permission("aurora.leaderboard.prevent." + board, PermissionDefault.FALSE);
-            Bukkit.getPluginManager().addPermission(perm);
-            perm.addParent(wildcard, true);
+            registerPreventPermission(board);
         }
+        hooked = true;
 
 
         for (var board : descriptors.keySet()) {
@@ -130,6 +127,31 @@ public class LeaderboardExpansion implements AuroraExpansion, Listener {
      */
     public void registerBoard(String board, Function<AuroraUser, Double> valueMapper, Function<LbEntry, String> formatMapper, int cacheSize, double minValue) {
         descriptors.put(board, new LbDescriptor(board, valueMapper, formatMapper, cacheSize, minValue));
+        // Boards registered after the expansion hooked (e.g. in a plugin's onEnable) need their permission registered here
+        if (hooked) {
+            registerPreventPermission(board);
+        }
+    }
+
+    /**
+     * Registers the aurora.leaderboard.prevent.&lt;board&gt; permission (and the wildcard) with default false,
+     * otherwise Bukkit would treat it as an op permission and exclude every op from the leaderboard.
+     */
+    private void registerPreventPermission(String board) {
+        var pm = Bukkit.getPluginManager();
+
+        var wildcard = pm.getPermission("aurora.leaderboard.prevent.*");
+        if (wildcard == null) {
+            wildcard = new Permission("aurora.leaderboard.prevent.*", PermissionDefault.FALSE);
+            pm.addPermission(wildcard);
+        }
+
+        var name = "aurora.leaderboard.prevent." + board;
+        if (pm.getPermission(name) == null) {
+            var perm = new Permission(name, PermissionDefault.FALSE);
+            pm.addPermission(perm);
+            perm.addParent(wildcard, true);
+        }
     }
 
     /**

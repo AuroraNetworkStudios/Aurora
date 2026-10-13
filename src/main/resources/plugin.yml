@@ -49,7 +49,6 @@ permissions:
       - aurora.core.admin.registeritem
       - aurora.core.admin.giveitem
       - aurora.core.admin.unregisteritem
-      - aurora.core.admin.merchant
       - aurora.core.admin.debug.blockinfo
       - aurora.core.admin.debug.itemid
       - aurora.core.admin.debug.blockremove
@@ -61,7 +60,6 @@ permissions:
     default: true
     children:
       - aurora.core.user.stash.open
-      - aurora.core.user.merchant.open
   aurora.core.user.language:
     description: Allows player to use the language command
     default: false

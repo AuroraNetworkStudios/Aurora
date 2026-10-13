@@ -1,7 +1,7 @@
 # Aurora
 
 This is the base plugin for every Aurora plugin.
-It requires **PaperMC** as the server software and **Java 21** or higher.
+It requires **PaperMC** (Minecraft **26.2** or newer) as the server software and **Java 25** or higher.
 In theory folia is also supported, but it is not tested yet.
 
 You can view the full documentation [here](https://docs.auroramc.gg/aurora).

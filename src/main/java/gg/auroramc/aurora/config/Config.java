@@ -68,8 +68,6 @@ public class Config extends AuroraConfig {
     @Getter
     public final static class ItemIdResolverConfig {
         private Boolean enableIdResolver = false;
-        private Boolean requireExactMatch = false;
-        private Map<String, Boolean> hashIncludes;
     }
 
 
