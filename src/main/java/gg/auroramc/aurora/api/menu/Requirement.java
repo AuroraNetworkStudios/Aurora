@@ -39,7 +39,7 @@ public class Requirement {
         for (var requirement : requirements) {
             if (!isMet(player, requirement.getRequirement(), placeholders)) {
                 if (requirement.getDenyActions() != null) {
-                    requirement.getDenyActions().forEach(action -> CommandDispatcher.dispatch(player, action, placeholders));
+                    CommandDispatcher.dispatchAll(player, requirement.getDenyActions(), placeholders);
                 }
                 return false;
             }
