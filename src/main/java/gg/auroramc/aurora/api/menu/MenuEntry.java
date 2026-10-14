@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -41,30 +42,22 @@ public class MenuEntry {
     public MenuAction handleEvent(InventoryClickEvent event) {
         var config = item.getItemBuilder().getConfig();
 
-        if (!Requirement.passes(item.getPlayer(), config.getClickRequirements(), item.getPlaceholders())) {
-            return MenuAction.NONE;
-        }
-
         // Shift clicks only get special handling if they are configured, otherwise they act as normal left/right clicks
         var shiftLeft = event.isShiftClick() && event.isLeftClick() && config.hasShiftLeftClickConfig();
         var shiftRight = event.isShiftClick() && event.isRightClick() && config.hasShiftRightClickConfig();
 
-        if (shiftLeft) {
-            if (!Requirement.passes(item.getPlayer(), config.getShiftLeftClickRequirements(), item.getPlaceholders())) {
-                return MenuAction.NONE;
-            }
-        } else if (shiftRight) {
-            if (!Requirement.passes(item.getPlayer(), config.getShiftRightClickRequirements(), item.getPlaceholders())) {
-                return MenuAction.NONE;
-            }
-        } else if (event.isLeftClick()) {
-            if (!Requirement.passes(item.getPlayer(), config.getLeftClickRequirements(), item.getPlaceholders())) {
-                return MenuAction.NONE;
-            }
-        } else if (event.isRightClick()) {
-            if (!Requirement.passes(item.getPlayer(), config.getRightClickRequirements(), item.getPlaceholders())) {
-                return MenuAction.NONE;
-            }
+        var clickTypeRequirements = shiftLeft ? config.getShiftLeftClickRequirements()
+                : shiftRight ? config.getShiftRightClickRequirements()
+                : event.isLeftClick() ? config.getLeftClickRequirements()
+                : event.isRightClick() ? config.getRightClickRequirements()
+                : null;
+
+        // Checked again after every [delay] in the actions, so the requirements can't be bypassed while waiting
+        BooleanSupplier requirements = () -> Requirement.passes(item.getPlayer(), config.getClickRequirements(), item.getPlaceholders())
+                && Requirement.passes(item.getPlayer(), clickTypeRequirements, item.getPlaceholders());
+
+        if (!requirements.getAsBoolean()) {
+            return MenuAction.NONE;
         }
 
         var action = MenuAction.NONE;
@@ -75,16 +68,16 @@ public class MenuEntry {
             consumer.accept(event);
         }
 
-        item.runOnClickCommands(item.getPlayer());
+        item.runOnClickCommands(item.getPlayer(), requirements);
 
         if (shiftLeft) {
-            item.runOnShiftLeftClickCommands(item.getPlayer());
+            item.runOnShiftLeftClickCommands(item.getPlayer(), requirements);
         } else if (shiftRight) {
-            item.runOnShiftRightClickCommands(item.getPlayer());
+            item.runOnShiftRightClickCommands(item.getPlayer(), requirements);
         } else if (event.isLeftClick()) {
-            item.runOnLeftClickCommands(item.getPlayer());
+            item.runOnLeftClickCommands(item.getPlayer(), requirements);
         } else if (event.isRightClick()) {
-            item.runOnRightClickCommands(item.getPlayer());
+            item.runOnRightClickCommands(item.getPlayer(), requirements);
         }
 
         return action;

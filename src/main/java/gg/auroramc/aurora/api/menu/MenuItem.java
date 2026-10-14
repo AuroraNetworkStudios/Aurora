@@ -6,9 +6,11 @@ import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 @Getter
 public class MenuItem {
@@ -37,28 +39,51 @@ public class MenuItem {
     }
 
     public void runOnClickCommands(Player player) {
+        runOnClickCommands(player, null);
+    }
+
+    /**
+     * @param requirements checked again after every [delay], see {@link CommandDispatcher#dispatchAll(Player, List, List, BooleanSupplier)}
+     */
+    public void runOnClickCommands(Player player, @Nullable BooleanSupplier requirements) {
         if (itemBuilder.getConfig().getOnClick() == null) return;
-        itemBuilder.getConfig().getOnClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+        CommandDispatcher.dispatchAll(player, itemBuilder.getConfig().getOnClick(), placeholders, requirements);
     }
 
     public void runOnLeftClickCommands(Player player) {
+        runOnLeftClickCommands(player, null);
+    }
+
+    public void runOnLeftClickCommands(Player player, @Nullable BooleanSupplier requirements) {
         if (itemBuilder.getConfig().getOnLeftClick() == null) return;
-        itemBuilder.getConfig().getOnLeftClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+        CommandDispatcher.dispatchAll(player, itemBuilder.getConfig().getOnLeftClick(), placeholders, requirements);
     }
 
     public void runOnRightClickCommands(Player player) {
+        runOnRightClickCommands(player, null);
+    }
+
+    public void runOnRightClickCommands(Player player, @Nullable BooleanSupplier requirements) {
         if (itemBuilder.getConfig().getOnRightClick() == null) return;
-        itemBuilder.getConfig().getOnRightClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+        CommandDispatcher.dispatchAll(player, itemBuilder.getConfig().getOnRightClick(), placeholders, requirements);
     }
 
     public void runOnShiftLeftClickCommands(Player player) {
+        runOnShiftLeftClickCommands(player, null);
+    }
+
+    public void runOnShiftLeftClickCommands(Player player, @Nullable BooleanSupplier requirements) {
         if (itemBuilder.getConfig().getOnShiftLeftClick() == null) return;
-        itemBuilder.getConfig().getOnShiftLeftClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+        CommandDispatcher.dispatchAll(player, itemBuilder.getConfig().getOnShiftLeftClick(), placeholders, requirements);
     }
 
     public void runOnShiftRightClickCommands(Player player) {
+        runOnShiftRightClickCommands(player, null);
+    }
+
+    public void runOnShiftRightClickCommands(Player player, @Nullable BooleanSupplier requirements) {
         if (itemBuilder.getConfig().getOnShiftRightClick() == null) return;
-        itemBuilder.getConfig().getOnShiftRightClick().forEach(c -> CommandDispatcher.dispatch(player, c, placeholders));
+        CommandDispatcher.dispatchAll(player, itemBuilder.getConfig().getOnShiftRightClick(), placeholders, requirements);
     }
 
     public void refresh() {

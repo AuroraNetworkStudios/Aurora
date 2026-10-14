@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
+import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.menu.AuroraMenu;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.menu.MenuAction;
@@ -15,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -95,6 +97,7 @@ public class Gui implements AuroraGui {
 
         config.getItems().forEach((id, itemConfig) ->
                 menu.addItem(ItemBuilder.of(itemConfig).placeholder(placeholders).build(player), (e) -> {
+                    refreshAfterDelays(menu, player, itemConfig, e, placeholders);
                     if (shouldRefreshAfter(itemConfig.getOnClick())) {
                         return MenuAction.REFRESH_MENU_DELAYED;
                     }
@@ -116,9 +119,7 @@ public class Gui implements AuroraGui {
         if (config.getCloseActions() != null) {
             menu.onClose((m, e) -> {
                 menus.remove(m);
-                for (var cmd : config.getCloseActions()) {
-                    CommandDispatcher.dispatch(player, cmd, Placeholder.of("{player}", player.getName()));
-                }
+                CommandDispatcher.dispatchAll(player, config.getCloseActions(), List.of(Placeholder.of("{player}", player.getName())));
             });
         }
 
@@ -126,14 +127,38 @@ public class Gui implements AuroraGui {
             menu.open(player, false, menus::add);
 
             if (config.getOpenActions() != null) {
-                for (var cmd : config.getOpenActions()) {
-                    CommandDispatcher.dispatch(player, cmd, Placeholder.of("{player}", player.getName()));
-                }
+                CommandDispatcher.dispatchAll(player, config.getOpenActions(), List.of(Placeholder.of("{player}", player.getName())),
+                        () -> Requirement.passes(player, config.getOpenRequirements(), placeholders));
             }
         }, null);
     }
 
     private static boolean shouldRefreshAfter(List<String> actions) {
         return actions != null && !actions.isEmpty() && !actions.contains("[close]");
+    }
+
+    // Actions below a [delay] run after the usual refresh, so refresh the menu again once they have run
+    private static void refreshAfterDelays(AuroraMenu menu, Player player, ItemConfig itemConfig, InventoryClickEvent e, List<Placeholder<?>> placeholders) {
+        List<String> clickActions = null;
+        if (e.isShiftClick() && e.isLeftClick() && itemConfig.hasShiftLeftClickConfig()) {
+            clickActions = itemConfig.getOnShiftLeftClick();
+        } else if (e.isShiftClick() && e.isRightClick() && itemConfig.hasShiftRightClickConfig()) {
+            clickActions = itemConfig.getOnShiftRightClick();
+        } else if (e.isLeftClick()) {
+            clickActions = itemConfig.getOnLeftClick();
+        } else if (e.isRightClick()) {
+            clickActions = itemConfig.getOnRightClick();
+        }
+
+        var delay = Math.max(
+                CommandDispatcher.getTotalDelay(itemConfig.getOnClick(), placeholders),
+                CommandDispatcher.getTotalDelay(clickActions, placeholders));
+        if (delay <= 0) return;
+
+        player.getScheduler().runDelayed(Aurora.getInstance(), (task) -> {
+            if (player.getOpenInventory().getTopInventory().getHolder() == menu) {
+                menu.refresh();
+            }
+        }, null, delay + 2);
     }
 }

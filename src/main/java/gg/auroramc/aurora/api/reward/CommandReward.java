@@ -21,16 +21,12 @@ public class CommandReward extends NumberReward {
         if (commands == null) return;
         var value = getValue(placeholders);
 
-        for (String command : commands) {
-            CommandDispatcher.dispatch(
-                    player,
-                    Placeholder.execute(command,
-                            Placeholder.of("{value}", value),
-                            Placeholder.of("{value_int}", value.longValue()),
-                            Placeholder.of("{value_formatted}", AuroraAPI.formatNumber(value))),
-                    placeholders
-            );
-        }
+        var resolved = commands.stream().map(command -> Placeholder.execute(command,
+                Placeholder.of("{value}", value),
+                Placeholder.of("{value_int}", value.longValue()),
+                Placeholder.of("{value_formatted}", AuroraAPI.formatNumber(value)))).toList();
+
+        CommandDispatcher.dispatchAll(player, resolved, placeholders);
     }
 
     @Override

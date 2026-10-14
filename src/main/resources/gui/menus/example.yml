@@ -51,3 +51,21 @@ items:
     slot: 13
     on-click:
       - "[console] lp user {player} permission set example.permission"
+  delayed:
+    material: clock
+    name: "&6Delayed actions"
+    slot: 22
+    click-requirements:
+      - requirement: "[money] 100"
+        deny-actions:
+          - "[message] &cYou need 100 coins."
+    on-click:
+      - "[close]"
+      - "[console] lp user {player} permission settemp example.temp true 10s"
+      # [delay: ticks] waits before the actions below it (20 ticks = 1 second).
+      # [delay:20], [delay 20] and [delay] 20 work as well.
+      # The click requirements are checked again after the delay, the actions below it only run if they still pass.
+      # If the player leaves the server before that, the remaining actions are skipped.
+      - "[delay: 20]"
+      - "[take-money] 100"
+      - "[player] say I waited a second"

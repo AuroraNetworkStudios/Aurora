@@ -21,12 +21,15 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -34,6 +37,8 @@ import java.util.stream.Stream;
 
 public class CommandDispatcher {
     private static final Map<String, BiConsumer<Player, String>> actions = Maps.newConcurrentMap();
+    // [delay: 20], [delay:20], [delay 20] or [delay] 20
+    private static final Pattern DELAY_PATTERN = Pattern.compile("^\\[delay(?:\\s*:\\s*|\\s+|(?=\\]))([^\\]]*)\\]\\s*(.*)$", Pattern.CASE_INSENSITIVE);
 
     static {
         registerActionHandler("default", CommandDispatcher::runConsoleCommand);
@@ -118,6 +123,11 @@ public class CommandDispatcher {
             return;
         }
 
+        if (parseDelay(command, null, false) != null) {
+            Aurora.logger().warning("[delay] only works in action lists (menu actions, open/close actions, deny-actions, command rewards), ignoring: " + command);
+            return;
+        }
+
         var action = extractActionAndContent(command);
         var handler = actions.get(action.getKey());
 
@@ -139,6 +149,105 @@ public class CommandDispatcher {
 
     public static void dispatch(Player player, String command, Placeholder<?>... placeholders) {
         dispatch(player, Placeholder.execute(command, placeholders));
+    }
+
+    /**
+     * Dispatches the actions in order. A "[delay: ticks]" line pauses the list and the actions
+     * below it run after that many ticks. If the player leaves before that, they are skipped and logged.
+     */
+    public static void dispatchAll(Player player, List<String> commands, List<Placeholder<?>> placeholders) {
+        dispatchAll(player, commands, placeholders, null);
+    }
+
+    /**
+     * Same as {@link #dispatchAll(Player, List, List)}, but the requirements are checked again after every delay
+     * and the actions below it only run if they still pass. Otherwise they could be bypassed while waiting,
+     * e.g. by giving the money away before it's taken.
+     *
+     * @param requirements checks the requirements that allowed these actions (and runs their deny actions)
+     */
+    public static void dispatchAll(Player player, List<String> commands, List<Placeholder<?>> placeholders, @Nullable BooleanSupplier requirements) {
+        if (commands == null) return;
+        for (int i = 0; i < commands.size(); i++) {
+            var command = commands.get(i);
+            var delay = parseDelay(command, placeholders, true);
+
+            if (delay == null) {
+                dispatch(player, command, placeholders);
+                continue;
+            }
+
+            // A delay at the end of the list has nothing to wait for
+            if (delay == 0 || i == commands.size() - 1) continue;
+
+            var rest = new ArrayList<>(commands.subList(i + 1, commands.size()));
+            var task = player.getScheduler().runDelayed(Aurora.getInstance(), (t) -> {
+                if (requirements == null || requirements.getAsBoolean()) {
+                    dispatchAll(player, rest, placeholders, requirements);
+                }
+            }, () -> logSkipped(player, rest, placeholders), delay);
+            // null means the player is already gone
+            if (task == null) logSkipped(player, rest, placeholders);
+            return;
+        }
+    }
+
+    /**
+     * @return the sum of the [delay] lines in ticks, 0 if there are none
+     */
+    public static long getTotalDelay(List<String> commands, List<Placeholder<?>> placeholders) {
+        if (commands == null) return 0;
+        long total = 0;
+        for (var command : commands) {
+            var delay = parseDelay(command, placeholders, false);
+            if (delay != null) total += delay;
+        }
+        return total;
+    }
+
+    private static void logSkipped(Player player, List<String> rest, List<Placeholder<?>> placeholders) {
+        // Runs while the player is being removed, it must not throw
+        try {
+            var skipped = new ArrayList<String>();
+            for (var command : rest) {
+                if (command != null && parseDelay(command, placeholders, false) == null) {
+                    skipped.add(Placeholder.execute(command, placeholders));
+                }
+            }
+            if (!skipped.isEmpty()) {
+                Aurora.logger().warning(player.getName() + " left before delayed actions could run, skipped: "
+                        + Aurora.getMiniMessage().escapeTags(String.join(" | ", skipped)));
+            }
+        } catch (Exception e) {
+            Aurora.logger().warning(player.getName() + " left before delayed actions could run, skipped " + rest.size() + " lines");
+        }
+    }
+
+    /**
+     * @return null if the line isn't a delay, otherwise the delay in ticks. An invalid amount counts as 0.
+     */
+    private static @Nullable Integer parseDelay(String command, @Nullable List<Placeholder<?>> placeholders, boolean warn) {
+        // A "delay" action registered through the API keeps working like before
+        if (command == null || actions.containsKey("delay")) return null;
+        var line = command.strip();
+        if (!line.regionMatches(true, 0, "[delay", 0, 6)) return null;
+
+        var matcher = DELAY_PATTERN.matcher(Placeholder.execute(line, placeholders).strip());
+        if (!matcher.matches()) return null;
+
+        var inside = matcher.group(1).strip();
+        var after = matcher.group(2).strip();
+        try {
+            if (inside.isEmpty() == after.isEmpty()) throw new NumberFormatException();
+            var ticks = Integer.parseInt(inside.isEmpty() ? after : inside);
+            if (ticks < 0) throw new NumberFormatException();
+            return ticks;
+        } catch (NumberFormatException e) {
+            if (warn) {
+                Aurora.logger().warning("Invalid delay: " + line + ", it has to be a number of ticks like [delay: 20]. Running the next actions without delay.");
+            }
+            return 0;
+        }
     }
 
     private static void runConsoleCommand(Player player, String command) {
