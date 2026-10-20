@@ -33,9 +33,10 @@ public class StashAddItemsChange implements UserChange {
     }
 
     @Override
-    public void apply(AuroraUser user) {
+    public boolean apply(AuroraUser user) {
         for (var item : items) {
             user.getStashData().addItem(item);
         }
+        return true;
     }
 }

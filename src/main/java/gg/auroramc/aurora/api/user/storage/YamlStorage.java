@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +24,7 @@ import java.util.function.Consumer;
 public class YamlStorage implements UserStorage {
     // Only this server uses these files, so changes are applied within a second (and on shutdown), no need to save them
     private final Map<UUID, List<PendingChange>> changes = new ConcurrentHashMap<>();
+    private final Map<Long, Boolean> answers = new ConcurrentHashMap<>();
     private final AtomicLong nextChangeId = new AtomicLong();
 
     public DirectoryStream<Path> getFileStream() throws IOException {
@@ -106,9 +109,10 @@ public class YamlStorage implements UserStorage {
     }
 
     @Override
-    public boolean addChange(UUID uuid, String type, String data) {
-        changes.computeIfAbsent(uuid, k -> new CopyOnWriteArrayList<>()).add(new PendingChange(nextChangeId.incrementAndGet(), type, data));
-        return true;
+    public long addChange(UUID uuid, String type, String data, boolean awaiting) {
+        var id = nextChangeId.incrementAndGet();
+        changes.computeIfAbsent(uuid, k -> new CopyOnWriteArrayList<>()).add(new PendingChange(id, type, data, awaiting));
+        return id;
     }
 
     @Override
@@ -117,17 +121,37 @@ public class YamlStorage implements UserStorage {
     }
 
     @Override
-    public boolean removeChanges(UUID uuid, List<PendingChange> toRemove) {
+    public Set<UUID> getUsersWithChanges() {
+        return Set.copyOf(changes.keySet());
+    }
+
+    @Override
+    public boolean completeChanges(UUID uuid, List<PendingChange> applied, Map<Long, Boolean> answers) {
         changes.computeIfPresent(uuid, (k, list) -> {
-            list.removeAll(toRemove);
+            list.removeIf(change -> applied.contains(change) || answers.containsKey(change.id()));
             return list.isEmpty() ? null : list;
         });
+        this.answers.putAll(answers);
         return true;
     }
 
     @Override
-    public Set<UUID> getUsersWithChanges() {
-        return Set.copyOf(changes.keySet());
+    public Map<Long, Boolean> takeAnswers(Collection<Long> ids) {
+        var taken = new HashMap<Long, Boolean>();
+        for (var id : ids) {
+            var answer = answers.remove(id);
+            if (answer != null) taken.put(id, answer);
+        }
+        return taken;
+    }
+
+    @Override
+    public boolean cancelChange(long id) {
+        for (var entry : changes.entrySet()) {
+            var change = entry.getValue().stream().filter(c -> c.id() == id).findFirst();
+            if (change.isPresent()) return completeChanges(entry.getKey(), List.of(change.get()), Map.of());
+        }
+        return false;
     }
 
     @Override

@@ -3,7 +3,9 @@ package gg.auroramc.aurora.expansions.itemstash;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.menu.AuroraMenu;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
+import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.user.change.StashTakeItemsChange;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -22,10 +24,12 @@ public class StashMenu {
     private final String targetName;
     private final Player openFor;
     private final Consumer<UUID> onClose;
-    // Stash of a player who isn't online on this server, as it was when the menu was opened. The menu is view only then.
+    // Stash of a player who isn't online on this server, as it was when the menu was opened
     @Nullable
     private final List<ItemStack> offlineItems;
     private final AtomicBoolean refreshQueued = new AtomicBoolean(false);
+    // Waiting to hear back if we could take items from a player who isn't online here
+    private boolean taking = false;
     private Config config;
     private AuroraMenu menu;
     private int page = 0;
@@ -80,7 +84,7 @@ public class StashMenu {
             menu.addItem(ItemBuilder.of(customItem).placeholder(Placeholder.of("{player}", targetName)).build(player));
         }
 
-        // Null if they aren't online here, the menu is view only then
+        // Null if they aren't online here, items are taken with takeOffline then
         var stashData = offlineItems == null ? Aurora.getUserManager().getUser(targetId).getStashData() : null;
 
         var items = getPageItems();
@@ -92,7 +96,10 @@ public class StashMenu {
             }
             var item = items.get(i);
             menu.addItem(ItemBuilder.item(item).amount(item.getAmount()).slot(menuSlot).build(player), (e) -> {
-                if (stashData == null) return;
+                if (stashData == null) {
+                    takeOffline(List.of(item));
+                    return;
+                }
                 if (stashData.removeItem(item)) {
                     var failed = openFor.getInventory().addItem(item);
                     if (!failed.isEmpty()) {
@@ -111,7 +118,10 @@ public class StashMenu {
 
         // Collect all
         menu.addItem(ItemBuilder.of(mc.getItems().getCollectAll()).build(player), (e) -> {
-            if (stashData == null) return;
+            if (stashData == null) {
+                takeOffline(List.copyOf(offlineItems));
+                return;
+            }
             var itemsToRemove = new ArrayList<ItemStack>();
 
             for (var item : stashData.getItems()) {
@@ -149,6 +159,35 @@ public class StashMenu {
         }
 
         menu.open(openFor);
+    }
+
+    /**
+     * They aren't online here, so the items are taken wherever their data is, and given only if that worked.
+     */
+    private void takeOffline(List<ItemStack> items) {
+        if (taking || items.isEmpty()) return;
+        taking = true;
+
+        Aurora.getUserManager().requestChange(targetId, new StashTakeItemsChange(items)).whenComplete((taken, error) ->
+                openFor.getScheduler().run(Aurora.getInstance(), (task) -> {
+                    taking = false;
+                    if (!Boolean.TRUE.equals(taken)) {
+                        // What we show is outdated, reopening shows what they have now
+                        Chat.sendMessage(openFor, Aurora.getMsg(openFor).getStashTakeFailed(), Placeholder.of("{player}", targetName));
+                        openFor.closeInventory();
+                        return;
+                    }
+
+                    offlineItems.removeIf(item -> items.stream().anyMatch(given -> given == item));
+                    var failed = openFor.getInventory().addItem(items.toArray(new ItemStack[0]));
+                    failed.forEach((slot, fitem) -> openFor.getWorld().dropItem(openFor.getLocation(), fitem));
+                    // Don't open it again if they closed it while waiting
+                    if (openFor.getOpenInventory().getTopInventory().getHolder() != menu) return;
+                    if (getMaxPages() <= page) {
+                        page = Math.max(getMaxPages() - 1, 0);
+                    }
+                    refresh(config);
+                }, null));
     }
 
     private List<ItemStack> getItems() {

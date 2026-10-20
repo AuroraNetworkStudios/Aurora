@@ -345,25 +345,30 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
     }
 
     @Override
-    public boolean addChange(UUID uuid, String type, String data) {
-        String insertQuery = "INSERT INTO " + changeTableName + " (player_uuid, type, data) VALUES (?, ?, ?);";
+    public long addChange(UUID uuid, String type, String data, boolean awaiting) {
+        String insertQuery = "INSERT INTO " + changeTableName + " (player_uuid, type, data, awaiting) VALUES (?, ?, ?, ?);";
 
         try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(insertQuery)) {
+             PreparedStatement statement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, uuid.toString());
             statement.setString(2, type);
             statement.setString(3, data);
+            statement.setBoolean(4, awaiting);
             statement.executeUpdate();
-            return true;
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                keys.next();
+                return keys.getLong(1);
+            }
         } catch (SQLException e) {
             Aurora.logger().severe("Failed to store " + type + " change for player: " + uuid + " error: " + e.getMessage());
-            return false;
+            return -1;
         }
     }
 
     @Override
     public List<PendingChange> getChanges(UUID uuid) {
-        String query = "SELECT id, type, data FROM " + changeTableName + " WHERE player_uuid=? ORDER BY id;";
+        // Answered ones only wait for the server that asked to take the answer
+        String query = "SELECT id, type, data, awaiting FROM " + changeTableName + " WHERE player_uuid=? AND result IS NULL ORDER BY id;";
         List<PendingChange> changes = new ArrayList<>();
 
         try (Connection connection = connection();
@@ -371,7 +376,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
             statement.setString(1, uuid.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    changes.add(new PendingChange(resultSet.getLong("id"), resultSet.getString("type"), resultSet.getString("data")));
+                    changes.add(new PendingChange(resultSet.getLong("id"), resultSet.getString("type"), resultSet.getString("data"), resultSet.getBoolean("awaiting")));
                 }
             }
         } catch (SQLException e) {
@@ -382,27 +387,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
     }
 
     @Override
-    public boolean removeChanges(UUID uuid, List<PendingChange> changes) {
-        if (changes.isEmpty()) return true;
-        String deleteQuery = "DELETE FROM " + changeTableName + " WHERE id=?;";
-
-        try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-            for (var change : changes) {
-                statement.setLong(1, change.id());
-                statement.addBatch();
-            }
-            statement.executeBatch();
-            return true;
-        } catch (SQLException e) {
-            Aurora.logger().severe("Failed to remove applied changes for player: " + uuid);
-            return false;
-        }
-    }
-
-    @Override
     public Set<UUID> getUsersWithChanges() {
-        String query = "SELECT DISTINCT player_uuid FROM " + changeTableName + ";";
+        String query = "SELECT DISTINCT player_uuid FROM " + changeTableName + " WHERE result IS NULL;";
         Set<UUID> uuids = new HashSet<>();
 
         try (Connection connection = connection();
@@ -416,6 +402,91 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         }
 
         return uuids;
+    }
+
+    @Override
+    public boolean completeChanges(UUID uuid, List<PendingChange> applied, Map<Long, Boolean> answers) {
+        if (applied.isEmpty() && answers.isEmpty()) return true;
+        String deleteQuery = "DELETE FROM " + changeTableName + " WHERE id=?;";
+        String answerQuery = "UPDATE " + changeTableName + " SET result=? WHERE id=?;";
+
+        try (Connection connection = connection()) {
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+                for (var change : applied) {
+                    statement.setLong(1, change.id());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement(answerQuery)) {
+                for (var answer : answers.entrySet()) {
+                    statement.setBoolean(1, answer.getValue());
+                    statement.setLong(2, answer.getKey());
+                    statement.addBatch();
+                }
+                for (var updated : statement.executeBatch()) {
+                    if (updated == 0) {
+                        Aurora.logger().warning("Applied a change for player: " + uuid + " after the server that asked for it gave up waiting");
+                    }
+                }
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            Aurora.logger().severe("Failed to complete applied changes for player: " + uuid + ", they may be applied again. Error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public Map<Long, Boolean> takeAnswers(Collection<Long> ids) {
+        Map<Long, Boolean> answers = new HashMap<>();
+        if (ids.isEmpty()) return answers;
+        String in = String.join(",", Collections.nCopies(ids.size(), "?"));
+        String query = "SELECT id, result FROM " + changeTableName + " WHERE result IS NOT NULL AND id IN (" + in + ");";
+
+        try (Connection connection = connection()) {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                int i = 1;
+                for (var id : ids) statement.setLong(i++, id);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        answers.put(resultSet.getLong("id"), resultSet.getBoolean("result"));
+                    }
+                }
+            }
+
+            if (!answers.isEmpty()) {
+                try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + changeTableName + " WHERE id=?;")) {
+                    for (var id : answers.keySet()) {
+                        statement.setLong(1, id);
+                        statement.addBatch();
+                    }
+                    statement.executeBatch();
+                }
+            }
+        } catch (SQLException e) {
+            Aurora.logger().warning("Failed to check for answers: " + e.getMessage());
+        }
+
+        return answers;
+    }
+
+    @Override
+    public boolean cancelChange(long id) {
+        String deleteQuery = "DELETE FROM " + changeTableName + " WHERE id=? AND result IS NULL;";
+
+        try (Connection connection = connection();
+             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+            statement.setLong(1, id);
+            return statement.executeUpdate() == 1;
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     private DatabaseCredentials readCredentials() {

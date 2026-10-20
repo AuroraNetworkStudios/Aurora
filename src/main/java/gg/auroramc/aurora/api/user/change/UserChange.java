@@ -16,5 +16,8 @@ public interface UserChange {
 
     void serializeInto(ConfigurationSection data);
 
-    void apply(AuroraUser user);
+    /**
+     * @return false if it can't be applied, like taking more than they have, it must not change anything then
+     */
+    boolean apply(AuroraUser user);
 }

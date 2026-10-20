@@ -12,6 +12,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class UserStashHolder extends UserDataHolder {
         }
     }
 
-    public boolean addItem(ItemStack item) {
+    public synchronized boolean addItem(ItemStack item) {
         var event = new StashItemAddEvent(getUniqueId(), item);
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled()) return false;
@@ -64,7 +65,7 @@ public class UserStashHolder extends UserDataHolder {
         return true;
     }
 
-    public boolean removeItem(ItemStack item) {
+    public synchronized boolean removeItem(ItemStack item) {
         // Check if the item exists in the collection by reference
         int index = -1;
         for (int i = 0; i < items.size(); i++) {
@@ -87,7 +88,29 @@ public class UserStashHolder extends UserDataHolder {
         return true;
     }
 
-    public boolean clear() {
+    /**
+     * Removes these exact stacks (same item and amount), all of them or none.
+     * Unlike {@link #removeItem}, this doesn't call {@link StashItemRemoveEvent}, so it can't be cancelled halfway.
+     *
+     * @return false if any of them isn't in the stash
+     */
+    public synchronized boolean takeItems(List<ItemStack> wanted) {
+        var matches = new ArrayList<ItemStack>();
+        for (var want : wanted) {
+            var match = items.stream()
+                    .filter(current -> current.isSimilar(want) && current.getAmount() == want.getAmount())
+                    .filter(current -> matches.stream().noneMatch(taken -> taken == current))
+                    .findFirst();
+            if (match.isEmpty()) return false;
+            matches.add(match.get());
+        }
+
+        items.removeIf(current -> matches.stream().anyMatch(taken -> taken == current));
+        dirty.set(true);
+        return true;
+    }
+
+    public synchronized boolean clear() {
         items.clear();
         dirty.set(true);
         return true;

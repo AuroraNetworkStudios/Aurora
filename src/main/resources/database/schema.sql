@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS `%change_table%`
     player_uuid VARCHAR(36)  NOT NULL,
     type        VARCHAR(100) NOT NULL,
     data        MEDIUMTEXT,
+    awaiting    BOOLEAN      NOT NULL DEFAULT FALSE,
+    result      BOOLEAN      NULL,
     INDEX idx_player_uuid (player_uuid)
 ) CHARACTER SET utf8;
 

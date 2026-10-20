@@ -38,6 +38,7 @@ public class MessageConfig extends AuroraConfig {
     private String stashAvailable = "&aYou have unclaimed items in your stash!";
     private String stashItemAdded = "&aItems are added to the stash!";
     private String stashItemsCleared = "&aItems cleared!";
+    private String stashTakeFailed = "&cThose items aren't in the stash of {player} anymore!";
     private String itemRegistered = "&aItem registered with id: &2{id}!";
     private String itemUnregistered = "&aItem unregistered with id: &2{id}!";
     private String itemNotFound = "&cItem with id &4{id} &cwas not found";

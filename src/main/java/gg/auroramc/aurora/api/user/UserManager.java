@@ -35,17 +35,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class UserManager implements Listener {
     @Getter
     private volatile UserStorage storage;
-    private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
+    // A fixed set of locks shared by players, so a player's lock is never replaced while someone holds it
+    private final Object[] playerLocks = Stream.generate(Object::new).limit(1024).toArray();
     @Getter
     private final Set<Class<? extends UserDataHolder>> dataHolders = new HashSet<>();
     private ScheduledTask autoSaveTask;
     private ScheduledTask leaderboardUpdateTask;
     private ScheduledTask changeTask;
+    private ScheduledTask requestTask;
     private final Map<String, Function<ConfigurationSection, UserChange>> changeTypes = new ConcurrentHashMap<>();
+    // Requests made on this server that aren't answered yet, by change id
+    private final Map<Long, Request> requests = new ConcurrentHashMap<>();
+    private static final long REQUEST_TIMEOUT_MS = 60_000;
     @Getter
     private final LatencyMeasure loadLatencyMeasure = new LatencyMeasure();
     @Getter
@@ -70,6 +76,7 @@ public class UserManager implements Listener {
         autoSaveTask();
         leaderboardUpdateTask();
         changeTask();
+        requestTask();
     }
 
     public CompletableFuture<Boolean> attemptMigration(int threadCount) {
@@ -110,6 +117,7 @@ public class UserManager implements Listener {
                 autoSaveTask();
                 leaderboardUpdateTask();
                 changeTask();
+                requestTask();
             }
 
             migrator.markFinished();
@@ -176,8 +184,17 @@ public class UserManager implements Listener {
         }, 1, TimeUnit.SECONDS);
     }
 
+    private void requestTask() {
+        this.requestTask = Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
+            if (!requests.isEmpty()) {
+                answerRequests(false);
+            }
+            requestTask();
+        }, 100, TimeUnit.MILLISECONDS);
+    }
+
     private Object getPlayerLock(UUID playerId) {
-        return playerLocks.computeIfAbsent(playerId, k -> new Object());
+        return playerLocks[Math.floorMod(playerId.hashCode(), playerLocks.length)];
     }
 
     public <T extends UserDataHolder> void registerUserDataHolder(Class<T> clazz) {
@@ -211,11 +228,47 @@ public class UserManager implements Listener {
                     return;
                 }
 
-                var data = new YamlConfiguration();
-                change.serializeInto(data);
-                storage.addChange(uuid, change.getType().toString(), data.saveToString());
+                storage.addChange(uuid, change.getType().toString(), serialize(change), false);
             }
         });
+    }
+
+    /**
+     * Like {@link #applyChange}, but tells whether the change was applied (see {@link UserChange#apply}).
+     * Use it for the part of an action that can fail, like taking items or money, and do the rest
+     * (the parts that can't fail, like giving them to someone) with applyChange once this was applied.
+     * <p>
+     * Answered right away if their data is loaded on this server or if they are offline (their data is loaded,
+     * changed and saved), within about a second if they are online on another server.
+     *
+     * @param uuid   player's uuid
+     * @param change the change to apply
+     * @return whether it was applied, false if it was refused or their data couldn't be reached for a minute
+     */
+    public CompletableFuture<Boolean> requestChange(UUID uuid, UserChange change) {
+        return CompletableFuture.supplyAsync(() -> {
+            synchronized (getPlayerLock(uuid)) {
+                var user = cache.getIfPresent(uuid);
+                if (user != null && user.isLoaded()) {
+                    return CompletableFuture.completedFuture(change.apply(user));
+                }
+
+                var id = storage.addChange(uuid, change.getType().toString(), serialize(change), true);
+                if (id < 0) return CompletableFuture.completedFuture(false);
+
+                var request = new Request(uuid, new CompletableFuture<>(), System.currentTimeMillis());
+                requests.put(id, request);
+                // If they are offline, this applies and answers it right away
+                applyPendingChanges(uuid);
+                return request.answer();
+            }
+        }).thenCompose(answer -> answer);
+    }
+
+    private String serialize(UserChange change) {
+        var data = new YamlConfiguration();
+        change.serializeInto(data);
+        return data.saveToString();
     }
 
     /**
@@ -226,10 +279,7 @@ public class UserManager implements Listener {
             var cached = cache.getIfPresent(uuid);
             if (cached != null && cached.isLoaded()) {
                 // Online here, the changed data is saved by the next auto save or on quit
-                var changes = getKnownChanges(uuid);
-                if (storage.removeChanges(uuid, changes)) {
-                    changes.forEach(change -> apply(cached, change));
-                }
+                complete(uuid, applyChanges(cached, getKnownChanges(uuid)));
                 return;
             }
 
@@ -244,9 +294,9 @@ public class UserManager implements Listener {
                 var user = storage.loadUser(uuid, dataHolders);
                 if (!user.isLoaded()) return; // Failed to load, try again later
 
-                changes.forEach(change -> apply(user, change));
+                var results = applyChanges(user, changes);
                 if (storage.saveUser(user, SaveReason.CUSTOM)) {
-                    storage.removeChanges(uuid, changes);
+                    complete(uuid, results);
                 }
             } finally {
                 storage.unlockUser(uuid);
@@ -259,15 +309,71 @@ public class UserManager implements Listener {
         return storage.getChanges(uuid).stream().filter(change -> changeTypes.containsKey(change.type())).toList();
     }
 
-    private void apply(AuroraUser user, PendingChange change) {
+    private Map<PendingChange, Boolean> applyChanges(AuroraUser user, List<PendingChange> changes) {
+        var results = new LinkedHashMap<PendingChange, Boolean>();
+        for (var change : changes) {
+            results.put(change, apply(user, change));
+        }
+        return results;
+    }
+
+    private boolean apply(AuroraUser user, PendingChange change) {
         try {
             var data = new YamlConfiguration();
             data.loadFromString(change.data());
-            changeTypes.get(change.type()).apply(data).apply(user);
-            Aurora.logger().debug("Applied " + change.type() + " change for player " + user.getUniqueId());
+            var applied = changeTypes.get(change.type()).apply(data).apply(user);
+            Aurora.logger().debug((applied ? "Applied " : "Refused ") + change.type() + " change for player " + user.getUniqueId());
+            return applied;
         } catch (Exception e) {
             Aurora.logger().severe("Failed to apply " + change.type() + " change for player " + user.getUniqueId() + " error: " + e.getMessage());
+            return false;
         }
+    }
+
+    /**
+     * Removes the applied changes from the storage and answers the requests among them.
+     * Requests made on this server are answered directly, the others through the storage.
+     */
+    private void complete(UUID uuid, Map<PendingChange, Boolean> results) {
+        var answers = new HashMap<Long, Boolean>();
+        results.forEach((change, applied) -> {
+            if (change.awaiting() && !requests.containsKey(change.id())) answers.put(change.id(), applied);
+        });
+        var applied = results.keySet().stream().filter(change -> !answers.containsKey(change.id())).toList();
+
+        if (!storage.completeChanges(uuid, applied, answers)) return;
+
+        results.forEach((change, result) -> {
+            var request = requests.remove(change.id());
+            // Async, so whatever the requester does next doesn't run while we hold this player's lock
+            if (request != null) request.answer().completeAsync(() -> result);
+        });
+    }
+
+    /**
+     * Answers the requests that were applied on another server, and gives up on the ones
+     * that weren't applied for too long (or on all of them, when shutting down).
+     */
+    private void answerRequests(boolean giveUpAll) {
+        var now = System.currentTimeMillis();
+        requests.forEach((id, request) -> {
+            if (!giveUpAll && now - request.sentAt() < REQUEST_TIMEOUT_MS) return;
+            synchronized (getPlayerLock(request.uuid())) {
+                // Fails if it was applied in the meantime, then it's answered below
+                if (storage.cancelChange(id)) {
+                    requests.remove(id);
+                    request.answer().completeAsync(() -> false);
+                }
+            }
+        });
+
+        storage.takeAnswers(requests.keySet()).forEach((id, applied) -> {
+            var request = requests.remove(id);
+            if (request != null) request.answer().completeAsync(() -> applied);
+        });
+    }
+
+    private record Request(UUID uuid, CompletableFuture<Boolean> answer, long sentAt) {
     }
 
     /**
@@ -334,36 +440,40 @@ public class UserManager implements Listener {
                 var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
 
                 storage.loadUser(uuid, dataHolders, user -> {
-                    if (Bukkit.getPlayer(uuid) == null) {
-                        // Left while we were loading, nobody has their data here
-                        storage.unlockUser(uuid);
-                        return;
-                    }
+                    // Same lock as quitting and applying changes, so they all see the same state
+                    synchronized (getPlayerLock(uuid)) {
+                        if (Bukkit.getPlayer(uuid) == null) {
+                            // Left while we were loading. If an earlier join has their data loaded, their quit saves and releases it
+                            var loaded = cache.getIfPresent(uuid);
+                            if (loaded == null || !loaded.isLoaded()) storage.unlockUser(uuid);
+                            return;
+                        }
 
-                    var maybeUser = cache.getIfPresent(uuid);
-                    // Joined again before the previous load or quit finished, keep the data that's already loaded (and maybe changed)
-                    if (maybeUser != null && maybeUser.isLoaded()) {
-                        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(maybeUser)));
-                        return;
-                    }
+                        var maybeUser = cache.getIfPresent(uuid);
+                        // Joined again before the previous load or quit finished, keep the data that's already loaded (and maybe changed)
+                        if (maybeUser != null && maybeUser.isLoaded()) {
+                            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                                    (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(maybeUser)));
+                            return;
+                        }
 
-                    if (maybeUser != null && !maybeUser.isLoaded()) {
-                        lbm.loadUser(user.getUniqueId()).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll);
+                        if (maybeUser != null && !maybeUser.isLoaded()) {
+                            lbm.loadUser(user.getUniqueId()).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll);
 
-                        maybeUser.loadFromUser(user);
-                        Aurora.logger().debug("Updated user " + user.getUniqueId() + " in cache");
+                            maybeUser.loadFromUser(user);
+                            Aurora.logger().debug("Updated user " + user.getUniqueId() + " in cache");
 
-                        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
-                    } else {
-                        lbm.loadUser(user.getUniqueId()).thenAcceptAsync(user.getLeaderboardEntries()::putAll);
+                            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                                    (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
+                        } else {
+                            lbm.loadUser(user.getUniqueId()).thenAcceptAsync(user.getLeaderboardEntries()::putAll);
 
-                        cache.put(uuid, user);
-                        Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
+                            cache.put(uuid, user);
+                            Aurora.logger().debug("Loaded user " + user.getUniqueId() + " into cache");
 
-                        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
+                            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                                    (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
+                        }
                     }
                 });
             }
@@ -409,7 +519,10 @@ public class UserManager implements Listener {
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
         if (changeTask != null) changeTask.cancel();
+        if (requestTask != null) requestTask.cancel();
         storage.getUsersWithChanges().forEach(this::applyPendingChanges);
+        // Nobody would be here for the answers of the ones still waiting, so they shouldn't be applied
+        answerRequests(true);
         storage.bulkSaveUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).toList(), SaveReason.QUIT);
         var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
         lbm.bulkUpdateUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).collect(HashMap::new, (m, u) -> m.put(u.getUniqueId(), u.getDirtyLeaderboards().keySet()), HashMap::putAll)).join();
@@ -419,23 +532,20 @@ public class UserManager implements Listener {
     public void invalidate(Player player) {
         var user = cache.getIfPresent(player.getUniqueId());
         if (user == null) return;
-        CompletableFuture.supplyAsync(() -> {
+        CompletableFuture.runAsync(() -> {
             var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
             lbm.updateUser(user, Collections.emptyList()).join();
             synchronized (getPlayerLock(user.getUniqueId())) {
                 // Rejoined before we got here, their session just goes on
-                if (user.getPlayer() != null) return true;
+                if (user.getPlayer() != null) {
+                    Aurora.logger().debug("Failed to remove user " + user.getUniqueId() + " from cache, because player is still online");
+                    return;
+                }
                 // Changes from now on are stored, and applied once this save is done
                 user.setLoaded(false);
-                return saveUserData(user, SaveReason.QUIT);
-            }
-        }).thenAcceptAsync(success -> {
-            if (user.getPlayer() == null || !user.getPlayer().isOnline()) {
+                saveUserData(user, SaveReason.QUIT);
+                cache.asMap().remove(user.getUniqueId(), user);
                 Aurora.logger().debug("Removed user " + user.getUniqueId() + " from cache");
-                playerLocks.remove(user.getUniqueId());
-                cache.invalidate(player.getUniqueId());
-            } else {
-                Aurora.logger().debug("Failed to remove user " + user.getUniqueId() + " from cache, because player is still online");
             }
         });
     }

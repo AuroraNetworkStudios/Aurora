@@ -17,7 +17,7 @@ public class StashClearChange implements UserChange {
     }
 
     @Override
-    public void apply(AuroraUser user) {
-        user.getStashData().clear();
+    public boolean apply(AuroraUser user) {
+        return user.getStashData().clear();
     }
 }
