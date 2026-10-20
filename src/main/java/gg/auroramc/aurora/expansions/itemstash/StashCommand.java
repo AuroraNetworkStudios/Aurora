@@ -37,8 +37,13 @@ public class StashCommand extends BaseCommand {
     @Subcommand("view")
     @CommandPermission("aurora.core.admin.stash.other")
     @CommandCompletion("@players @nothing")
-    public void onView(Player sender, @Flags("other") Player target) {
-        expansion.open(sender, target);
+    public void onView(Player sender, String target) {
+        var player = findPlayer(target);
+        if (player == null) {
+            Chat.sendMessage(sender, Aurora.getMsg(sender).getPlayerNotFound());
+            return;
+        }
+        expansion.open(sender, player);
     }
 
     @Subcommand("add")
