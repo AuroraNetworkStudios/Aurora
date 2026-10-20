@@ -52,6 +52,7 @@ public class UserManager implements Listener {
     // Requests made on this server that aren't answered yet, by change id
     private final Map<Long, Request> requests = new ConcurrentHashMap<>();
     private static final long REQUEST_TIMEOUT_MS = 60_000;
+    private final ProxyNotifier proxyNotifier = new ProxyNotifier(this::onChangesNotified);
     @Getter
     private final LatencyMeasure loadLatencyMeasure = new LatencyMeasure();
     @Getter
@@ -229,6 +230,7 @@ public class UserManager implements Listener {
                 }
 
                 storage.addChange(uuid, change.getType().toString(), serialize(change), false);
+                notifyOtherServers(uuid);
             }
         });
     }
@@ -260,9 +262,26 @@ public class UserManager implements Listener {
                 requests.put(id, request);
                 // If they are offline, this applies and answers it right away
                 applyPendingChanges(uuid);
+                if (requests.containsKey(id)) notifyOtherServers(uuid);
                 return request.answer();
             }
         }).thenCompose(answer -> answer);
+    }
+
+    /**
+     * Wakes up the server they are online on (if that's another server), so it applies their changes right away.
+     */
+    private void notifyOtherServers(UUID uuid) {
+        if (storage instanceof MySqlStorage) {
+            proxyNotifier.notifyChanges(uuid);
+        }
+    }
+
+    private void onChangesNotified(UUID uuid) {
+        var user = cache.getIfPresent(uuid);
+        if (user != null && user.isLoaded()) {
+            CompletableFuture.runAsync(() -> applyPendingChanges(uuid));
+        }
     }
 
     private String serialize(UserChange change) {
@@ -474,6 +493,9 @@ public class UserManager implements Listener {
                             Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
                                     (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(user)));
                         }
+
+                        // Changes sent while they were joining
+                        CompletableFuture.runAsync(() -> applyPendingChanges(uuid));
                     }
                 });
             }
