@@ -15,4 +15,15 @@ public interface UserStorage {
     int bulkSaveUsers(List<AuroraUser> users, SaveReason reason);
     void purgeUser(UUID uuid);
     void dispose();
+
+    // Changes for players whose data isn't loaded on the server that made the change
+    boolean addChange(UUID uuid, String type, String data);
+    List<PendingChange> getChanges(UUID uuid);
+    boolean removeChanges(UUID uuid, List<PendingChange> changes);
+    Set<UUID> getUsersWithChanges();
+
+    // The same lock a server holds while a player is online there,
+    // so only one server can change a player's data at a time
+    boolean lockUser(UUID uuid);
+    void unlockUser(UUID uuid);
 }

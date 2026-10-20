@@ -14,6 +14,15 @@ CREATE TABLE IF NOT EXISTS `%sync_table%`
     created     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) CHARACTER SET utf8;
 
+CREATE TABLE IF NOT EXISTS `%change_table%`
+(
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    player_uuid VARCHAR(36)  NOT NULL,
+    type        VARCHAR(100) NOT NULL,
+    data        MEDIUMTEXT,
+    INDEX idx_player_uuid (player_uuid)
+) CHARACTER SET utf8;
+
 CREATE TABLE IF NOT EXISTS `%leaderboard_table%`
 (
     id           INT AUTO_INCREMENT PRIMARY KEY,

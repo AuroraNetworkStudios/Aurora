@@ -5,6 +5,7 @@ import gg.auroramc.aurora.api.config.ConfigManager;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.message.Placeholder;
+import gg.auroramc.aurora.api.user.change.StashAddItemsChange;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.Bukkit;
@@ -15,7 +16,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CompletableFuture;
 
 public class ItemReward extends NumberReward {
     enum StashHandle {
@@ -35,12 +35,7 @@ public class ItemReward extends NumberReward {
             final var items = getItems(player, placeholders);
             if (items == null) return;
 
-            var stashHolder = Aurora.getUserManager().getUser(player.getUniqueId()).getStashData();
-
-            for (var i : items) {
-                stashHolder.addItem(i);
-            }
-
+            Aurora.getUserManager().applyChange(player.getUniqueId(), new StashAddItemsChange(List.of(items)));
             return;
         }
 
@@ -57,10 +52,7 @@ public class ItemReward extends NumberReward {
             } else if (stash == StashHandle.OVERFLOW) {
                 var failed = player.getInventory().addItem(items);
                 if (failed.isEmpty()) return;
-                CompletableFuture.runAsync(() -> {
-                    var stashHolder = Aurora.getUserManager().getUser(player.getUniqueId()).getStashData();
-                    failed.forEach((slot, fitem) -> stashHolder.addItem(fitem));
-                });
+                Aurora.getUserManager().applyChange(player.getUniqueId(), new StashAddItemsChange(failed.values()));
             }
 
         }, null);

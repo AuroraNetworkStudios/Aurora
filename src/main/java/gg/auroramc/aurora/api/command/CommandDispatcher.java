@@ -9,6 +9,7 @@ import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
+import gg.auroramc.aurora.api.user.change.StashAddItemsChange;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.api.util.TriConsumer;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
@@ -342,10 +343,7 @@ public class CommandDispatcher {
 
         if (!failed.isEmpty()) {
             if (stash) {
-                var data = Aurora.getUserManager().getUser(player).getStashData();
-                for (var stack : stacks) {
-                    data.addItem(stack);
-                }
+                Aurora.getUserManager().applyChange(player.getUniqueId(), new StashAddItemsChange(failed.values()));
             } else {
                 Bukkit.getRegionScheduler().run(Aurora.getInstance(), player.getLocation(), (t) -> {
                     failed.forEach((index, itemStack) -> player.getWorld().dropItem(player.getLocation(), itemStack));

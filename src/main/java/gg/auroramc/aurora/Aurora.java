@@ -12,6 +12,8 @@ import gg.auroramc.aurora.api.user.UserLocalizationHolder;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.api.user.UserMetaHolder;
 import gg.auroramc.aurora.api.user.UserStashHolder;
+import gg.auroramc.aurora.api.user.change.StashAddItemsChange;
+import gg.auroramc.aurora.api.user.change.StashClearChange;
 import gg.auroramc.aurora.commands.CommandManager;
 import gg.auroramc.aurora.config.Config;
 import gg.auroramc.aurora.config.MessageConfig;
@@ -130,6 +132,8 @@ public final class Aurora extends JavaPlugin implements Listener {
         userManager.registerUserDataHolder(UserMetaHolder.class);
         userManager.registerUserDataHolder(UserStashHolder.class);
         userManager.registerUserDataHolder(UserLocalizationHolder.class);
+        userManager.registerChangeType(StashAddItemsChange.TYPE, StashAddItemsChange::new);
+        userManager.registerChangeType(StashClearChange.TYPE, data -> new StashClearChange());
 
         menuManager = new MenuManager(this);
         setupExpansions();

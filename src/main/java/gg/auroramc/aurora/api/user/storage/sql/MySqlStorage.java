@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserDataHolder;
+import gg.auroramc.aurora.api.user.storage.PendingChange;
 import gg.auroramc.aurora.api.user.storage.SaveReason;
 import gg.auroramc.aurora.api.user.storage.UserStorage;
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
@@ -25,6 +26,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
     private final DatabaseCredentials credentials;
     private final String tableName = "aurora_user_data";
     private final String syncTableName = "aurora_sync";
+    private final String changeTableName = "aurora_user_change";
     private final String leaderboardTableName = "aurora_leaderboard";
     private final int networkLatency;
     private final int syncRetryCount;
@@ -91,19 +93,18 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                     }
                     if (count <= 0) {
                         Aurora.logger().debug("We are still in sync lock after " + syncRetryCount + " retry for player: " + uuid + ". We won't wait anymore. Loading form database...");
+                        createSyncFlag(uuid, connection);
                         var user = loadUserForReal(connection, uuid, dataHolders);
                         if (user == null) return;
                         handler.accept(user);
-                        createSyncFlag(uuid, connection);
                         Aurora.logger().debug("Player: " + uuid + " loaded from database.");
                         return;
                     }
 
-                    if (!isLocked(uuid, connection)) {
+                    if (tryCreateSyncFlag(uuid, connection)) {
                         var user = loadUserForReal(connection, uuid, dataHolders);
                         if (user == null) return;
                         handler.accept(user);
-                        createSyncFlag(uuid, connection);
                         Aurora.logger().debug("Player: " + uuid + " loaded from database.");
                     } else {
                         Aurora.logger().debug("Sync lock detected for player: " + uuid + ", retrying...");
@@ -303,20 +304,118 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         }
     }
 
-    private boolean isLocked(UUID uuid, Connection connection) {
-        String query = "SELECT * FROM " + syncTableName + " WHERE player_uuid=? AND created > NOW() - INTERVAL 2 DAY;";
+    /**
+     * Creates the sync flag only if no other server has it.
+     *
+     * @return whether we got it
+     */
+    private boolean tryCreateSyncFlag(UUID uuid, Connection connection) {
+        String insertQuery = "INSERT IGNORE INTO " + syncTableName + " (player_uuid) VALUES (?);";
 
-        try {
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
-                statement.setString(1, uuid.toString());
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    return resultSet.next();
+        try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
+            statement.setString(1, uuid.toString());
+            return statement.executeUpdate() == 1;
+        } catch (SQLException e) {
+            // Two servers trying to get the same flag can deadlock, we will just try again later
+            Aurora.logger().debug("Failed to create sync flag for player: " + uuid + " error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean lockUser(UUID uuid) {
+        try (Connection connection = connection()) {
+            return tryCreateSyncFlag(uuid, connection);
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public void unlockUser(UUID uuid) {
+        String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=?;";
+
+        try (Connection connection = connection();
+             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+            statement.setString(1, uuid.toString());
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            Aurora.logger().warning("Failed to remove sync flag for player: " + uuid);
+        }
+    }
+
+    @Override
+    public boolean addChange(UUID uuid, String type, String data) {
+        String insertQuery = "INSERT INTO " + changeTableName + " (player_uuid, type, data) VALUES (?, ?, ?);";
+
+        try (Connection connection = connection();
+             PreparedStatement statement = connection.prepareStatement(insertQuery)) {
+            statement.setString(1, uuid.toString());
+            statement.setString(2, type);
+            statement.setString(3, data);
+            statement.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            Aurora.logger().severe("Failed to store " + type + " change for player: " + uuid + " error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public List<PendingChange> getChanges(UUID uuid) {
+        String query = "SELECT id, type, data FROM " + changeTableName + " WHERE player_uuid=? ORDER BY id;";
+        List<PendingChange> changes = new ArrayList<>();
+
+        try (Connection connection = connection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, uuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    changes.add(new PendingChange(resultSet.getLong("id"), resultSet.getString("type"), resultSet.getString("data")));
                 }
             }
         } catch (SQLException e) {
-            Aurora.logger().warning("Error checking sync lock status for player: " + uuid);
+            Aurora.logger().warning("Failed to get pending changes for player: " + uuid);
+        }
+
+        return changes;
+    }
+
+    @Override
+    public boolean removeChanges(UUID uuid, List<PendingChange> changes) {
+        if (changes.isEmpty()) return true;
+        String deleteQuery = "DELETE FROM " + changeTableName + " WHERE id=?;";
+
+        try (Connection connection = connection();
+             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+            for (var change : changes) {
+                statement.setLong(1, change.id());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+            return true;
+        } catch (SQLException e) {
+            Aurora.logger().severe("Failed to remove applied changes for player: " + uuid);
             return false;
         }
+    }
+
+    @Override
+    public Set<UUID> getUsersWithChanges() {
+        String query = "SELECT DISTINCT player_uuid FROM " + changeTableName + ";";
+        Set<UUID> uuids = new HashSet<>();
+
+        try (Connection connection = connection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                uuids.add(UUID.fromString(resultSet.getString("player_uuid")));
+            }
+        } catch (SQLException e) {
+            Aurora.logger().warning("Failed to check for pending changes: " + e.getMessage());
+        }
+
+        return uuids;
     }
 
     private DatabaseCredentials readCredentials() {
@@ -358,6 +457,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 StandardCharsets.UTF_8)
                 .replaceAll("%user_table%", tableName)
                 .replaceAll("%sync_table%", syncTableName)
+                .replaceAll("%change_table%", changeTableName)
                 .replaceAll("%leaderboard_table%", leaderboardTableName)
                 .split(";");
     }

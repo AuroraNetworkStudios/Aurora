@@ -11,11 +11,19 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class YamlStorage implements UserStorage {
+    // Only this server uses these files, so changes are applied within a second (and on shutdown), no need to save them
+    private final Map<UUID, List<PendingChange>> changes = new ConcurrentHashMap<>();
+    private final AtomicLong nextChangeId = new AtomicLong();
+
     public DirectoryStream<Path> getFileStream() throws IOException {
         var file = new File(Aurora.getInstance().getDataFolder() + "/userdata");
         return Files.newDirectoryStream(file.toPath(), "*.yml");
@@ -95,5 +103,40 @@ public class YamlStorage implements UserStorage {
     @Override
     public void dispose() {
         // nothing to dispose
+    }
+
+    @Override
+    public boolean addChange(UUID uuid, String type, String data) {
+        changes.computeIfAbsent(uuid, k -> new CopyOnWriteArrayList<>()).add(new PendingChange(nextChangeId.incrementAndGet(), type, data));
+        return true;
+    }
+
+    @Override
+    public List<PendingChange> getChanges(UUID uuid) {
+        return List.copyOf(changes.getOrDefault(uuid, List.of()));
+    }
+
+    @Override
+    public boolean removeChanges(UUID uuid, List<PendingChange> toRemove) {
+        changes.computeIfPresent(uuid, (k, list) -> {
+            list.removeAll(toRemove);
+            return list.isEmpty() ? null : list;
+        });
+        return true;
+    }
+
+    @Override
+    public Set<UUID> getUsersWithChanges() {
+        return Set.copyOf(changes.keySet());
+    }
+
+    @Override
+    public boolean lockUser(UUID uuid) {
+        // Only one server uses these files, the UserManager's player lock is enough
+        return true;
+    }
+
+    @Override
+    public void unlockUser(UUID uuid) {
     }
 }
