@@ -12,14 +12,10 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Tells the other servers through the proxy (BungeeCord or Velocity) that a player has new pending changes,
- * so the server they are online on applies them right away, instead of with its next check within a second.
- * And that requests were answered, so the servers waiting for answers don't have to wait for their next check.
- * <p>
- * It's only a wake-up call, the changes themselves are in the storage. A message can't be sent if nobody is
- * online on this server (plugin messages go through a player's connection), the checks still pick those up.
+ * A {@link ServerNotifier} that sends plugin messages through the proxy (BungeeCord or Velocity).
+ * A message can't be sent if nobody is online on this server, since plugin messages go through a player's connection.
  */
-class ProxyNotifier implements PluginMessageListener {
+class ProxyNotifier implements ServerNotifier, PluginMessageListener {
     private static final String CHANNEL = "BungeeCord";
     private static final String CHANGES = "AuroraUserChanges";
     private static final String ANSWERS = "AuroraChangeAnswers";
@@ -33,11 +29,13 @@ class ProxyNotifier implements PluginMessageListener {
         Bukkit.getMessenger().registerIncomingPluginChannel(Aurora.getInstance(), CHANNEL, this);
     }
 
-    void notifyChanges(UUID uuid) {
+    @Override
+    public void notifyChanges(UUID uuid) {
         send(CHANGES, uuid.toString());
     }
 
-    void notifyAnswers() {
+    @Override
+    public void notifyAnswers() {
         send(ANSWERS, "");
     }
 

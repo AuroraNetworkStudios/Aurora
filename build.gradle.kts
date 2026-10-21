@@ -157,6 +157,12 @@ dependencies {
     // bSats
     implementation("org.bstats:bstats-bukkit:3.0.2")
 
+    // Jedis, for telling other servers about user changes through Redis
+    implementation("redis.clients:jedis:5.2.0") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+        exclude(group = "com.google.code.gson", module = "gson")
+    }
+
     // JUnit Jupiter API and Engine dependencies
     testImplementation("io.papermc.paper:paper-api:26.2.build.31-alpha")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
@@ -193,6 +199,10 @@ tasks.withType<ShadowJar> {
     relocate("co.aikar.locales", "gg.auroramc.aurora.libs.locales")
 
     relocate("org.bstats", "gg.auroramc.aurora.libs.bstats")
+
+    relocate("redis.clients.jedis", "gg.auroramc.aurora.libs.jedis")
+    relocate("org.apache.commons.pool2", "gg.auroramc.aurora.libs.pool2")
+    relocate("org.json", "gg.auroramc.aurora.libs.json")
 
     exclude("acf-*.properties")
 }

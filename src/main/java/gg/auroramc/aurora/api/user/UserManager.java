@@ -33,6 +33,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -52,7 +54,10 @@ public class UserManager implements Listener {
     // Requests made on this server that aren't answered yet, by change id
     private final Map<Long, Request> requests = new ConcurrentHashMap<>();
     private static final long REQUEST_TIMEOUT_MS = 60_000;
-    private final ProxyNotifier proxyNotifier = new ProxyNotifier(this::onChangesNotified, this::onAnswersNotified);
+    // Null if only this server uses the storage
+    private ServerNotifier notifier;
+    // Changes and quits are saved on these threads, so the ones still running can be waited for on shutdown
+    private final ExecutorService changeExecutor = Executors.newFixedThreadPool(4, r -> new Thread(r, "Aurora user changes"));
     @Getter
     private final LatencyMeasure loadLatencyMeasure = new LatencyMeasure();
     @Getter
@@ -76,8 +81,30 @@ public class UserManager implements Listener {
 
         autoSaveTask();
         leaderboardUpdateTask();
-        changeTask();
-        requestTask();
+        if (isCrossServer()) {
+            changeTask();
+            requestTask();
+            var config = Aurora.getInstance().getConfig();
+            if (config.getBoolean("mysql.redis.enabled", false)) {
+                notifier = new RedisNotifier(config.getConfigurationSection("mysql.redis"), this::onChangesNotified, this::onAnswersNotified);
+            } else if (Bukkit.getServer().getServerConfig().isProxyEnabled()) {
+                // Only behind a proxy, otherwise players could send us these plugin messages themselves
+                notifier = new ProxyNotifier(this::onChangesNotified, this::onAnswersNotified);
+            } else {
+                Aurora.logger().info("Not behind a proxy and Redis isn't enabled, so other servers apply changes with their next check (within a second)");
+            }
+        } else {
+            // Changes left over if something went wrong last time, once the plugins registered their change types
+            Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(),
+                    (task) -> storage.getUsersWithChanges().forEach(this::applyPendingChanges), 1, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Whether other servers use the same storage, so players' data has to be kept in sync between them.
+     */
+    private boolean isCrossServer() {
+        return storage instanceof MySqlStorage mySqlStorage && mySqlStorage.isCrossServerSync();
     }
 
     public CompletableFuture<Boolean> attemptMigration(int threadCount) {
@@ -117,8 +144,11 @@ public class UserManager implements Listener {
                 Aurora.getLibConfig().saveChanges();
                 autoSaveTask();
                 leaderboardUpdateTask();
-                changeTask();
-                requestTask();
+                // Notifying other servers starts after a restart
+                if (isCrossServer()) {
+                    changeTask();
+                    requestTask();
+                }
             }
 
             migrator.markFinished();
@@ -230,9 +260,14 @@ public class UserManager implements Listener {
                 }
 
                 storage.addChange(uuid, change.getType().toString(), serialize(change), false);
-                notifyOtherServers(uuid);
+                if (isCrossServer()) {
+                    notifyOtherServers(uuid);
+                } else {
+                    // Nobody else uses the storage, so it can be applied right away
+                    applyPendingChanges(uuid);
+                }
             }
-        });
+        }, changeExecutor);
     }
 
     /**
@@ -262,18 +297,26 @@ public class UserManager implements Listener {
                 requests.put(id, request);
                 // If they are offline, this applies and answers it right away
                 applyPendingChanges(uuid);
-                if (requests.containsKey(id)) notifyOtherServers(uuid);
+                if (requests.containsKey(id)) {
+                    if (isCrossServer()) {
+                        notifyOtherServers(uuid);
+                    } else if (storage.cancelChange(id)) {
+                        // Nobody else uses the storage, so it should have been applied, but something went wrong
+                        requests.remove(id);
+                        return CompletableFuture.completedFuture(false);
+                    }
+                }
                 return request.answer();
             }
-        }).thenCompose(answer -> answer);
+        }, changeExecutor).thenCompose(answer -> answer);
     }
 
     /**
      * Wakes up the server they are online on (if that's another server), so it applies their changes right away.
      */
     private void notifyOtherServers(UUID uuid) {
-        if (storage instanceof MySqlStorage) {
-            proxyNotifier.notifyChanges(uuid);
+        if (notifier != null) {
+            notifier.notifyChanges(uuid);
         }
     }
 
@@ -368,7 +411,7 @@ public class UserManager implements Listener {
 
         if (!storage.completeChanges(uuid, applied, answers)) return;
         // The servers waiting for these can take them right away
-        if (!answers.isEmpty() && storage instanceof MySqlStorage) proxyNotifier.notifyAnswers();
+        if (!answers.isEmpty() && notifier != null) notifier.notifyAnswers();
 
         results.forEach((change, result) -> {
             var request = requests.remove(change.id());
@@ -550,18 +593,31 @@ public class UserManager implements Listener {
         if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
         if (changeTask != null) changeTask.cancel();
         if (requestTask != null) requestTask.cancel();
+        if (dispose) {
+            // Changes made and players who quit right before shutting down
+            changeExecutor.shutdown();
+            try {
+                changeExecutor.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {
+            }
+        }
         storage.getUsersWithChanges().forEach(this::applyPendingChanges);
         // Nobody would be here for the answers of the ones still waiting, so they shouldn't be applied
         answerRequests(true);
         storage.bulkSaveUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).toList(), SaveReason.QUIT);
         var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
         lbm.bulkUpdateUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).collect(HashMap::new, (m, u) -> m.put(u.getUniqueId(), u.getDirtyLeaderboards().keySet()), HashMap::putAll)).join();
-        if (dispose) storage.dispose();
+        if (dispose) {
+            if (notifier != null) notifier.close();
+            storage.dispose();
+        }
     }
 
     public void invalidate(Player player) {
         var user = cache.getIfPresent(player.getUniqueId());
-        if (user == null) return;
+        // When shutting down, they are saved with everyone else
+        if (user == null || changeExecutor.isShutdown()) return;
+        // On the change threads, so shutting down waits for quits that are being saved
         CompletableFuture.runAsync(() -> {
             var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
             lbm.updateUser(user, Collections.emptyList()).join();
@@ -577,7 +633,7 @@ public class UserManager implements Listener {
                 cache.asMap().remove(user.getUniqueId(), user);
                 Aurora.logger().debug("Removed user " + user.getUniqueId() + " from cache");
             }
-        });
+        }, changeExecutor);
     }
 
     @EventHandler(ignoreCancelled = true)

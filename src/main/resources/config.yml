@@ -41,6 +41,21 @@ mysql:
   network-latency: 500
   pool-size: 10
   sync-retry-count: 3
+  # Keeps the data of players in sync between the servers using this database, and lets you change the data
+  # of players who are offline or online on another server. Only turn it off if just one server uses this database.
+  # Changing this requires a restart
+  cross-server-sync: true
+  # Servers tell each other about changes through Redis if it's enabled, otherwise through your proxy (BungeeCord or Velocity)
+  # if the server is set up for one. Redis also works when nobody is online on the server making the change, and it's faster.
+  # Without either, servers still find the changes within a second.
+  # Changing this requires a restart
+  redis:
+    enabled: false
+    host: "127.0.0.1"
+    port: 6379
+    username: ""
+    password: ""
+    ssl: false
 
 # Tracks blocks placed by players
 block-tracker:
@@ -103,4 +118,4 @@ item-resolver-priorities:
 aurora-items:
   enable-id-resolver: true
 
-config-version: 14
+config-version: 16

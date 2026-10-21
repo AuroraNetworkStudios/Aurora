@@ -211,6 +211,29 @@ public class Config extends AuroraConfig {
                             "Supported plugins: Vault, Essentials, CMI, PlayerPoints, ExcellentEconomy, CoinsEngine, EcoBits, EliteMobs", "RoyaleEconomy", "RoyaleEconomyBank",
                             "Changing this requires a full restart"));
                     yaml.set("config-version", 14);
+                },
+                // Early 3.0.0 dev builds used version 15, the next step undoes what they changed
+                (yaml) -> yaml.set("config-version", 15),
+                (yaml) -> {
+                    if (!yaml.contains("mysql.sync-retry-count")) yaml.set("mysql.sync-retry-count", 3);
+                    yaml.set("mysql.operation-poll-interval", null);
+                    yaml.set("mysql.cross-server-sync", true);
+                    yaml.setComments("mysql.cross-server-sync", List.of(
+                            "Keeps the data of players in sync between the servers using this database, and lets you change the data",
+                            "of players who are offline or online on another server. Only turn it off if just one server uses this database.",
+                            "Changing this requires a restart"));
+                    yaml.set("mysql.redis.enabled", false);
+                    yaml.set("mysql.redis.host", "127.0.0.1");
+                    yaml.set("mysql.redis.port", 6379);
+                    yaml.set("mysql.redis.username", "");
+                    yaml.set("mysql.redis.password", "");
+                    yaml.set("mysql.redis.ssl", false);
+                    yaml.setComments("mysql.redis", List.of(
+                            "Servers tell each other about changes through Redis if it's enabled, otherwise through your proxy (BungeeCord or Velocity)",
+                            "if the server is set up for one. Redis also works when nobody is online on the server making the change, and it's faster.",
+                            "Without either, servers still find the changes within a second.",
+                            "Changing this requires a restart"));
+                    yaml.set("config-version", 16);
                 }
         );
     }

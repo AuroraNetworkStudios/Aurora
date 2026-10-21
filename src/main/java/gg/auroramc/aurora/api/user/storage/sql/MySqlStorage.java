@@ -30,12 +30,15 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
     private final String leaderboardTableName = "aurora_leaderboard";
     private final int networkLatency;
     private final int syncRetryCount;
+    // False if only this server uses the database, then there is no other server to sync with
+    private final boolean crossServerSync;
 
     @SneakyThrows
     public MySqlStorage() {
         int poolSize = Aurora.getInstance().getConfig().getInt("mysql.pool-size", 10);
         networkLatency = Aurora.getInstance().getConfig().getInt("mysql.network-latency", 500);
         syncRetryCount = Aurora.getInstance().getConfig().getInt("mysql.sync-retry-count", 3);
+        crossServerSync = Aurora.getInstance().getConfig().getBoolean("mysql.cross-server-sync", true);
         credentials = readCredentials();
         HikariConfig config = new HikariConfig();
         config.setPoolName("aurora-pool");
@@ -69,8 +72,17 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         return ids;
     }
 
+    public boolean isCrossServerSync() {
+        return crossServerSync;
+    }
+
     @Override
     public void loadUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders, Consumer<AuroraUser> handler) {
+        if (!crossServerSync) {
+            // No other server to wait for, load it right away like the yaml storage does
+            handler.accept(loadUser(uuid, dataHolders));
+            return;
+        }
         loadUser(uuid, dataHolders, syncRetryCount, handler);
     }
 
@@ -190,7 +202,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                     return true;
                 }
             } catch (Exception e) {
-                Aurora.logger().severe("Failed to save user data for player: " + uuid);
+                Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e.getMessage());
                 return false;
             }
         }
@@ -324,6 +336,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
 
     @Override
     public boolean lockUser(UUID uuid) {
+        // Only this server uses the database, the UserManager's player lock is enough
+        if (!crossServerSync) return true;
         try (Connection connection = connection()) {
             return tryCreateSyncFlag(uuid, connection);
         } catch (SQLException e) {
@@ -333,6 +347,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
 
     @Override
     public void unlockUser(UUID uuid) {
+        if (!crossServerSync) return;
         String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=?;";
 
         try (Connection connection = connection();
