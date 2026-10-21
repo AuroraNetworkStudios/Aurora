@@ -14,30 +14,42 @@ import java.util.function.Consumer;
 /**
  * Tells the other servers through the proxy (BungeeCord or Velocity) that a player has new pending changes,
  * so the server they are online on applies them right away, instead of with its next check within a second.
+ * And that requests were answered, so the servers waiting for answers don't have to wait for their next check.
  * <p>
  * It's only a wake-up call, the changes themselves are in the storage. A message can't be sent if nobody is
  * online on this server (plugin messages go through a player's connection), the checks still pick those up.
  */
 class ProxyNotifier implements PluginMessageListener {
     private static final String CHANNEL = "BungeeCord";
-    private static final String SUBCHANNEL = "AuroraUserChanges";
-    private final Consumer<UUID> onNotified;
+    private static final String CHANGES = "AuroraUserChanges";
+    private static final String ANSWERS = "AuroraChangeAnswers";
+    private final Consumer<UUID> onChanges;
+    private final Runnable onAnswers;
 
-    ProxyNotifier(Consumer<UUID> onNotified) {
-        this.onNotified = onNotified;
+    ProxyNotifier(Consumer<UUID> onChanges, Runnable onAnswers) {
+        this.onChanges = onChanges;
+        this.onAnswers = onAnswers;
         Bukkit.getMessenger().registerOutgoingPluginChannel(Aurora.getInstance(), CHANNEL);
         Bukkit.getMessenger().registerIncomingPluginChannel(Aurora.getInstance(), CHANNEL, this);
     }
 
     void notifyChanges(UUID uuid) {
+        send(CHANGES, uuid.toString());
+    }
+
+    void notifyAnswers() {
+        send(ANSWERS, "");
+    }
+
+    private void send(String subchannel, String message) {
         var player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
         if (player == null) return;
 
-        var payload = uuid.toString().getBytes(StandardCharsets.UTF_8);
+        var payload = message.getBytes(StandardCharsets.UTF_8);
         var out = ByteStreams.newDataOutput();
         out.writeUTF("Forward");
         out.writeUTF("ONLINE"); // All servers with players on them, except this one
-        out.writeUTF(SUBCHANNEL);
+        out.writeUTF(subchannel);
         out.writeShort(payload.length);
         out.write(payload);
         player.sendPluginMessage(Aurora.getInstance(), CHANNEL, out.toByteArray());
@@ -48,12 +60,17 @@ class ProxyNotifier implements PluginMessageListener {
         if (!channel.equals(CHANNEL)) return;
         try {
             var in = ByteStreams.newDataInput(message);
-            if (!in.readUTF().equals(SUBCHANNEL)) return;
+            var subchannel = in.readUTF();
+            if (!subchannel.equals(CHANGES) && !subchannel.equals(ANSWERS)) return;
             var payload = new byte[in.readShort()];
             in.readFully(payload);
-            onNotified.accept(UUID.fromString(new String(payload, StandardCharsets.UTF_8)));
+            if (subchannel.equals(CHANGES)) {
+                onChanges.accept(UUID.fromString(new String(payload, StandardCharsets.UTF_8)));
+            } else {
+                onAnswers.run();
+            }
         } catch (Exception e) {
-            Aurora.logger().debug("Invalid " + SUBCHANNEL + " message: " + e.getMessage());
+            Aurora.logger().debug("Invalid Aurora proxy message: " + e.getMessage());
         }
     }
 }

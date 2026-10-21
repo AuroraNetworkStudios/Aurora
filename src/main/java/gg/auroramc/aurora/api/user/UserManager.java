@@ -52,7 +52,7 @@ public class UserManager implements Listener {
     // Requests made on this server that aren't answered yet, by change id
     private final Map<Long, Request> requests = new ConcurrentHashMap<>();
     private static final long REQUEST_TIMEOUT_MS = 60_000;
-    private final ProxyNotifier proxyNotifier = new ProxyNotifier(this::onChangesNotified);
+    private final ProxyNotifier proxyNotifier = new ProxyNotifier(this::onChangesNotified, this::onAnswersNotified);
     @Getter
     private final LatencyMeasure loadLatencyMeasure = new LatencyMeasure();
     @Getter
@@ -284,6 +284,12 @@ public class UserManager implements Listener {
         }
     }
 
+    private void onAnswersNotified() {
+        if (!requests.isEmpty()) {
+            CompletableFuture.runAsync(() -> answerRequests(false));
+        }
+    }
+
     private String serialize(UserChange change) {
         var data = new YamlConfiguration();
         change.serializeInto(data);
@@ -361,6 +367,8 @@ public class UserManager implements Listener {
         var applied = results.keySet().stream().filter(change -> !answers.containsKey(change.id())).toList();
 
         if (!storage.completeChanges(uuid, applied, answers)) return;
+        // The servers waiting for these can take them right away
+        if (!answers.isEmpty() && storage instanceof MySqlStorage) proxyNotifier.notifyAnswers();
 
         results.forEach((change, result) -> {
             var request = requests.remove(change.id());
