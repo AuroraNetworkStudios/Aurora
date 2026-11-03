@@ -28,6 +28,7 @@ public class StorageMigrator {
         try {
             final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
             final AtomicLong counter = new AtomicLong(0);
+            final AtomicLong failed = new AtomicLong(0);
             int batchSize = 1000;
             int offset = 0;
 
@@ -42,10 +43,19 @@ public class StorageMigrator {
                     executor.submit(() -> {
                         var parsedId = UUID.fromString(uuid);
                         var loadedUser = from.loadUser(parsedId, userManager.getDataHolders());
-                        loadedUser.setLoaded(true);
+                        // Saving data that couldn't be loaded would replace their real data with nothing
+                        if (!loadedUser.isLoaded()) {
+                            failed.incrementAndGet();
+                            Aurora.logger().severe("Failed to load the data of " + parsedId + " to migrate it");
+                            return;
+                        }
                         loadedUser.getDataHolders().forEach(dataHolder -> dataHolder.setDirty(true));
                         to.purgeUser(parsedId);
-                        to.saveUser(loadedUser, SaveReason.CUSTOM);
+                        if (!to.saveUser(loadedUser, SaveReason.CUSTOM)) {
+                            failed.incrementAndGet();
+                            Aurora.logger().severe("Failed to save the migrated data of " + parsedId);
+                            return;
+                        }
                         var currentCount = counter.incrementAndGet();
                         Aurora.logger().info("[" + currentCount + "] Migrated user data for " + parsedId + " with name: " + Bukkit.getOfflinePlayer(parsedId).getName());
                     });
@@ -57,6 +67,10 @@ public class StorageMigrator {
             try {
                 executor.shutdown();
                 var success = executor.awaitTermination(1, TimeUnit.HOURS);
+                if (success && failed.get() > 0) {
+                    Aurora.logger().severe("Failed to migrate the data of " + failed.get() + " users (see the errors above), not switching to the new storage. " + counter.get() + " users were migrated.");
+                    return false;
+                }
                 if (success) {
                     Aurora.logger().info("Successfully migrated all user data for: " + counter.get() + " users.");
                 } else {
@@ -78,6 +92,7 @@ public class StorageMigrator {
         try {
             final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
             final AtomicLong counter = new AtomicLong(0);
+            final AtomicLong failed = new AtomicLong(0);
 
             Aurora.logger().info("Starting migration of user data from Yaml to MySQL storage with thread count: " + threadCount);
 
@@ -87,10 +102,19 @@ public class StorageMigrator {
                 executor.submit(() -> {
                     var uuid = UUID.fromString(path.getFileName().toString().replace(".yml", ""));
                     var loadedUser = from.loadUser(uuid, userManager.getDataHolders());
-                    loadedUser.setLoaded(true);
+                    // Saving data that couldn't be loaded would replace their real data with nothing
+                    if (!loadedUser.isLoaded()) {
+                        failed.incrementAndGet();
+                        Aurora.logger().severe("Failed to load the data of " + uuid + " to migrate it");
+                        return;
+                    }
                     loadedUser.getDataHolders().forEach(dataHolder -> dataHolder.setDirty(true));
                     to.purgeUser(uuid);
-                    to.saveUser(loadedUser, SaveReason.CUSTOM);
+                    if (!to.saveUser(loadedUser, SaveReason.CUSTOM)) {
+                        failed.incrementAndGet();
+                        Aurora.logger().severe("Failed to save the migrated data of " + uuid);
+                        return;
+                    }
                     var currentCount = counter.incrementAndGet();
                     Aurora.logger().info("[" + currentCount + "] Migrated user data for " + uuid + " with name: " + Bukkit.getOfflinePlayer(uuid).getName());
                 });
@@ -99,6 +123,10 @@ public class StorageMigrator {
             try {
                 executor.shutdown();
                 var success = executor.awaitTermination(1, TimeUnit.HOURS);
+                if (success && failed.get() > 0) {
+                    Aurora.logger().severe("Failed to migrate the data of " + failed.get() + " users (see the errors above), not switching to the new storage. " + counter.get() + " users were migrated.");
+                    return false;
+                }
                 if (success) {
                     Aurora.logger().info("Successfully migrated all user data for: " + counter.get() + " users.");
                 } else {

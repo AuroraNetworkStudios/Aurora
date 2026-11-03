@@ -158,47 +158,63 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
 
     @Override
     public boolean saveUser(AuroraUser user, SaveReason reason) {
+        return prepareSave(user, reason).write();
+    }
+
+    @Override
+    public PendingSave prepareSave(AuroraUser user, SaveReason reason) {
         var uuid = user.getUniqueId();
+        // Holder id to its data
+        var rows = new LinkedHashMap<String, String>();
+        try {
+            synchronized (user.getSerializeLock()) {
+                for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
+                    var data = new YamlConfiguration();
+                    holder.serializeInto(data);
+                    rows.put(holder.getId().toString(), data.saveToString());
+                }
+            }
+        } catch (Exception e) {
+            Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
+            return () -> false;
+        }
+        return () -> write(uuid, rows, reason);
+    }
+
+    private boolean write(UUID uuid, Map<String, String> rows, SaveReason reason) {
         String saveQuery = "INSERT INTO " + tableName + " (player_uuid, holder, data) VALUES (?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE data=?;";
 
-        synchronized (user.getSerializeLock()) {
-            try {
-                final var start = System.nanoTime();
-                try (Connection connection = connection()) {
-                    connection.setAutoCommit(false);
+        try {
+            final var start = System.nanoTime();
+            try (Connection connection = connection()) {
+                connection.setAutoCommit(false);
 
-
-                    try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
-                        for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
-                            var data = new YamlConfiguration();
-                            holder.serializeInto(data);
-                            var serializedData = data.saveToString();
-
-                            statement.setString(1, uuid.toString());
-                            statement.setString(2, holder.getId().toString());
-                            statement.setString(3, serializedData);
-                            statement.setString(4, serializedData);
-                            statement.addBatch();
-                        }
-                        statement.executeBatch();
+                try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
+                    for (var row : rows.entrySet()) {
+                        statement.setString(1, uuid.toString());
+                        statement.setString(2, row.getKey());
+                        statement.setString(3, row.getValue());
+                        statement.setString(4, row.getValue());
+                        statement.addBatch();
                     }
-
-                    final var end = System.nanoTime();
-                    Aurora.getUserManager().getSaveLatencyMeasure().addLatency(end - start);
-
-                    if (reason == SaveReason.QUIT) {
-                        removeSyncFlag(uuid, connection);
-                    }
-
-                    connection.commit();
-
-                    return true;
+                    statement.executeBatch();
                 }
-            } catch (Exception e) {
-                Aurora.logger().severe("Failed to save user data for player: " + uuid);
-                return false;
+
+                final var end = System.nanoTime();
+                Aurora.getUserManager().getSaveLatencyMeasure().addLatency(end - start);
+
+                if (reason == SaveReason.QUIT) {
+                    removeSyncFlag(uuid, connection);
+                }
+
+                connection.commit();
+
+                return true;
             }
+        } catch (Exception e) {
+            Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
+            return false;
         }
     }
 

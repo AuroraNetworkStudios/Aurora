@@ -130,6 +130,12 @@ public class AuroraUser {
         }
     }
 
+    public String serializeToString() {
+        synchronized (serializeLock) {
+            return serializeData().saveToString();
+        }
+    }
+
     public Collection<UserDataHolder> getDataHolders() {
         return dataHolderMap.values();
     }

@@ -30,15 +30,25 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class UserManager implements Listener {
     @Getter
     private volatile UserStorage storage;
-    // A fixed set of locks shared by players, so a player's lock is never replaced while someone holds it
+    // A fixed set of locks shared by players, so a player's lock is never replaced while someone holds it. Nothing
+    // waits for the storage while holding one, except loading an offline player the first time they are edited or
+    // read, and purging a player.
     private final Object[] playerLocks = Stream.generate(Object::new).limit(1024).toArray();
+    // Keep the writes of each player's data in order, so an older copy is never written over a newer one. Taken before
+    // their player lock, never while holding it.
+    private final Object[] saveLocks = Stream.generate(Object::new).limit(1024).toArray();
+    // Every write holds it shared, saving everyone at once (shutting down, migrating) holds it alone. Taken first.
+    private final ReentrantReadWriteLock writes = new ReentrantReadWriteLock();
     @Getter
     private final Set<Class<? extends UserDataHolder>> dataHolders = new HashSet<>();
     private ScheduledTask autoSaveTask;
@@ -50,8 +60,10 @@ public class UserManager implements Listener {
     @Getter
     private final LatencyMeasure syncFlagLatencyMeasure = new LatencyMeasure();
     private StorageMigrator migrator = new StorageMigrator(this);
-    // Players who left, but whose data couldn't be saved yet. It stays in memory and the save is tried again.
+    // Players who left, whose offline copy (see offlineCache) isn't saved for their quit yet
     private final Set<UUID> unsavedQuits = ConcurrentHashMap.newKeySet();
+    // How many times each player was purged, a load that read their data before a purge reads it again
+    private final Map<UUID, Long> purges = new ConcurrentHashMap<>();
     private static final int LOAD_ATTEMPTS = 3;
     private static final long LOAD_RETRY_SECONDS = 2;
     private static final long MAX_QUIT_SAVE_RETRY_SECONDS = 30;
@@ -60,14 +72,18 @@ public class UserManager implements Listener {
     private final Cache<UUID, AuroraUser> cache = CacheBuilder.newBuilder().build();
     // Edits for players who are online here, but whose data is still loading. Made as soon as it's loaded.
     private final Map<UUID, List<PendingEdit>> pendingEdits = new ConcurrentHashMap<>();
-    // Offline players loaded to be edited, kept until they join here (then their session takes over), so they are only
-    // loaded once. Like online players, they are saved by the autosave and when shutting down, not after every edit.
+    // Offline players in memory: loaded to be edited, kept until they join here (then their session takes over), so
+    // they are only loaded once. Players who leave are kept here too until their quit is saved (longer if they are
+    // edited meanwhile). Like online players, they are saved by the autosave and when shutting down.
     private final Cache<UUID, AuroraUser> offlineCache = CacheBuilder.newBuilder().build();
-    // The offline players above edited since they were last saved
-    private final Set<UUID> unsavedOfflineEdits = ConcurrentHashMap.newKeySet();
+    // The offline copies above with changes the storage doesn't have yet
+    private final Set<UUID> unsavedOfflineCopies = ConcurrentHashMap.newKeySet();
     private volatile boolean stopping = false;
 
     private record PendingEdit(Predicate<AuroraUser> edit, CompletableFuture<Boolean> result) {
+    }
+
+    private record ToSave(AuroraUser user, SaveReason reason) {
     }
 
 
@@ -89,76 +105,129 @@ public class UserManager implements Listener {
         finishEdits();
 
         return CompletableFuture.supplyAsync(() -> {
-            stopTasksAndSaveAllData(false);
-            if (!unsavedOfflineEdits.isEmpty()) {
-                // The migration copies the storage, edits it doesn't have yet would be lost
-                Aurora.logger().severe("Not migrating, the edits of " + unsavedOfflineEdits.size() + " offline players couldn't be saved. Check the errors above!");
+            // No write gets between saving everyone and copying the storage
+            writes.writeLock().lock();
+            try {
+                stopTasksAndSaveAllData(false);
+                if (!unsavedOfflineCopies.isEmpty()) {
+                    // The migration copies the storage, edits it doesn't have yet would be lost
+                    Aurora.logger().severe("Not migrating, the edits of " + unsavedOfflineCopies.size() + " offline players couldn't be saved. Check the errors above!");
+                    autoSaveTask();
+                    leaderboardUpdateTask();
+                    migrator.markFinished();
+                    return false;
+                }
+                cache.invalidateAll();
+                offlineCache.invalidateAll();
+                unsavedOfflineCopies.clear();
+                unsavedQuits.clear();
+
+                Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
+                    Bukkit.getOnlinePlayers().forEach(player -> player.kick(
+                            Text.component(Aurora.getMsg(player).getKickedByDbMigration())
+                    ));
+                });
+
+                UserStorage newStorage = this.storage;
+                String newStorageId = storage instanceof MySqlStorage ? "yaml" : "mysql";
+                boolean success = false;
+
+                if (storage instanceof MySqlStorage mySqlStorage) {
+                    newStorage = new YamlStorage();
+                    success = migrator.migrateUserData(mySqlStorage, (YamlStorage) newStorage, threadCount);
+                } else if (storage instanceof YamlStorage yamlStorage) {
+                    newStorage = new MySqlStorage();
+                    success = migrator.migrateUserData(yamlStorage, (MySqlStorage) newStorage, threadCount);
+                }
+
+                if (success) {
+                    storage.dispose();
+                    storage = newStorage;
+                    if (newStorage instanceof MySqlStorage mySqlStorage) {
+                        Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(mySqlStorage);
+                    } else {
+                        Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(new SqliteLeaderboardStorage());
+                    }
+                    Aurora.getLibConfig().setStorageType(newStorageId);
+                    Aurora.getLibConfig().saveChanges();
+                }
+
+                // With whichever storage is used now
                 autoSaveTask();
                 leaderboardUpdateTask();
                 migrator.markFinished();
-                return false;
+
+                return success;
+            } finally {
+                writes.writeLock().unlock();
             }
-            cache.invalidateAll();
-            offlineCache.invalidateAll();
-            unsavedOfflineEdits.clear();
-            unsavedQuits.clear();
-
-            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                Bukkit.getOnlinePlayers().forEach(player -> player.kick(
-                        Text.component(Aurora.getMsg(player).getKickedByDbMigration())
-                ));
-            });
-
-            UserStorage newStorage = this.storage;
-            String newStorageId = storage instanceof MySqlStorage ? "yaml" : "mysql";
-            boolean success = false;
-
-            if (storage instanceof MySqlStorage mySqlStorage) {
-                newStorage = new YamlStorage();
-                success = migrator.migrateUserData(mySqlStorage, (YamlStorage) newStorage, threadCount);
-            } else if (storage instanceof YamlStorage yamlStorage) {
-                newStorage = new MySqlStorage();
-                success = migrator.migrateUserData(yamlStorage, (MySqlStorage) newStorage, threadCount);
-            }
-
-            if (success) {
-                storage.dispose();
-                storage = newStorage;
-                if (newStorage instanceof MySqlStorage mySqlStorage) {
-                    Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(mySqlStorage);
-                } else {
-                    Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(new SqliteLeaderboardStorage());
-                }
-                Aurora.getLibConfig().setStorageType(newStorageId);
-                Aurora.getLibConfig().saveChanges();
-            }
-
-            // With whichever storage is used now
-            autoSaveTask();
-            leaderboardUpdateTask();
-            migrator.markFinished();
-
-            return success;
         });
     }
 
+    /**
+     * Saves the user's data now, on this thread. It waits for a save of the same player that's running, and while a
+     * storage migration runs, so don't call it on the main thread. Don't call it from inside an edit (editUser,
+     * editUserNow), that could deadlock.
+     */
     public boolean saveUserData(AuroraUser user, SaveReason reason) {
-        synchronized (getPlayerLock(user.getUniqueId())) {
-            var result = storage.saveUser(user, reason);
-            if (result && reason == SaveReason.QUIT && !Bukkit.isStopping() && !Aurora.isDisabling()) {
-                Aurora.logger().debug("Saved user " + user.getUniqueId() + " into storage");
-                Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                        (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(user)));
+        return save(user.getUniqueId(), () -> new ToSave(user, reason), (saved, written) -> {
+            if (written && reason == SaveReason.QUIT) unloaded(user);
+        });
+    }
+
+    /**
+     * Saves a player's data without holding their lock while it's written, so their edits and reads never wait for
+     * the storage. Under their lock, pick chooses what to save (null for nothing) and it's serialized right away.
+     * After writing it, done gets it with whether it was written, under their lock again.
+     *
+     * @return false if it couldn't be written
+     */
+    private boolean save(UUID uuid, Supplier<ToSave> pick, BiConsumer<ToSave, Boolean> done) {
+        writes.readLock().lock();
+        try {
+            synchronized (getSaveLock(uuid)) {
+                ToSave toSave;
+                UserStorage.PendingSave pending;
+                synchronized (getPlayerLock(uuid)) {
+                    toSave = pick.get();
+                    if (toSave == null) return true;
+                    try {
+                        pending = storage.prepareSave(toSave.user(), toSave.reason());
+                    } catch (Exception e) {
+                        Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
+                        pending = () -> false;
+                    }
+                }
+                boolean written;
+                try {
+                    written = pending.write();
+                } catch (Exception e) {
+                    Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
+                    written = false;
+                }
+                // Still holding their save lock, so no newer copy was taken to be written meanwhile
+                synchronized (getPlayerLock(uuid)) {
+                    done.accept(toSave, written);
+                }
+                return written;
             }
-            return result;
+        } finally {
+            writes.readLock().unlock();
         }
+    }
+
+    private void unloaded(AuroraUser user) {
+        if (Bukkit.isStopping() || Aurora.isDisabling()) return;
+        Aurora.logger().debug("Saved user " + user.getUniqueId() + " into storage");
+        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(user)));
     }
 
     private void autoSaveTask() {
         this.autoSaveTask = Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
             var values = cache.asMap().values();
             var toSave = values.stream().filter(u -> u.isLoaded() && u.isDirty()).toList();
-            var offline = unsavedOfflineEdits.size();
+            var offline = unsavedOfflineCopies.size();
             if (offline > 0) {
                 var saved = saveOfflineEdits(SaveReason.AUTO_SAVE);
                 Aurora.logger().info("Auto background saved user data for " + saved + "/" + offline + " edited offline players");
@@ -174,39 +243,58 @@ public class UserManager implements Listener {
         }, Aurora.getLibConfig().getUserAutoSaveInMinutes(), TimeUnit.MINUTES);
     }
 
-    // Each player on their own and under their lock, only while it's still their session here. If they left since
-    // the autosave started, their quit saved them, and an edit saved since then would be overwritten by this older copy.
+    // Only while it's still their session here. If they left since the autosave started, it's their offline copy now,
+    // saved on its own.
     private boolean autoSave(AuroraUser user) {
-        synchronized (getPlayerLock(user.getUniqueId())) {
-            if (!user.isLoaded() || cache.getIfPresent(user.getUniqueId()) != user) return false;
-            return storage.saveUser(user, SaveReason.AUTO_SAVE);
-        }
+        var uuid = user.getUniqueId();
+        return save(uuid, () -> user.isLoaded() && cache.getIfPresent(uuid) == user ? new ToSave(user, SaveReason.AUTO_SAVE) : null,
+                (saved, written) -> {
+                });
     }
 
     /**
-     * Saves the offline players edited since they were last saved, each under their lock.
+     * Saves the offline copies with changes the storage doesn't have yet.
      *
      * @return how many of them were saved
      */
     private int saveOfflineEdits(SaveReason reason) {
         int saved = 0;
-        for (var uuid : List.copyOf(unsavedOfflineEdits)) {
-            synchronized (getPlayerLock(uuid)) {
-                var user = offlineCache.getIfPresent(uuid);
-                // Joined in the meantime, their session has it now
-                if (user == null) {
-                    unsavedOfflineEdits.remove(uuid);
-                    continue;
-                }
-                if (storage.saveUser(user, reason)) {
-                    unsavedOfflineEdits.remove(uuid);
-                    saved++;
-                } else {
-                    Aurora.logger().severe("Failed to save the edited data of offline player: " + uuid);
-                }
+        for (var uuid : List.copyOf(unsavedOfflineCopies)) {
+            if (saveOfflineCopy(uuid, reason)) {
+                saved++;
+            } else {
+                Aurora.logger().severe("Failed to save the data of offline player: " + uuid);
             }
         }
         return saved;
+    }
+
+    /**
+     * Saves a player's offline copy if it has changes the storage doesn't have yet. For a player who left, it's saved
+     * as their quit, and dropped from memory after that unless it was edited meanwhile.
+     *
+     * @return false if it couldn't be written
+     */
+    private boolean saveOfflineCopy(UUID uuid, SaveReason reason) {
+        return save(uuid, () -> {
+            var copy = offlineCache.getIfPresent(uuid);
+            // Joined in the meantime (their session has it now), or nothing changed since it was saved
+            if (!unsavedOfflineCopies.remove(uuid) || copy == null) return null;
+            return new ToSave(copy, unsavedQuits.contains(uuid) ? SaveReason.QUIT : reason);
+        }, (saved, written) -> {
+            // Joined meanwhile, their session goes on with it and saves it
+            if (offlineCache.getIfPresent(uuid) != saved.user()) return;
+            if (!written) {
+                unsavedOfflineCopies.add(uuid);
+                return;
+            }
+            if (saved.reason() != SaveReason.QUIT) return;
+            unsavedQuits.remove(uuid);
+            unloaded(saved.user());
+            // Kept if it was edited after this was taken to be saved. Also if they joined again: their load may have read
+            // the storage before this was written, it goes on with this copy instead.
+            if (!unsavedOfflineCopies.contains(uuid) && Bukkit.getPlayer(uuid) == null) offlineCache.invalidate(uuid);
+        });
     }
 
     private void leaderboardUpdateTask() {
@@ -252,6 +340,10 @@ public class UserManager implements Listener {
         return playerLocks[Math.floorMod(playerId.hashCode(), playerLocks.length)];
     }
 
+    private Object getSaveLock(UUID playerId) {
+        return saveLocks[Math.floorMod(playerId.hashCode(), saveLocks.length)];
+    }
+
     public <T extends UserDataHolder> void registerUserDataHolder(Class<T> clazz) {
         dataHolders.add(clazz);
     }
@@ -271,7 +363,8 @@ public class UserManager implements Listener {
      *
      * @param uuid player's uuid
      * @param edit changes the user's data, and returns whether it did (like taking items only if they are there).
-     *             When it returns false, it must not have changed anything.
+     *             When it returns false, it must not have changed anything. It must not call editUserNow, getUserNow or
+     *             saveUserData itself (that could deadlock).
      * @return whether the edit was made. False if it refused, or their data couldn't be loaded, in which case nothing
      * was changed.
      */
@@ -287,11 +380,6 @@ public class UserManager implements Listener {
                 var cached = cache.getIfPresent(uuid);
                 if (cached != null && cached.isLoaded()) {
                     result.complete(test(edit, cached));
-                    return;
-                }
-                // They left, but their data in memory couldn't be saved yet. Edits wait until it is.
-                if (unsavedQuits.contains(uuid)) {
-                    result.complete(false);
                     return;
                 }
                 if (Bukkit.getPlayer(uuid) != null) {
@@ -319,25 +407,93 @@ public class UserManager implements Listener {
     }
 
     /**
+     * Changes a player's data right away on the calling thread, for APIs that have to answer at once (like an economy
+     * behind Vault). Works like {@link #editUser}, except for these: an offline player who isn't in memory yet is
+     * loaded on this thread (only the first time, they stay in memory after that), and a player who is online here
+     * but whose data is still loading can't be changed, false is returned for them.
+     *
+     * @param uuid player's uuid
+     * @param edit changes the user's data, and returns whether it did. When it returns false, it must not have changed
+     *             anything. It must not call editUserNow, getUserNow or saveUserData itself (that could deadlock), make
+     *             changes to more players one after another instead.
+     * @return whether the edit was made
+     */
+    public boolean editUserNow(UUID uuid, Predicate<AuroraUser> edit) {
+        synchronized (getPlayerLock(uuid)) {
+            if (stopping || migrator.isMigrating()) return false;
+            var cached = cache.getIfPresent(uuid);
+            if (cached != null && cached.isLoaded()) return test(edit, cached);
+            if (Bukkit.getPlayer(uuid) != null) return false;
+            return editOffline(uuid, List.of(edit)).getFirst();
+        }
+    }
+
+    /**
+     * Gets a player's data right away on the calling thread, for reading it, like {@link #editUserNow}: an offline
+     * player who isn't in memory yet is loaded on this thread, and stays in memory after that.
+     * Don't change what this returns, use editUser or editUserNow for that.
+     *
+     * @param uuid player's uuid
+     * @return their data, or null if it isn't available (it's still loading, couldn't be loaded, or offline-player-cache
+     * is turned off and they are offline)
+     */
+    public AuroraUser getUserNow(UUID uuid) {
+        synchronized (getPlayerLock(uuid)) {
+            if (stopping || migrator.isMigrating()) return null;
+            var cached = cache.getIfPresent(uuid);
+            if (cached != null && cached.isLoaded()) return cached;
+            if (Bukkit.getPlayer(uuid) != null) return null;
+            return getOfflineCopy(uuid);
+        }
+    }
+
+    // Call with the player's lock held. Null if offline-player-cache is turned off, or their data couldn't be loaded.
+    private AuroraUser getOfflineCopy(UUID uuid) {
+        // Turned off for servers sharing a database, offline players are left alone then
+        if (!Aurora.getLibConfig().getOfflinePlayerCache()) return null;
+        var user = offlineCache.getIfPresent(uuid);
+        if (user == null) {
+            user = storage.loadUser(uuid, dataHolders);
+            if (!user.isLoaded()) return null;
+            offlineCache.put(uuid, user);
+        }
+        return user;
+    }
+
+    /**
      * Edits an offline player's copy, loading it first if needed. Call with their lock held.
      *
      * @return the result of each edit, all false if their data couldn't be loaded
      */
     private List<Boolean> editOffline(UUID uuid, List<Predicate<AuroraUser>> edits) {
-        var refused = edits.stream().map(edit -> false).toList();
-        // Turned off for servers sharing a database, offline players are left alone then
-        if (!Aurora.getLibConfig().getOfflinePlayerCache()) return refused;
-        var user = offlineCache.getIfPresent(uuid);
-        if (user == null) {
-            user = storage.loadUser(uuid, dataHolders);
-            if (!user.isLoaded()) return refused;
-            offlineCache.put(uuid, user);
-        }
-        var edited = user;
+        var edited = getOfflineCopy(uuid);
+        if (edited == null) return edits.stream().map(edit -> false).toList();
         var results = edits.stream().map(edit -> test(edit, edited)).toList();
         // Saved later, like an online player
-        if (results.contains(true)) unsavedOfflineEdits.add(uuid);
+        if (results.contains(true)) unsavedOfflineCopies.add(uuid);
         return results;
+    }
+
+    // Call with the player's save and player lock held (so it isn't being written right now). An offline copy kept for
+    // a rejoin (see saveOfflineCopy) whose session never took it over is dropped here once it's saved, it could be
+    // outdated when they join next time (by playing on another server sharing the database).
+    private void dropIfSaved(UUID uuid) {
+        if (Bukkit.getPlayer(uuid) != null || unsavedOfflineCopies.contains(uuid) || unsavedQuits.contains(uuid)) return;
+        offlineCache.invalidate(uuid);
+    }
+
+    // Like dropIfSaved, taking the locks. Call without holding any.
+    private void dropIfSavedLocking(UUID uuid) {
+        writes.readLock().lock();
+        try {
+            synchronized (getSaveLock(uuid)) {
+                synchronized (getPlayerLock(uuid)) {
+                    dropIfSaved(uuid);
+                }
+            }
+        } finally {
+            writes.readLock().unlock();
+        }
     }
 
     // Call with the player's lock held
@@ -435,74 +591,98 @@ public class UserManager implements Listener {
         CompletableFuture.runAsync(() -> {
             synchronized (getPlayerLock(uuid)) {
                 var cached = cache.getIfPresent(uuid);
-                // Joined again before their quit was saved (or while it can't be saved), what we have in memory
-                // is newer than the storage
-                if (cached != null && (cached.isLoaded() || unsavedQuits.contains(uuid))) {
-                    offlineCache.invalidate(uuid);
-                    unsavedOfflineEdits.remove(uuid);
-                    unsavedQuits.remove(uuid);
-                    cached.setLoaded(true);
+                // Joined again before their quit was handled, their session just goes on
+                if (cached != null && cached.isLoaded()) {
                     makePendingEdits(uuid, cached);
                     Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
                             (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(cached)));
                     return;
                 }
-
-                storage.loadUser(uuid, dataHolders, loaded -> {
-                    synchronized (getPlayerLock(uuid)) {
-                        if (Bukkit.getPlayer(uuid) == null) {
-                            makePendingEditsOffline(uuid);
-                            return;
-                        }
-
-                        var maybeUser = cache.getIfPresent(uuid);
-                        // An earlier join's load finished first (or their last quit isn't saved yet), their session
-                        // goes on with what's in memory
-                        if (maybeUser != null && (maybeUser.isLoaded() || unsavedQuits.contains(uuid))) {
-                            offlineCache.invalidate(uuid);
-                            unsavedOfflineEdits.remove(uuid);
-                            unsavedQuits.remove(uuid);
-                            maybeUser.setLoaded(true);
-                            makePendingEdits(uuid, maybeUser);
-                            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                    (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(maybeUser)));
-                            return;
-                        }
-
-                        // Edited while offline (maybe after this load read their data), that copy is the newest.
-                        // From now on their session is the only copy.
-                        // It may have edits that aren't saved yet, so it's used even if offline-player-cache was turned off since.
-                        var user = offlineCache.getIfPresent(uuid);
-                        offlineCache.invalidate(uuid);
-                        unsavedOfflineEdits.remove(uuid);
-                        if (user == null) user = loaded;
-
-                        if (!user.isLoaded()) {
-                            // Never go on with empty data, it would overwrite their real data once saved
-                            onLoadFailed(uuid, attempt);
-                            return;
-                        }
-
-                        var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
-                        if (maybeUser != null) {
-                            lbm.loadUser(uuid).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll);
-                            maybeUser.loadFromUser(user);
-                            user = maybeUser;
-                            Aurora.logger().debug("Updated user " + uuid + " in cache");
-                        } else {
-                            lbm.loadUser(uuid).thenAcceptAsync(user.getLeaderboardEntries()::putAll);
-                            cache.put(uuid, user);
-                            Aurora.logger().debug("Loaded user " + uuid + " into cache");
-                        }
-
-                        makePendingEdits(uuid, user);
-                        var loadedUser = user;
-                        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(loadedUser)));
-                    }
-                });
             }
+
+            // Not holding their lock while it's read
+            var purgesBefore = purges.getOrDefault(uuid, 0L);
+            storage.loadUser(uuid, dataHolders, loaded -> {
+                // Not waiting for a save of everyone (this may hold a database connection the migration needs)
+                if (stopping || migrator.isMigrating()) {
+                    synchronized (getPlayerLock(uuid)) {
+                        makePendingEdits(uuid, null);
+                    }
+                    return;
+                }
+                // After a write of theirs that's running (so a quit save finishes before their session starts), and
+                // not while everyone is being saved
+                writes.readLock().lock();
+                try {
+                    synchronized (getSaveLock(uuid)) {
+                        synchronized (getPlayerLock(uuid)) {
+                            onLoaded(uuid, attempt, loaded, purgesBefore);
+                        }
+                    }
+                } finally {
+                    writes.readLock().unlock();
+                }
+            });
         });
+    }
+
+    // Call with the player's save and player lock held
+    private void onLoaded(UUID uuid, int attempt, AuroraUser loaded, long purgesBefore) {
+        if (stopping || migrator.isMigrating()) {
+            makePendingEdits(uuid, null);
+            return;
+        }
+        if (Bukkit.getPlayer(uuid) == null) {
+            makePendingEditsOffline(uuid);
+            dropIfSaved(uuid);
+            return;
+        }
+        // Purged after this was read, it has to be read again
+        if (purges.getOrDefault(uuid, 0L) != purgesBefore) {
+            loadUser(uuid, attempt);
+            return;
+        }
+
+        var maybeUser = cache.getIfPresent(uuid);
+        // An earlier join's load finished first, their session goes on with what's in memory
+        if (maybeUser != null && maybeUser.isLoaded()) {
+            makePendingEdits(uuid, maybeUser);
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                    (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(maybeUser)));
+            return;
+        }
+
+        // Kept since they left, or edited while offline (maybe after this load read their data), that
+        // copy is the newest. From now on their session is the only copy, and saves it.
+        // It may have changes that aren't saved yet, so it's used even if offline-player-cache is off.
+        var user = offlineCache.getIfPresent(uuid);
+        offlineCache.invalidate(uuid);
+        unsavedOfflineCopies.remove(uuid);
+        unsavedQuits.remove(uuid);
+        if (user == null) user = loaded;
+
+        if (!user.isLoaded()) {
+            // Never go on with empty data, it would overwrite their real data once saved
+            onLoadFailed(uuid, attempt);
+            return;
+        }
+
+        var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
+        if (maybeUser != null) {
+            lbm.loadUser(uuid).thenAcceptAsync(maybeUser.getLeaderboardEntries()::putAll);
+            maybeUser.loadFromUser(user);
+            user = maybeUser;
+            Aurora.logger().debug("Updated user " + uuid + " in cache");
+        } else {
+            lbm.loadUser(uuid).thenAcceptAsync(user.getLeaderboardEntries()::putAll);
+            cache.put(uuid, user);
+            Aurora.logger().debug("Loaded user " + uuid + " into cache");
+        }
+
+        makePendingEdits(uuid, user);
+        var loadedUser = user;
+        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(loadedUser)));
     }
 
     private void onLoadFailed(UUID uuid, int attempt) {
@@ -538,29 +718,44 @@ public class UserManager implements Listener {
 
     public void purgeUserData(UUID uuid) {
         CompletableFuture.runAsync(() -> {
-            synchronized (getPlayerLock(uuid)) {
-                offlineCache.invalidate(uuid);
-                unsavedOfflineEdits.remove(uuid);
-                unsavedQuits.remove(uuid);
-                var oldUser = cache.getIfPresent(uuid);
-                if (oldUser != null && oldUser.isLoaded()) {
-                    // So nothing still holding the old object saves it
-                    oldUser.setLoaded(false);
-                    cache.invalidate(uuid);
-                    var newUser = new AuroraUser(uuid, true);
-                    newUser.initData(new YamlConfiguration(), dataHolders);
-                    cache.put(uuid, newUser);
-                    storage.purgeUser(uuid);
-                    Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                        Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(oldUser));
-                        Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(newUser));
-                    });
-                } else {
-                    if (oldUser != null) cache.invalidate(uuid);
-                    storage.purgeUser(uuid);
+            // After a write of theirs that's running, so it can't bring the data back. The storage is purged under their
+            // player lock, so an edit can't load the old data meanwhile.
+            writes.readLock().lock();
+            try {
+                synchronized (getSaveLock(uuid)) {
+                    synchronized (getPlayerLock(uuid)) {
+                        purge(uuid);
+                    }
                 }
+            } finally {
+                writes.readLock().unlock();
             }
         });
+    }
+
+    // Call with the player's save and player lock held
+    private void purge(UUID uuid) {
+        purges.merge(uuid, 1L, Long::sum);
+        offlineCache.invalidate(uuid);
+        unsavedOfflineCopies.remove(uuid);
+        unsavedQuits.remove(uuid);
+        var oldUser = cache.getIfPresent(uuid);
+        if (oldUser != null && oldUser.isLoaded()) {
+            // So nothing still holding the old object saves it
+            oldUser.setLoaded(false);
+            cache.invalidate(uuid);
+            var newUser = new AuroraUser(uuid, true);
+            newUser.initData(new YamlConfiguration(), dataHolders);
+            cache.put(uuid, newUser);
+            storage.purgeUser(uuid);
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
+                Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(oldUser));
+                Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(newUser));
+            });
+        } else {
+            if (oldUser != null) cache.invalidate(uuid);
+            storage.purgeUser(uuid);
+        }
     }
 
     /**
@@ -576,16 +771,23 @@ public class UserManager implements Listener {
         }
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
-        saveOfflineEdits(SaveReason.CUSTOM);
-        var users = cache.asMap().values().stream().filter(u -> u.isLoaded() || unsavedQuits.contains(u.getUniqueId())).toList();
-        if (storage.bulkSaveUsers(users, SaveReason.QUIT) == 0 && !users.isEmpty()) {
-            // One player's data that can't be saved shouldn't stop everyone else's
-            Aurora.logger().severe("Failed to save everyone's data at once while shutting down, saving them one by one");
-            for (var user : users) {
-                if (!storage.saveUser(user, SaveReason.QUIT)) {
-                    Aurora.logger().severe("Failed to save the data of " + user.getUniqueId() + " while shutting down, changes since their last save are lost");
+        // After the writes that are running, and none start until everyone is saved
+        writes.writeLock().lock();
+        try {
+            var users = cache.asMap().values().stream().filter(AuroraUser::isLoaded).toList();
+            if (storage.bulkSaveUsers(users, SaveReason.QUIT) == 0 && !users.isEmpty()) {
+                // One player's data that can't be saved shouldn't stop everyone else's
+                Aurora.logger().severe("Failed to save everyone's data at once while shutting down, saving them one by one");
+                for (var user : users) {
+                    if (!storage.saveUser(user, SaveReason.QUIT)) {
+                        Aurora.logger().severe("Failed to save the data of " + user.getUniqueId() + " while shutting down, changes since their last save are lost");
+                    }
                 }
             }
+            // After the sessions, so one that just became an offline copy (its player left meanwhile) is saved either way
+            saveOfflineEdits(SaveReason.CUSTOM);
+        } finally {
+            writes.writeLock().unlock();
         }
         var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
         lbm.bulkUpdateUsers(cache.asMap().values().stream().filter(AuroraUser::isLoaded).collect(HashMap::new, (m, u) -> m.put(u.getUniqueId(), u.getDirtyLeaderboards().keySet()), HashMap::putAll)).join();
@@ -601,6 +803,7 @@ public class UserManager implements Listener {
                 synchronized (getPlayerLock(uuid)) {
                     if (Bukkit.getPlayer(uuid) == null) makePendingEditsOffline(uuid);
                 }
+                dropIfSavedLocking(uuid);
             });
             return;
         }
@@ -611,43 +814,38 @@ public class UserManager implements Listener {
                     lbm.updateUser(user, Collections.emptyList()).join();
                 }
             } finally {
-                saveOnQuit(user, 1);
+                saveOnQuit(user);
             }
         });
     }
 
-    private void saveOnQuit(AuroraUser user, int attempt) {
+    private void saveOnQuit(AuroraUser user) {
         var uuid = user.getUniqueId();
         synchronized (getPlayerLock(uuid)) {
             // Rejoined before we got here, their session just goes on
             if (user.getPlayer() != null || cache.getIfPresent(uuid) != user) return;
-            if (!user.isLoaded() && !unsavedQuits.contains(uuid)) {
+            cache.asMap().remove(uuid, user);
+            Aurora.logger().debug("Removed user " + uuid + " from cache");
+            if (!user.isLoaded()) {
                 // Their data never loaded, there is nothing to save. Saving it would overwrite their real data.
-                cache.asMap().remove(uuid, user);
                 makePendingEditsOffline(uuid);
+                Bukkit.getAsyncScheduler().runNow(Aurora.getInstance(), (task) -> dropIfSavedLocking(uuid));
                 return;
             }
-            // Edits from now on load their data from the storage, after this save
-            user.setLoaded(false);
-            boolean saved;
-            try {
-                saved = saveUserData(user, SaveReason.QUIT);
-            } catch (Exception e) {
-                Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
-                saved = false;
-            }
-            if (saved) {
-                unsavedQuits.remove(uuid);
-                cache.asMap().remove(uuid, user);
-                Aurora.logger().debug("Removed user " + uuid + " from cache");
-                return;
-            }
+            // Their offline copy from now on: edits are made to it (if offline-player-cache is on), a rejoin goes on
+            // with it, and it's kept until it's saved
+            offlineCache.put(uuid, user);
+            unsavedOfflineCopies.add(uuid);
             unsavedQuits.add(uuid);
         }
+        saveQuit(uuid, 1);
+    }
 
+    private void saveQuit(UUID uuid, int attempt) {
+        if (saveOfflineCopy(uuid, SaveReason.QUIT) || !unsavedQuits.contains(uuid) || stopping) return;
         var delay = Math.min(MAX_QUIT_SAVE_RETRY_SECONDS, 1L << Math.min(attempt, 5));
         Aurora.logger().severe("Failed to save the data of " + uuid + " after they left (attempt " + attempt + "), it's kept in memory and saving it again in " + delay + " seconds");
-        Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> saveOnQuit(user, attempt + 1), delay, TimeUnit.SECONDS);
+        Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> saveQuit(uuid, attempt + 1), delay, TimeUnit.SECONDS);
     }
 
     @EventHandler(ignoreCancelled = true)

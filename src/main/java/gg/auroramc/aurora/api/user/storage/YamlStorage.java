@@ -73,15 +73,32 @@ public class YamlStorage implements UserStorage {
     }
 
     @Override
-    public synchronized boolean saveUser(AuroraUser user, SaveReason reason) {
-        var file = getFile(user.getUniqueId());
+    public boolean saveUser(AuroraUser user, SaveReason reason) {
+        return prepareSave(user, reason).write();
+    }
+
+    @Override
+    public PendingSave prepareSave(AuroraUser user, SaveReason reason) {
+        var uuid = user.getUniqueId();
+        String data;
+        try {
+            data = user.serializeToString();
+        } catch (Exception e) {
+            Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
+            return () -> false;
+        }
+        return () -> write(uuid, data);
+    }
+
+    private synchronized boolean write(UUID uuid, String data) {
+        var file = getFile(uuid);
 
         try {
             final var start = System.nanoTime();
             file.getParentFile().mkdirs();
             // Written next to it and then moved over it, so a crash while writing can't leave a half written file
             var temp = new File(file.getParentFile(), file.getName() + ".tmp");
-            Files.writeString(temp.toPath(), user.serializeData().saveToString(), StandardCharsets.UTF_8);
+            Files.writeString(temp.toPath(), data, StandardCharsets.UTF_8);
             try {
                 Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             } catch (AtomicMoveNotSupportedException e) {
@@ -91,7 +108,7 @@ public class YamlStorage implements UserStorage {
             Aurora.getUserManager().getSaveLatencyMeasure().addLatency(end - start);
             return true;
         } catch (Exception e) {
-            Aurora.logger().severe("Failed to save user data for player: " + user.getUniqueId() + " error: " + e);
+            Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
             return false;
         }
     }
