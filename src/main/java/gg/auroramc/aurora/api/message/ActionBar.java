@@ -1,6 +1,6 @@
 package gg.auroramc.aurora.api.message;
 
-import gg.auroramc.aurora.hooks.AuraSkillsHook;
+import gg.auroramc.aurora.internal.hooks.AuraSkillsHook;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 

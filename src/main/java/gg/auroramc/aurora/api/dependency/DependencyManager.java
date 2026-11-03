@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.dependency;
 
+import gg.auroramc.aurora.internal.dependency.EssentialsAdapter;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.api.menu;
 
+import gg.auroramc.aurora.internal.menu.MenuClickPolicy;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.localization.LocalizationProvider;
 import gg.auroramc.aurora.api.message.Placeholder;

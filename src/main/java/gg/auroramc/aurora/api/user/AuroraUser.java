@@ -3,7 +3,7 @@ package gg.auroramc.aurora.api.user;
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.AuroraAPI;
-import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
+import gg.auroramc.aurora.api.leaderboard.LbEntry;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;

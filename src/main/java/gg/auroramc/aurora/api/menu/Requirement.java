@@ -9,7 +9,7 @@ import gg.auroramc.aurora.api.dependency.Dep;
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Placeholder;
-import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
+import gg.auroramc.aurora.internal.expansions.economy.EconomyExpansion;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 

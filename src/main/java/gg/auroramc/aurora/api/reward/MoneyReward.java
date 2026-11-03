@@ -4,8 +4,8 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
-import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
+import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.internal.expansions.economy.EconomyExpansion;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 

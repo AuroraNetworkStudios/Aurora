@@ -1,0 +1,80 @@
+package gg.auroramc.aurora.internal.expansions;
+
+import gg.auroramc.aurora.Aurora;
+import org.bukkit.Bukkit;
+import org.bukkit.event.Listener;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ExpansionManager {
+    private final Map<Class<? extends AuroraExpansion>, AuroraExpansion> expansions = new HashMap<>();
+    private final Map<Class<? extends AuroraExpansion>, AuroraExpansion> preload = new HashMap<>();
+
+    public <T extends AuroraExpansion> void preloadExpansion(Class<T> clazz) {
+        try {
+            var expansion = clazz.getDeclaredConstructor().newInstance();
+            preload.put(clazz, expansion);
+            expansions.put(clazz, expansion);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
+            Aurora.logger().severe("Failed to load expansion: " + clazz.getName());
+        }
+    }
+
+    public <T extends AuroraExpansion> void loadExpansion(Class<T> clazz) {
+        try {
+            if (preload.containsKey(clazz)) {
+                var expansion = preload.get(clazz);
+
+                if (expansion.canHook()) {
+                    expansion.hook();
+                    if (expansion instanceof Listener) {
+                        Bukkit.getPluginManager().registerEvents((Listener) expansion, Aurora.getInstance());
+                    }
+                }
+                preload.remove(clazz);
+            } else {
+                var expansion = clazz.getDeclaredConstructor().newInstance();
+
+                if (expansion.canHook()) {
+                    expansions.put(clazz, expansion);
+                    expansion.hook();
+                    if (expansion instanceof Listener) {
+                        Bukkit.getPluginManager().registerEvents((Listener) expansion, Aurora.getInstance());
+                    }
+                }
+            }
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
+                 InvocationTargetException e) {
+            Aurora.logger().severe("Failed to load expansion: " + clazz.getName());
+        } catch (Exception | LinkageError e) {
+            // Usually an integration that is outdated for the installed plugin. Aurora and every plugin that
+            // depends on it still enable. The expansion stays registered with whatever it could set up,
+            // removing it would make every getExpansion call for it fail instead
+            preload.remove(clazz);
+            Aurora.logger().severe("Failed to fully hook expansion: " + clazz.getSimpleName() + ", parts of it may not work. Is the plugin it hooks into up to date? Error: " + e);
+            e.printStackTrace();
+        }
+    }
+
+    public <T extends AuroraExpansion> T getExpansion(Class<T> clazz) {
+        var expansion = expansions.get(clazz);
+        if (clazz.isInstance(expansion)) {
+            return clazz.cast(expansion);
+        }
+        return null;
+    }
+
+    public void reloadExpansions() {
+        for (var expansion : expansions.values()) {
+            try {
+                expansion.reload();
+            } catch (Exception | LinkageError e) {
+                Aurora.logger().severe("Failed to reload expansion: " + expansion.getClass().getSimpleName() + " error: " + e);
+                e.printStackTrace();
+            }
+        }
+    }
+}

@@ -1,0 +1,25 @@
+package gg.auroramc.aurora.internal.expansions.placeholder;
+
+import gg.auroramc.aurora.api.dependency.Dep;
+import gg.auroramc.aurora.api.dependency.DependencyManager;
+import gg.auroramc.aurora.internal.expansions.AuroraExpansion;
+import gg.auroramc.aurora.internal.placeholder.PlaceholderHandlerRegistry;
+
+public class PlaceholderExpansion implements AuroraExpansion {
+    @Override
+    public void hook() {
+        new AuroraPapiExpansion().register();
+        PlaceholderHandlerRegistry.addHandler(new MetaHandler());
+        PlaceholderHandlerRegistry.addHandler(new ColorHandler());
+        PlaceholderHandlerRegistry.addHandler(new LangHandler());
+
+        if (DependencyManager.hasDep(Dep.WORLDGUARD)) {
+            PlaceholderHandlerRegistry.addHandler(new InRegionHandler());
+        }
+    }
+
+    @Override
+    public boolean canHook() {
+        return DependencyManager.hasDep(Dep.PAPI);
+    }
+}

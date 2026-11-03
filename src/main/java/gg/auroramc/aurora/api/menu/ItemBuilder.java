@@ -14,7 +14,7 @@ import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.BukkitPotionType;
 import gg.auroramc.aurora.api.util.Version;
-import gg.auroramc.aurora.expansions.item.ItemExpansion;
+import gg.auroramc.aurora.internal.expansions.item.ItemExpansion;
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;

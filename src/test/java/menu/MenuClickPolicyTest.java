@@ -1,6 +1,6 @@
 package menu;
 
-import gg.auroramc.aurora.api.menu.MenuClickPolicy;
+import gg.auroramc.aurora.internal.menu.MenuClickPolicy;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.junit.jupiter.api.Test;
