@@ -32,7 +32,7 @@ public class ItemUtils {
 
     /**
      * Adds the items to the player's stash, also while their data is still loading. The items that can't be added
-     * (a plugin cancelled it, or their data couldn't be loaded or saved) are dropped at the player instead of lost.
+     * (a plugin cancelled it, or their data couldn't be loaded) are dropped at the player instead of lost.
      */
     public static void addToStash(Player player, Collection<ItemStack> items) {
         var rejected = new ArrayList<ItemStack>();

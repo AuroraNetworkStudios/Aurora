@@ -61,9 +61,10 @@ public class UserManager implements Listener {
     // Edits for players who are online here, but whose data is still loading. Made as soon as it's loaded.
     private final Map<UUID, List<PendingEdit>> pendingEdits = new ConcurrentHashMap<>();
     // Offline players loaded to be edited, kept until they join here (then their session takes over), so they are only
-    // loaded once. Every edit is saved right away, so this is always the same as their saved data, as long as only this
-    // server changes it.
+    // loaded once. Like online players, they are saved by the autosave and when shutting down, not after every edit.
     private final Cache<UUID, AuroraUser> offlineCache = CacheBuilder.newBuilder().build();
+    // The offline players above edited since they were last saved
+    private final Set<UUID> unsavedOfflineEdits = ConcurrentHashMap.newKeySet();
     private volatile boolean stopping = false;
 
     private record PendingEdit(Predicate<AuroraUser> edit, CompletableFuture<Boolean> result) {
@@ -89,8 +90,17 @@ public class UserManager implements Listener {
 
         return CompletableFuture.supplyAsync(() -> {
             stopTasksAndSaveAllData(false);
+            if (!unsavedOfflineEdits.isEmpty()) {
+                // The migration copies the storage, edits it doesn't have yet would be lost
+                Aurora.logger().severe("Not migrating, the edits of " + unsavedOfflineEdits.size() + " offline players couldn't be saved. Check the errors above!");
+                autoSaveTask();
+                leaderboardUpdateTask();
+                migrator.markFinished();
+                return false;
+            }
             cache.invalidateAll();
             offlineCache.invalidateAll();
+            unsavedOfflineEdits.clear();
             unsavedQuits.clear();
 
             Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
@@ -121,10 +131,11 @@ public class UserManager implements Listener {
                 }
                 Aurora.getLibConfig().setStorageType(newStorageId);
                 Aurora.getLibConfig().saveChanges();
-                autoSaveTask();
-                leaderboardUpdateTask();
             }
 
+            // With whichever storage is used now
+            autoSaveTask();
+            leaderboardUpdateTask();
             migrator.markFinished();
 
             return success;
@@ -147,6 +158,11 @@ public class UserManager implements Listener {
         this.autoSaveTask = Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
             var values = cache.asMap().values();
             var toSave = values.stream().filter(u -> u.isLoaded() && u.isDirty()).toList();
+            var offline = unsavedOfflineEdits.size();
+            if (offline > 0) {
+                var saved = saveOfflineEdits(SaveReason.AUTO_SAVE);
+                Aurora.logger().info("Auto background saved user data for " + saved + "/" + offline + " edited offline players");
+            }
             if (!toSave.isEmpty()) {
                 var successCount = toSave.stream().filter(this::autoSave).count();
                 var all = toSave.size();
@@ -165,6 +181,32 @@ public class UserManager implements Listener {
             if (!user.isLoaded() || cache.getIfPresent(user.getUniqueId()) != user) return false;
             return storage.saveUser(user, SaveReason.AUTO_SAVE);
         }
+    }
+
+    /**
+     * Saves the offline players edited since they were last saved, each under their lock.
+     *
+     * @return how many of them were saved
+     */
+    private int saveOfflineEdits(SaveReason reason) {
+        int saved = 0;
+        for (var uuid : List.copyOf(unsavedOfflineEdits)) {
+            synchronized (getPlayerLock(uuid)) {
+                var user = offlineCache.getIfPresent(uuid);
+                // Joined in the meantime, their session has it now
+                if (user == null) {
+                    unsavedOfflineEdits.remove(uuid);
+                    continue;
+                }
+                if (storage.saveUser(user, reason)) {
+                    unsavedOfflineEdits.remove(uuid);
+                    saved++;
+                } else {
+                    Aurora.logger().severe("Failed to save the edited data of offline player: " + uuid);
+                }
+            }
+        }
+        return saved;
     }
 
     private void leaderboardUpdateTask() {
@@ -218,18 +260,20 @@ public class UserManager implements Listener {
      * Changes a player's data, whether they are online on this server or offline.
      * If they are online here, the edit is made to their loaded data, which is saved like any other change they make
      * (if their data is still loading, the edit is made as soon as it's loaded). If they are offline, their data is
-     * loaded, edited and saved right away.
+     * loaded once and kept in memory, edits are made to it, and it's saved like an online player's (by the autosave,
+     * when shutting down, or by their session if they join).
      * <p>
      * This server must be the only one changing the player's data while they are offline. It doesn't work for a player
      * who is online on another server sharing the same database: that server would overwrite the edit. Offline players
-     * stay loaded after an edit until they join here, so on a database shared by several servers, an edit can also
+     * stay loaded after an edit until they join here, so on a database shared by several servers, saving them can also
      * overwrite what the player did on another server in the meantime. With offline-player-cache turned off in the
      * config, offline players aren't changed at all and this returns false for them.
      *
      * @param uuid player's uuid
-     * @param edit changes the user's data, and returns whether it did (like taking items only if they are there)
-     * @return whether the edit was made, and saved if they are offline. False if it refused, or their data couldn't
-     * be loaded or saved, in which case nothing was changed.
+     * @param edit changes the user's data, and returns whether it did (like taking items only if they are there).
+     *             When it returns false, it must not have changed anything.
+     * @return whether the edit was made. False if it refused, or their data couldn't be loaded, in which case nothing
+     * was changed.
      */
     public CompletableFuture<Boolean> editUser(UUID uuid, Predicate<AuroraUser> edit) {
         var result = new CompletableFuture<Boolean>();
@@ -258,7 +302,6 @@ public class UserManager implements Listener {
             }
         }).exceptionally(e -> {
             Aurora.logger().severe("Failed to edit the data of player: " + uuid + " error: " + e);
-            offlineCache.invalidate(uuid);
             result.complete(false);
             return null;
         });
@@ -276,9 +319,9 @@ public class UserManager implements Listener {
     }
 
     /**
-     * Loads, edits and saves an offline player. Call with their lock held.
+     * Edits an offline player's copy, loading it first if needed. Call with their lock held.
      *
-     * @return the result of each edit, all false if their data couldn't be loaded or saved
+     * @return the result of each edit, all false if their data couldn't be loaded
      */
     private List<Boolean> editOffline(UUID uuid, List<Predicate<AuroraUser>> edits) {
         var refused = edits.stream().map(edit -> false).toList();
@@ -292,16 +335,8 @@ public class UserManager implements Listener {
         }
         var edited = user;
         var results = edits.stream().map(edit -> test(edit, edited)).toList();
-        if (!results.contains(true)) {
-            // A refused edit may have changed some of it, that mustn't be saved by the next edit
-            offlineCache.invalidate(uuid);
-            return results;
-        }
-        if (!storage.saveUser(user, SaveReason.CUSTOM)) {
-            // The copy in memory has the edits, the storage doesn't, so it's loaded again next time
-            offlineCache.invalidate(uuid);
-            return refused;
-        }
+        // Saved later, like an online player
+        if (results.contains(true)) unsavedOfflineEdits.add(uuid);
         return results;
     }
 
@@ -314,7 +349,7 @@ public class UserManager implements Listener {
         }
     }
 
-    // Call with the player's lock held. They left before their data loaded, so it's edited in the storage.
+    // Call with the player's lock held. They left before their data loaded, so their offline copy is edited.
     private void makePendingEditsOffline(UUID uuid) {
         if (stopping || migrator.isMigrating()) {
             makePendingEdits(uuid, null);
@@ -327,8 +362,6 @@ public class UserManager implements Listener {
             results = editOffline(uuid, edits.stream().map(PendingEdit::edit).toList());
         } catch (Throwable e) {
             Aurora.logger().severe("Failed to edit the data of player: " + uuid + " error: " + e);
-            // It may have been changed before it failed, that mustn't be saved by the next edit
-            offlineCache.invalidate(uuid);
             results = edits.stream().map(edit -> false).toList();
         }
         for (int i = 0; i < edits.size(); i++) {
@@ -406,6 +439,7 @@ public class UserManager implements Listener {
                 // is newer than the storage
                 if (cached != null && (cached.isLoaded() || unsavedQuits.contains(uuid))) {
                     offlineCache.invalidate(uuid);
+                    unsavedOfflineEdits.remove(uuid);
                     unsavedQuits.remove(uuid);
                     cached.setLoaded(true);
                     makePendingEdits(uuid, cached);
@@ -426,6 +460,7 @@ public class UserManager implements Listener {
                         // goes on with what's in memory
                         if (maybeUser != null && (maybeUser.isLoaded() || unsavedQuits.contains(uuid))) {
                             offlineCache.invalidate(uuid);
+                            unsavedOfflineEdits.remove(uuid);
                             unsavedQuits.remove(uuid);
                             maybeUser.setLoaded(true);
                             makePendingEdits(uuid, maybeUser);
@@ -436,9 +471,10 @@ public class UserManager implements Listener {
 
                         // Edited while offline (maybe after this load read their data), that copy is the newest.
                         // From now on their session is the only copy.
-                        // (Only while offline edits are on, a copy from before they were turned off may be outdated.)
-                        var user = Aurora.getLibConfig().getOfflinePlayerCache() ? offlineCache.getIfPresent(uuid) : null;
+                        // It may have edits that aren't saved yet, so it's used even if offline-player-cache was turned off since.
+                        var user = offlineCache.getIfPresent(uuid);
                         offlineCache.invalidate(uuid);
+                        unsavedOfflineEdits.remove(uuid);
                         if (user == null) user = loaded;
 
                         if (!user.isLoaded()) {
@@ -488,18 +524,23 @@ public class UserManager implements Listener {
     }
 
     /**
-     * Loads user directly from storage.
+     * Loads user directly from storage. For an offline player loaded to be edited (see {@link #editUser}), it's that
+     * copy instead, since the storage may not have their latest edits yet. Don't change it, use editUser for that.
      *
      * @param uuid player's uuid to load data for
      */
     public CompletableFuture<AuroraUser> loadUserFromStorage(UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> storage.loadUser(uuid, dataHolders));
+        return CompletableFuture.supplyAsync(() -> {
+            var edited = offlineCache.getIfPresent(uuid);
+            return edited != null ? edited : storage.loadUser(uuid, dataHolders);
+        });
     }
 
     public void purgeUserData(UUID uuid) {
         CompletableFuture.runAsync(() -> {
             synchronized (getPlayerLock(uuid)) {
                 offlineCache.invalidate(uuid);
+                unsavedOfflineEdits.remove(uuid);
                 unsavedQuits.remove(uuid);
                 var oldUser = cache.getIfPresent(uuid);
                 if (oldUser != null && oldUser.isLoaded()) {
@@ -535,6 +576,7 @@ public class UserManager implements Listener {
         }
         if (autoSaveTask != null) autoSaveTask.cancel();
         if (leaderboardUpdateTask != null) leaderboardUpdateTask.cancel();
+        saveOfflineEdits(SaveReason.CUSTOM);
         var users = cache.asMap().values().stream().filter(u -> u.isLoaded() || unsavedQuits.contains(u.getUniqueId())).toList();
         if (storage.bulkSaveUsers(users, SaveReason.QUIT) == 0 && !users.isEmpty()) {
             // One player's data that can't be saved shouldn't stop everyone else's

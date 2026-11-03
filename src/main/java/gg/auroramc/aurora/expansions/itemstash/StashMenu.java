@@ -175,7 +175,7 @@ public class StashMenu {
     }
 
     /**
-     * They aren't online here, so the items are taken from their saved data, and given only if that was saved.
+     * They aren't online here, so the items are taken from their offline data, and given only if that worked.
      */
     private void takeOffline(List<ItemStack> items) {
         if (taking || items.isEmpty()) return;

@@ -246,10 +246,11 @@ public class Config extends AuroraConfig {
                     yaml.set("offline-player-cache", true);
                     yaml.setComments("offline-player-cache", List.of(
                             "Lets plugins change the data of offline players (like /stash add for someone who is offline):",
-                            "their data is loaded, changed and saved, and stays loaded until they join.",
+                            "their data is loaded once, changed in memory and saved like an online player's, until they join.",
                             "Turn it off if more servers share your MySQL database (cross-server sync), because there an offline",
                             "player may be playing on another server, and changing them here would overwrite what they do there.",
-                            "When it's off, offline players can't be changed, only players online on this server."));
+                            "When it's off, offline players can't be changed, only players online on this server.",
+                            "Changing this requires a restart"));
                     yaml.set("config-version", 18);
                 }
         );
