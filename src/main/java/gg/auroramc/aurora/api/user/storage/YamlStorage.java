@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 public class YamlStorage implements UserStorage {
     public DirectoryStream<Path> getFileStream() throws IOException {
         var file = new File(Aurora.getInstance().getDataFolder() + "/userdata");
+        // Nobody saved yet
+        file.mkdirs();
         return Files.newDirectoryStream(file.toPath(), "*.yml");
     }
 

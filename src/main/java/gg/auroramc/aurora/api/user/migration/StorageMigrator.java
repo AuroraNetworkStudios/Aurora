@@ -25,20 +25,21 @@ public class StorageMigrator {
     }
 
     public boolean migrateUserData(MySqlStorage from, YamlStorage to, int threadCount) {
+        final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         try {
-            final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
             final AtomicLong counter = new AtomicLong(0);
             final AtomicLong failed = new AtomicLong(0);
             int batchSize = 1000;
-            int offset = 0;
+            var after = "";
 
             Aurora.logger().info("Starting migration of user data from MySQL to Yaml storage with thread count: " + threadCount);
 
             while (true) {
-                var uuids = from.getUserIds(batchSize, offset);
+                var uuids = from.getUserIdsAfter(after, batchSize);
                 if (uuids.isEmpty()) {
                     break;
                 }
+                after = uuids.getLast();
                 for (var uuid : uuids) {
                     executor.submit(() -> {
                         var parsedId = UUID.fromString(uuid);
@@ -61,7 +62,6 @@ public class StorageMigrator {
                     });
                 }
 
-                offset += batchSize;
             }
 
             try {
@@ -84,13 +84,15 @@ public class StorageMigrator {
         } catch (Exception e) {
             Aurora.logger().severe("Failed to migrate: " + e.getMessage());
             return false;
+        } finally {
+            // Also when listing the players failed partway, the workers mustn't be left running
+            executor.shutdownNow();
         }
-
     }
 
     public boolean migrateUserData(YamlStorage from, MySqlStorage to, int threadCount) {
+        final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         try {
-            final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
             final AtomicLong counter = new AtomicLong(0);
             final AtomicLong failed = new AtomicLong(0);
 
@@ -142,6 +144,8 @@ public class StorageMigrator {
         } catch (IOException e) {
             Aurora.logger().severe("Failed to get file stream for Yaml storage: " + e.getMessage());
             return false;
+        } finally {
+            executor.shutdownNow();
         }
     }
 

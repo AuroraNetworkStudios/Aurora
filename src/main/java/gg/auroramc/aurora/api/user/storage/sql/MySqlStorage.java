@@ -48,9 +48,38 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         createTable();
     }
 
+    /**
+     * The next players in the database after the given one, in order. Unlike paging with an offset, nobody is skipped
+     * if players are added or removed meanwhile.
+     *
+     * @param after the last player of the previous batch, or an empty string for the first batch
+     */
+    public List<String> getUserIdsAfter(String after, int limit) {
+        List<String> ids = new ArrayList<>();
+        String query = "SELECT player_uuid FROM " + tableName + " WHERE player_uuid > ? GROUP BY player_uuid ORDER BY player_uuid LIMIT ?";
+
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, after);
+            ps.setInt(2, limit);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ids.add(rs.getString("player_uuid"));
+                }
+            }
+        } catch (SQLException e) {
+            // Not an empty list, a migration would think there is nobody to migrate
+            throw new IllegalStateException("Failed to list the players in the database", e);
+        }
+
+        return ids;
+    }
+
     public Set<String> getUserIds(int limit, int offset) {
         Set<String> ids = new HashSet<>();
-        String query = "SELECT DISTINCT player_uuid FROM " + tableName + " ORDER BY id LIMIT ? OFFSET ?";
+        // DISTINCT with ORDER BY id is refused by MySQL 5.7+ in its default mode
+        String query = "SELECT player_uuid FROM " + tableName + " GROUP BY player_uuid ORDER BY player_uuid LIMIT ? OFFSET ?";
 
         try (Connection conn = connection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -62,7 +91,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 ids.add(rs.getString("player_uuid"));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            // Not an empty list, a migration would think there is nobody to migrate
+            throw new IllegalStateException("Failed to list the players in the database", e);
         }
 
         return ids;
