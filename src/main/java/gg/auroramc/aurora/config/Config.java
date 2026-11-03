@@ -19,6 +19,7 @@ public class Config extends AuroraConfig {
     private Integer userAutoSaveInMinutes = 30;
     @Setter
     private String storageType = "yaml";
+    private Boolean offlinePlayerCache = true;
     private BlockTrackerConfig blockTracker;
     private Boolean modernBlockTracker = true;
     private MySqlConfig mysql;
@@ -234,6 +235,22 @@ public class Config extends AuroraConfig {
                             "Without either, servers still find the changes within a second.",
                             "Changing this requires a restart"));
                     yaml.set("config-version", 16);
+                },
+                // Players' data is only synced between servers on join and quit again, these settings are gone
+                (yaml) -> {
+                    yaml.set("mysql.cross-server-sync", null);
+                    yaml.set("mysql.redis", null);
+                    yaml.set("config-version", 17);
+                },
+                (yaml) -> {
+                    yaml.set("offline-player-cache", true);
+                    yaml.setComments("offline-player-cache", List.of(
+                            "Lets plugins change the data of offline players (like /stash add for someone who is offline):",
+                            "their data is loaded, changed and saved, and stays loaded until they join.",
+                            "Turn it off if more servers share your MySQL database (cross-server sync), because there an offline",
+                            "player may be playing on another server, and changing them here would overwrite what they do there.",
+                            "When it's off, offline players can't be changed, only players online on this server."));
+                    yaml.set("config-version", 18);
                 }
         );
     }

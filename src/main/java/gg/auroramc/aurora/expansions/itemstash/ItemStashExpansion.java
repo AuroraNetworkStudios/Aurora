@@ -12,11 +12,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 public class ItemStashExpansion implements AuroraExpansion, Listener {
@@ -62,8 +65,8 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
     }
 
     /**
-     * Opens the stash of a player who may be offline. If they aren't online on this server,
-     * it shows their saved stash and is view only.
+     * Opens the stash of a player who may be offline. If they aren't online on this server, it shows their saved
+     * stash, and items taken from it are taken from their saved data. Not for players online on another server.
      */
     public void open(Player player, OfflinePlayer target) {
         if (target.getPlayer() != null) {
@@ -78,8 +81,14 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
                         Chat.sendMessage(player, Aurora.getMsg(player).getCommandError());
                         return;
                     }
+                    // A copy, the saved data may be edited on another thread while the menu shows it
+                    var stash = user.getStashData();
+                    List<ItemStack> items;
+                    synchronized (stash) {
+                        items = stash.getItems().stream().map(ItemStack::clone).collect(Collectors.toCollection(ArrayList::new));
+                    }
                     // Not in menus, that's for menus showing a live stash
-                    new StashMenu(player, target.getUniqueId(), name, user.getStashData().getItems(), config, uuid -> {
+                    new StashMenu(player, target.getUniqueId(), name, items, config, uuid -> {
                     });
                 }, null));
     }

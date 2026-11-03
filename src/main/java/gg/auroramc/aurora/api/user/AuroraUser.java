@@ -70,6 +70,7 @@ public class AuroraUser {
                 try {
                     var holder = holderClass.getDeclaredConstructor().newInstance();
                     holder.setUuid(this.uuid);
+                    holder.setOwner(this);
                     if (isLoaded && data != null) {
                         holder.initFrom(data.getConfigurationSection(holder.getId().toString()));
                     }
@@ -88,6 +89,7 @@ public class AuroraUser {
             this.dataHolderMap.putAll(user.dataHolderMap);
             for (var holder : dataHolderMap.values()) {
                 holder.setUuid(this.uuid);
+                holder.setOwner(this);
             }
             this.loaded.set(true);
         }

@@ -5,7 +5,6 @@ import gg.auroramc.aurora.api.config.ConfigManager;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.message.Placeholder;
-import gg.auroramc.aurora.api.user.change.StashAddItemsChange;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.Bukkit;
@@ -14,6 +13,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -35,7 +35,7 @@ public class ItemReward extends NumberReward {
             final var items = getItems(player, placeholders);
             if (items == null) return;
 
-            Aurora.getUserManager().applyChange(player.getUniqueId(), new StashAddItemsChange(List.of(items)));
+            ItemUtils.addToStash(player, List.of(items));
             return;
         }
 
@@ -52,7 +52,7 @@ public class ItemReward extends NumberReward {
             } else if (stash == StashHandle.OVERFLOW) {
                 var failed = player.getInventory().addItem(items);
                 if (failed.isEmpty()) return;
-                Aurora.getUserManager().applyChange(player.getUniqueId(), new StashAddItemsChange(failed.values()));
+                ItemUtils.addToStash(player, failed.values());
             }
 
         }, null);

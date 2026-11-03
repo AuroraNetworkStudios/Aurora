@@ -5,7 +5,6 @@ import gg.auroramc.aurora.api.menu.AuroraMenu;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
-import gg.auroramc.aurora.api.user.change.StashTakeItemsChange;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -84,7 +83,7 @@ public class StashMenu {
             menu.addItem(ItemBuilder.of(customItem).placeholder(Placeholder.of("{player}", targetName)).build(player));
         }
 
-        // Null if they aren't online here, items are taken with takeOffline then
+        // Null if they aren't online here, items are taken from their saved data with takeOffline then
         var stashData = offlineItems == null ? Aurora.getUserManager().getUser(targetId).getStashData() : null;
 
         var items = getPageItems();
@@ -98,6 +97,11 @@ public class StashMenu {
             menu.addItem(ItemBuilder.item(item).amount(item.getAmount()).slot(menuSlot).build(player), (e) -> {
                 if (stashData == null) {
                     takeOffline(List.of(item));
+                    return;
+                }
+                // The target left, their data in this menu isn't theirs anymore (it's saved), taking from it would duplicate
+                if (!stashData.getUser().isLoaded()) {
+                    closeLater();
                     return;
                 }
                 if (stashData.removeItem(item)) {
@@ -120,6 +124,10 @@ public class StashMenu {
         menu.addItem(ItemBuilder.of(mc.getItems().getCollectAll()).build(player), (e) -> {
             if (stashData == null) {
                 takeOffline(List.copyOf(offlineItems));
+                return;
+            }
+            if (!stashData.getUser().isLoaded()) {
+                closeLater();
                 return;
             }
             var itemsToRemove = new ArrayList<ItemStack>();
@@ -161,33 +169,56 @@ public class StashMenu {
         menu.open(openFor);
     }
 
+    // Not inside the click event, closing there isn't safe
+    private void closeLater() {
+        openFor.getScheduler().run(Aurora.getInstance(), (task) -> openFor.closeInventory(), null);
+    }
+
     /**
-     * They aren't online here, so the items are taken wherever their data is, and given only if that worked.
+     * They aren't online here, so the items are taken from their saved data, and given only if that was saved.
      */
     private void takeOffline(List<ItemStack> items) {
         if (taking || items.isEmpty()) return;
         taking = true;
 
-        Aurora.getUserManager().requestChange(targetId, new StashTakeItemsChange(items)).whenComplete((taken, error) ->
-                openFor.getScheduler().run(Aurora.getInstance(), (task) -> {
-                    taking = false;
-                    if (!Boolean.TRUE.equals(taken)) {
-                        // What we show is outdated, reopening shows what they have now
-                        Chat.sendMessage(openFor, Aurora.getMsg(openFor).getStashTakeFailed(), Placeholder.of("{player}", targetName));
-                        openFor.closeInventory();
-                        return;
+        Aurora.getUserManager().editUser(targetId, user -> user.getStashData().takeItems(items)).whenComplete((taken, error) -> {
+            Runnable putBack = () -> {
+                // They left before getting the items, so they go back where they were taken from
+                if (!Boolean.TRUE.equals(taken)) return;
+                var notBack = new ArrayList<ItemStack>(items);
+                Aurora.getUserManager().editUser(targetId, user -> {
+                    var stash = user.getStashData();
+                    for (var item : items) {
+                        if (stash.addItem(item.clone())) notBack.remove(item);
                     }
+                    return notBack.size() < items.size();
+                }).thenAccept(back -> {
+                    var lost = back ? notBack : items;
+                    if (!lost.isEmpty()) Aurora.logger().severe("Couldn't put back the items " + openFor.getName() + " took from the stash of " + targetName + " before leaving: " + lost);
+                });
+            };
+            var scheduled = openFor.getScheduler().run(Aurora.getInstance(), (task) -> {
+                taking = false;
+                if (!Boolean.TRUE.equals(taken)) {
+                    // What we show is outdated, reopening shows what they have now
+                    Chat.sendMessage(openFor, Aurora.getMsg(openFor).getStashTakeFailed(), Placeholder.of("{player}", targetName));
+                    openFor.closeInventory();
+                    return;
+                }
 
-                    offlineItems.removeIf(item -> items.stream().anyMatch(given -> given == item));
-                    var failed = openFor.getInventory().addItem(items.toArray(new ItemStack[0]));
-                    failed.forEach((slot, fitem) -> openFor.getWorld().dropItem(openFor.getLocation(), fitem));
-                    // Don't open it again if they closed it while waiting
-                    if (openFor.getOpenInventory().getTopInventory().getHolder() != menu) return;
-                    if (getMaxPages() <= page) {
-                        page = Math.max(getMaxPages() - 1, 0);
-                    }
-                    refresh(config);
-                }, null));
+                offlineItems.removeIf(item -> items.stream().anyMatch(given -> given == item));
+                var failed = openFor.getInventory().addItem(items.toArray(new ItemStack[0]));
+                failed.forEach((slot, fitem) -> openFor.getWorld().dropItem(openFor.getLocation(), fitem));
+                // Don't open it again if they closed it while waiting
+                if (openFor.getOpenInventory().getTopInventory().getHolder() != menu) return;
+                if (getMaxPages() <= page) {
+                    page = Math.max(getMaxPages() - 1, 0);
+                }
+                refresh(config);
+            }, putBack);
+            // Null if they had left already, then neither runs
+            if (scheduled == null) putBack.run();
+        });
     }
 
     private List<ItemStack> getItems() {

@@ -14,6 +14,12 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class UserDataHolder implements DataHolder {
     protected AtomicReference<UUID> uuid = new AtomicReference<>();
     protected final AtomicBoolean dirty = new AtomicBoolean(false);
+    // The user this data belongs to, which isn't always the one in the cache (like a player loaded to be edited offline)
+    private volatile AuroraUser owner;
+
+    void setOwner(AuroraUser owner) {
+        this.owner = owner;
+    }
 
     public void setUuid(UUID uuid) {
         this.uuid.set(uuid);
@@ -24,7 +30,8 @@ public abstract class UserDataHolder implements DataHolder {
     }
 
     public AuroraUser getUser() {
-        return Aurora.getUserManager().getUser(uuid.get());
+        var owner = this.owner;
+        return owner != null ? owner : Aurora.getUserManager().getUser(uuid.get());
     }
 
     @Nullable

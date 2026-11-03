@@ -26,6 +26,7 @@ public class MessageConfig extends AuroraConfig {
     private String playerNotFound = "&cPlayer not found!";
     private String commandError = "&cAn error occurred while executing this command!";
     private String kickedByDbMigration = "&cUnder maintenance, please try again later!";
+    private String kickedByFailedLoad = "&cYour data couldn't be loaded, please rejoin in a moment!";
     private String dbMigrateStarted = "&aAttempting to migrate storage, please wait...";
     private String dbMigrateFinished = "&aStorage migration completed! It is advised to restart the server now, although it is not required.";
     private String dbMigrateFailed = "&cStorage migration failed! Please check the console for more information.";

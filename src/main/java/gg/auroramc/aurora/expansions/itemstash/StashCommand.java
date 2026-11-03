@@ -6,8 +6,6 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.item.TypeId;
 import gg.auroramc.aurora.api.message.Chat;
 import gg.auroramc.aurora.api.message.Placeholder;
-import gg.auroramc.aurora.api.user.change.StashAddItemsChange;
-import gg.auroramc.aurora.api.user.change.StashClearChange;
 import gg.auroramc.aurora.api.util.ItemUtils;
 import gg.auroramc.aurora.expansions.item.ItemExpansion;
 import org.bukkit.Bukkit;
@@ -68,11 +66,19 @@ public class StashCommand extends BaseCommand {
         }
 
         var stacks = ItemUtils.createStacksFromAmount(item, amount);
-        Aurora.getUserManager().applyChange(player.getUniqueId(), new StashAddItemsChange(List.of(stacks)));
-
-        if (!silent) {
-            Chat.sendMessage(sender, messages.getStashItemAdded(), Placeholder.of("{player}", target));
-        }
+        Aurora.getUserManager().editUser(player.getUniqueId(), user -> {
+            var stash = user.getStashData();
+            // Saved if any of them was added (a plugin may cancel some)
+            var any = false;
+            for (var stack : stacks) any |= stash.addItem(stack.clone());
+            return any;
+        }).thenAccept(added -> reply(sender, () -> {
+            if (!added) {
+                Chat.sendMessage(sender, messages.getCommandError());
+            } else if (!silent) {
+                Chat.sendMessage(sender, messages.getStashItemAdded(), Placeholder.of("{player}", target));
+            }
+        }));
     }
 
     @Subcommand("clear")
@@ -89,9 +95,8 @@ public class StashCommand extends BaseCommand {
         if (player.getPlayer() != null) {
             player.getPlayer().closeInventory();
         }
-        Aurora.getUserManager().applyChange(player.getUniqueId(), new StashClearChange());
-
-        Chat.sendMessage(sender, messages.getStashItemsCleared());
+        Aurora.getUserManager().editUser(player.getUniqueId(), user -> user.getStashData().clear()).thenAccept(cleared ->
+                reply(sender, () -> Chat.sendMessage(sender, cleared ? messages.getStashItemsCleared() : messages.getCommandError())));
     }
 
     /**
@@ -104,6 +109,15 @@ public class StashCommand extends BaseCommand {
             return Bukkit.getOfflinePlayer(UUID.fromString(nameOrUuid));
         } catch (IllegalArgumentException e) {
             return Bukkit.getOfflinePlayerIfCached(nameOrUuid);
+        }
+    }
+
+    // The edit finishes on another thread, messages are sent from the sender's own thread
+    private static void reply(CommandSender sender, Runnable send) {
+        if (sender instanceof Player player) {
+            player.getScheduler().run(Aurora.getInstance(), (task) -> send.run(), null);
+        } else {
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> send.run());
         }
     }
 }

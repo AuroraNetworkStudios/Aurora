@@ -5,7 +5,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserDataHolder;
-import gg.auroramc.aurora.api.user.storage.PendingChange;
 import gg.auroramc.aurora.api.user.storage.SaveReason;
 import gg.auroramc.aurora.api.user.storage.UserStorage;
 import gg.auroramc.aurora.expansions.leaderboard.model.LbEntry;
@@ -19,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class MySqlStorage implements UserStorage, LeaderboardStorage {
@@ -26,19 +26,15 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
     private final DatabaseCredentials credentials;
     private final String tableName = "aurora_user_data";
     private final String syncTableName = "aurora_sync";
-    private final String changeTableName = "aurora_user_change";
     private final String leaderboardTableName = "aurora_leaderboard";
     private final int networkLatency;
     private final int syncRetryCount;
-    // False if only this server uses the database, then there is no other server to sync with
-    private final boolean crossServerSync;
 
     @SneakyThrows
     public MySqlStorage() {
         int poolSize = Aurora.getInstance().getConfig().getInt("mysql.pool-size", 10);
         networkLatency = Aurora.getInstance().getConfig().getInt("mysql.network-latency", 500);
         syncRetryCount = Aurora.getInstance().getConfig().getInt("mysql.sync-retry-count", 3);
-        crossServerSync = Aurora.getInstance().getConfig().getBoolean("mysql.cross-server-sync", true);
         credentials = readCredentials();
         HikariConfig config = new HikariConfig();
         config.setPoolName("aurora-pool");
@@ -72,17 +68,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         return ids;
     }
 
-    public boolean isCrossServerSync() {
-        return crossServerSync;
-    }
-
     @Override
     public void loadUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders, Consumer<AuroraUser> handler) {
-        if (!crossServerSync) {
-            // No other server to wait for, load it right away like the yaml storage does
-            handler.accept(loadUser(uuid, dataHolders));
-            return;
-        }
         loadUser(uuid, dataHolders, syncRetryCount, handler);
     }
 
@@ -97,6 +84,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
 
     public void loadUser(UUID uuid, Set<Class<? extends UserDataHolder>> dataHolders, int count, Consumer<AuroraUser> handler) {
         Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
+            var handled = new AtomicBoolean(false);
             try {
                 try (Connection connection = connection()) {
                     if (Bukkit.getPlayer(uuid) == null) {
@@ -105,25 +93,31 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                     }
                     if (count <= 0) {
                         Aurora.logger().debug("We are still in sync lock after " + syncRetryCount + " retry for player: " + uuid + ". We won't wait anymore. Loading form database...");
-                        createSyncFlag(uuid, connection);
                         var user = loadUserForReal(connection, uuid, dataHolders);
                         if (user == null) return;
+                        handled.set(true);
                         handler.accept(user);
+                        createSyncFlag(uuid, connection);
                         Aurora.logger().debug("Player: " + uuid + " loaded from database.");
                         return;
                     }
 
-                    if (tryCreateSyncFlag(uuid, connection)) {
+                    if (!isLocked(uuid, connection)) {
                         var user = loadUserForReal(connection, uuid, dataHolders);
                         if (user == null) return;
+                        handled.set(true);
                         handler.accept(user);
+                        createSyncFlag(uuid, connection);
                         Aurora.logger().debug("Player: " + uuid + " loaded from database.");
                     } else {
                         Aurora.logger().debug("Sync lock detected for player: " + uuid + ", retrying...");
                         loadUser(uuid, dataHolders, count - 1, handler);
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // The handler has to hear about it, otherwise they would stay unloaded for the whole session
+                Aurora.logger().severe("Failed to load user data for player: " + uuid + " error: " + e.getMessage());
+                if (!handled.get()) handler.accept(createEmptyUser(uuid, dataHolders, false));
             }
         }, networkLatency, TimeUnit.MILLISECONDS);
     }
@@ -157,7 +151,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 return user;
             }
         } catch (Exception e) {
-            Aurora.logger().severe("Failed to load user data for player: " + uuid);
+            Aurora.logger().severe("Failed to load user data for player: " + uuid + " error: " + e.getMessage());
             return createEmptyUser(uuid, dataHolders, false);
         }
     }
@@ -202,7 +196,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                     return true;
                 }
             } catch (Exception e) {
-                Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e.getMessage());
+                Aurora.logger().severe("Failed to save user data for player: " + uuid);
                 return false;
             }
         }
@@ -316,190 +310,18 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         }
     }
 
-    /**
-     * Creates the sync flag only if no other server has it.
-     *
-     * @return whether we got it
-     */
-    private boolean tryCreateSyncFlag(UUID uuid, Connection connection) {
-        String insertQuery = "INSERT IGNORE INTO " + syncTableName + " (player_uuid) VALUES (?);";
+    private boolean isLocked(UUID uuid, Connection connection) {
+        String query = "SELECT * FROM " + syncTableName + " WHERE player_uuid=? AND created > NOW() - INTERVAL 2 DAY;";
 
-        try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
-            statement.setString(1, uuid.toString());
-            return statement.executeUpdate() == 1;
-        } catch (SQLException e) {
-            // Two servers trying to get the same flag can deadlock, we will just try again later
-            Aurora.logger().debug("Failed to create sync flag for player: " + uuid + " error: " + e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public boolean lockUser(UUID uuid) {
-        // Only this server uses the database, the UserManager's player lock is enough
-        if (!crossServerSync) return true;
-        try (Connection connection = connection()) {
-            return tryCreateSyncFlag(uuid, connection);
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public void unlockUser(UUID uuid) {
-        if (!crossServerSync) return;
-        String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=?;";
-
-        try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-            statement.setString(1, uuid.toString());
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            Aurora.logger().warning("Failed to remove sync flag for player: " + uuid);
-        }
-    }
-
-    @Override
-    public long addChange(UUID uuid, String type, String data, boolean awaiting) {
-        String insertQuery = "INSERT INTO " + changeTableName + " (player_uuid, type, data, awaiting) VALUES (?, ?, ?, ?);";
-
-        try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, uuid.toString());
-            statement.setString(2, type);
-            statement.setString(3, data);
-            statement.setBoolean(4, awaiting);
-            statement.executeUpdate();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                keys.next();
-                return keys.getLong(1);
-            }
-        } catch (SQLException e) {
-            Aurora.logger().severe("Failed to store " + type + " change for player: " + uuid + " error: " + e.getMessage());
-            return -1;
-        }
-    }
-
-    @Override
-    public List<PendingChange> getChanges(UUID uuid) {
-        // Answered ones only wait for the server that asked to take the answer
-        String query = "SELECT id, type, data, awaiting FROM " + changeTableName + " WHERE player_uuid=? AND result IS NULL ORDER BY id;";
-        List<PendingChange> changes = new ArrayList<>();
-
-        try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, uuid.toString());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    changes.add(new PendingChange(resultSet.getLong("id"), resultSet.getString("type"), resultSet.getString("data"), resultSet.getBoolean("awaiting")));
-                }
-            }
-        } catch (SQLException e) {
-            Aurora.logger().warning("Failed to get pending changes for player: " + uuid);
-        }
-
-        return changes;
-    }
-
-    @Override
-    public Set<UUID> getUsersWithChanges() {
-        String query = "SELECT DISTINCT player_uuid FROM " + changeTableName + " WHERE result IS NULL;";
-        Set<UUID> uuids = new HashSet<>();
-
-        try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                uuids.add(UUID.fromString(resultSet.getString("player_uuid")));
-            }
-        } catch (SQLException e) {
-            Aurora.logger().warning("Failed to check for pending changes: " + e.getMessage());
-        }
-
-        return uuids;
-    }
-
-    @Override
-    public boolean completeChanges(UUID uuid, List<PendingChange> applied, Map<Long, Boolean> answers) {
-        if (applied.isEmpty() && answers.isEmpty()) return true;
-        String deleteQuery = "DELETE FROM " + changeTableName + " WHERE id=?;";
-        String answerQuery = "UPDATE " + changeTableName + " SET result=? WHERE id=?;";
-
-        try (Connection connection = connection()) {
-            connection.setAutoCommit(false);
-
-            try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-                for (var change : applied) {
-                    statement.setLong(1, change.id());
-                    statement.addBatch();
-                }
-                statement.executeBatch();
-            }
-
-            try (PreparedStatement statement = connection.prepareStatement(answerQuery)) {
-                for (var answer : answers.entrySet()) {
-                    statement.setBoolean(1, answer.getValue());
-                    statement.setLong(2, answer.getKey());
-                    statement.addBatch();
-                }
-                for (var updated : statement.executeBatch()) {
-                    if (updated == 0) {
-                        Aurora.logger().warning("Applied a change for player: " + uuid + " after the server that asked for it gave up waiting");
-                    }
-                }
-            }
-
-            connection.commit();
-            return true;
-        } catch (SQLException e) {
-            Aurora.logger().severe("Failed to complete applied changes for player: " + uuid + ", they may be applied again. Error: " + e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public Map<Long, Boolean> takeAnswers(Collection<Long> ids) {
-        Map<Long, Boolean> answers = new HashMap<>();
-        if (ids.isEmpty()) return answers;
-        String in = String.join(",", Collections.nCopies(ids.size(), "?"));
-        String query = "SELECT id, result FROM " + changeTableName + " WHERE result IS NOT NULL AND id IN (" + in + ");";
-
-        try (Connection connection = connection()) {
+        try {
             try (PreparedStatement statement = connection.prepareStatement(query)) {
-                int i = 1;
-                for (var id : ids) statement.setLong(i++, id);
+                statement.setString(1, uuid.toString());
                 try (ResultSet resultSet = statement.executeQuery()) {
-                    while (resultSet.next()) {
-                        answers.put(resultSet.getLong("id"), resultSet.getBoolean("result"));
-                    }
-                }
-            }
-
-            if (!answers.isEmpty()) {
-                try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + changeTableName + " WHERE id=?;")) {
-                    for (var id : answers.keySet()) {
-                        statement.setLong(1, id);
-                        statement.addBatch();
-                    }
-                    statement.executeBatch();
+                    return resultSet.next();
                 }
             }
         } catch (SQLException e) {
-            Aurora.logger().warning("Failed to check for answers: " + e.getMessage());
-        }
-
-        return answers;
-    }
-
-    @Override
-    public boolean cancelChange(long id) {
-        String deleteQuery = "DELETE FROM " + changeTableName + " WHERE id=? AND result IS NULL;";
-
-        try (Connection connection = connection();
-             PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-            statement.setLong(1, id);
-            return statement.executeUpdate() == 1;
-        } catch (SQLException e) {
+            Aurora.logger().warning("Error checking sync lock status for player: " + uuid);
             return false;
         }
     }
@@ -543,7 +365,6 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 StandardCharsets.UTF_8)
                 .replaceAll("%user_table%", tableName)
                 .replaceAll("%sync_table%", syncTableName)
-                .replaceAll("%change_table%", changeTableName)
                 .replaceAll("%leaderboard_table%", leaderboardTableName)
                 .split(";");
     }
