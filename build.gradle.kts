@@ -95,7 +95,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.2.build.31-alpha")
+    compileOnly("io.papermc.paper:paper-api:26.2.build.134-stable")
 
     // 3rd party
     compileOnly("net.essentialsx:EssentialsX:2.21.0-SNAPSHOT") {
@@ -158,7 +158,7 @@ dependencies {
     implementation("org.bstats:bstats-bukkit:3.0.2")
 
     // JUnit Jupiter API and Engine dependencies
-    testImplementation("io.papermc.paper:paper-api:26.2.build.31-alpha")
+    testImplementation("io.papermc.paper:paper-api:26.2.build.134-stable")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.0")
 }

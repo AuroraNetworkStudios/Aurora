@@ -117,7 +117,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
             var handled = new AtomicBoolean(false);
             try {
                 try (Connection connection = connection()) {
-                    if (Bukkit.getPlayer(uuid) == null) {
+                    if (!Aurora.getUserManager().isOnline(uuid)) {
                         Aurora.logger().debug("Player: " + uuid + " is left, aborting load.");
                         return;
                     }
@@ -127,7 +127,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                         if (user == null) return;
                         handled.set(true);
                         handler.accept(user);
-                        createSyncFlag(uuid, connection);
+                        // Only for a session that started, a player who left meanwhile would keep it forever
+                        if (Aurora.getUserManager().isOnline(uuid)) createSyncFlag(uuid, connection);
                         Aurora.logger().debug("Player: " + uuid + " loaded from database.");
                         return;
                     }
@@ -137,7 +138,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                         if (user == null) return;
                         handled.set(true);
                         handler.accept(user);
-                        createSyncFlag(uuid, connection);
+                        // Only for a session that started, a player who left meanwhile would keep it forever
+                        if (Aurora.getUserManager().isOnline(uuid)) createSyncFlag(uuid, connection);
                         Aurora.logger().debug("Player: " + uuid + " loaded from database.");
                     } else {
                         Aurora.logger().debug("Sync lock detected for player: " + uuid + ", retrying...");

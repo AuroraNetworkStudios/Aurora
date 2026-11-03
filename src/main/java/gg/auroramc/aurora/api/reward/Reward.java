@@ -33,5 +33,10 @@ public interface Reward {
      */
     String getDisplay(Player player, List<Placeholder<?>> placeholders);
 
+    /**
+     * Where the reward may run. {@link ThreadSafety#SYNC_ONLY} rewards run on the player's own thread: the main thread
+     * on Paper, the player's region thread on Folia. On Folia a console command can't be dispatched from there, so
+     * run it through {@code Bukkit.getGlobalRegionScheduler()} (or use {@link CommandReward}).
+     */
     ThreadSafety getThreadSafety();
 }

@@ -287,10 +287,26 @@ public class CommandDispatcher {
     }
 
     private static void runConsoleCommand(Player player, String command) {
-        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-            var cmd = DependencyManager.hasDep(Dep.PAPI) ? PlaceholderAPI.setPlaceholders(player, command) : command;
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-        });
+        if (!DependencyManager.hasDep(Dep.PAPI)) {
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command));
+            return;
+        }
+        // Placeholders read the player, on Folia only from their own thread. The console command runs on the global
+        // thread, the only one it may run on there.
+        if (Bukkit.isOwnedByCurrentRegion(player)) {
+            // Already there (rewards, menu clicks): one hop like before, so it keeps its order with [player] lines
+            var cmd = PlaceholderAPI.setPlaceholders(player, command);
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd));
+            return;
+        }
+        Runnable onGlobal = () -> Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
+                (task) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), PlaceholderAPI.setPlaceholders(player, command)));
+        var scheduled = player.getScheduler().run(Aurora.getInstance(), (task) -> {
+            var cmd = PlaceholderAPI.setPlaceholders(player, command);
+            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (t) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd));
+        }, onGlobal);
+        // Null if they left already, then neither runs
+        if (scheduled == null) onGlobal.run();
     }
 
     private static void runPlayerCommand(Player player, String command) {

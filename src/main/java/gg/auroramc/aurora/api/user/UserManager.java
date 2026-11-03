@@ -20,7 +20,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -31,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -80,6 +83,10 @@ public class UserManager implements Listener {
     // The offline copies above with changes the storage doesn't have yet
     private final Set<UUID> unsavedOfflineCopies = ConcurrentHashMap.newKeySet();
     private volatile boolean stopping = false;
+    // Players online here, from their join until their quit event, by session (a quit only ends its own session). Not
+    // Bukkit.getPlayer: on Folia a player who just left can still be found there for a moment from other threads, which
+    // looked like a rejoin and skipped their save.
+    private final Map<UUID, Player> online = new ConcurrentHashMap<>();
 
     private record PendingEdit(Predicate<AuroraUser> edit, CompletableFuture<Boolean> result) {
     }
@@ -90,6 +97,7 @@ public class UserManager implements Listener {
 
     public UserManager() {
         Bukkit.getPluginManager().registerEvents(this, Aurora.getInstance());
+        Bukkit.getOnlinePlayers().forEach(player -> online.put(player.getUniqueId(), player));
 
         if (Aurora.getLibConfig().getStorageType().equals("mysql")) {
             storage = new MySqlStorage();
@@ -123,11 +131,11 @@ public class UserManager implements Listener {
                 unsavedOfflineCopies.clear();
                 unsavedQuits.clear();
 
-                Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                    Bukkit.getOnlinePlayers().forEach(player -> player.kick(
-                            Text.component(Aurora.getMsg(player).getKickedByDbMigration())
-                    ));
-                });
+                // Each on their own thread, on Folia a player can only be kicked from there
+                for (var player : Bukkit.getOnlinePlayers()) {
+                    player.getScheduler().run(Aurora.getInstance(),
+                            (task) -> player.kick(Text.component(Aurora.getMsg(player).getKickedByDbMigration())), null);
+                }
 
                 UserStorage newStorage = this.storage;
                 String newStorageId = storage instanceof MySqlStorage ? "yaml" : "mysql";
@@ -220,8 +228,44 @@ public class UserManager implements Listener {
     private void unloaded(AuroraUser user) {
         if (Bukkit.isStopping() || Aurora.isDisabling()) return;
         Aurora.logger().debug("Saved user " + user.getUniqueId() + " into storage");
-        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(user)));
+        callEvents(user.getUniqueId(), new AuroraUserUnloadedEvent(user));
+    }
+
+    // Each player's events, called one after another, so a quick rejoin's loaded event can't overtake the unloaded
+    // event of the session before (they may run on different threads on Folia)
+    private final Map<UUID, CompletableFuture<Void>> eventChains = new ConcurrentHashMap<>();
+
+    /**
+     * Calls the events in order, after the player's earlier events, on the player's own thread if they are online
+     * (listeners touch the player, on Folia only that thread may), otherwise (or if they leave before it runs) on the
+     * global thread.
+     */
+    private void callEvents(UUID uuid, Event... events) {
+        var chained = new AtomicReference<CompletableFuture<Void>>();
+        eventChains.compute(uuid, (k, previous) -> {
+            // After the previous ones, also if they failed
+            var next = (previous == null ? CompletableFuture.<Void>completedFuture(null) : previous.handle((v, e) -> (Void) null)).thenCompose(v -> {
+                var done = new CompletableFuture<Void>();
+                Runnable call = () -> {
+                    try {
+                        for (var event : events) Bukkit.getPluginManager().callEvent(event);
+                    } finally {
+                        done.complete(null);
+                    }
+                };
+                Runnable onGlobal = () -> Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> call.run());
+                var player = online.containsKey(uuid) ? Bukkit.getPlayer(uuid) : null;
+                // Null if they left already, then neither runs
+                if (player == null || player.getScheduler().run(Aurora.getInstance(), (task) -> call.run(), onGlobal) == null) {
+                    onGlobal.run();
+                }
+                return done;
+            });
+            chained.set(next);
+            return next;
+        });
+        // Forgotten once nothing waits behind it
+        chained.get().whenComplete((v, e) -> eventChains.remove(uuid, chained.get()));
     }
 
     private void autoSaveTask() {
@@ -294,7 +338,7 @@ public class UserManager implements Listener {
             unloaded(saved.user());
             // Kept if it was edited after this was taken to be saved. Also if they joined again: their load may have read
             // the storage before this was written, it goes on with this copy instead.
-            if (!unsavedOfflineCopies.contains(uuid) && Bukkit.getPlayer(uuid) == null) offlineCache.invalidate(uuid);
+            if (!unsavedOfflineCopies.contains(uuid) && !online.containsKey(uuid)) offlineCache.invalidate(uuid);
         });
     }
 
@@ -401,7 +445,7 @@ public class UserManager implements Listener {
                     result.complete(test(edit, cached));
                     return;
                 }
-                if (Bukkit.getPlayer(uuid) != null) {
+                if (online.containsKey(uuid)) {
                     pendingEdits.computeIfAbsent(uuid, k -> new ArrayList<>()).add(new PendingEdit(edit, result));
                     return;
                 }
@@ -442,7 +486,7 @@ public class UserManager implements Listener {
             if (stopping || migrator.isMigrating()) return false;
             var cached = cache.getIfPresent(uuid);
             if (cached != null && cached.isLoaded()) return test(edit, cached);
-            if (Bukkit.getPlayer(uuid) != null) return false;
+            if (online.containsKey(uuid)) return false;
             return editOffline(uuid, List.of(edit)).getFirst();
         }
     }
@@ -461,7 +505,7 @@ public class UserManager implements Listener {
             if (stopping || migrator.isMigrating()) return null;
             var cached = cache.getIfPresent(uuid);
             if (cached != null && cached.isLoaded()) return cached;
-            if (Bukkit.getPlayer(uuid) != null) return null;
+            if (online.containsKey(uuid)) return null;
             return getOfflineCopy(uuid);
         }
     }
@@ -497,7 +541,7 @@ public class UserManager implements Listener {
     // a rejoin (see saveOfflineCopy) whose session never took it over is dropped here once it's saved, it could be
     // outdated when they join next time (by playing on another server sharing the database).
     private void dropIfSaved(UUID uuid) {
-        if (Bukkit.getPlayer(uuid) != null || unsavedOfflineCopies.contains(uuid) || unsavedQuits.contains(uuid)) return;
+        if (online.containsKey(uuid) || unsavedOfflineCopies.contains(uuid) || unsavedQuits.contains(uuid)) return;
         offlineCache.invalidate(uuid);
     }
 
@@ -613,8 +657,7 @@ public class UserManager implements Listener {
                 // Joined again before their quit was handled, their session just goes on
                 if (cached != null && cached.isLoaded()) {
                     makePendingEdits(uuid, cached);
-                    Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                            (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(cached)));
+                    callEvents(uuid, new AuroraUserLoadedEvent(cached));
                     return;
                 }
             }
@@ -651,7 +694,7 @@ public class UserManager implements Listener {
             makePendingEdits(uuid, null);
             return;
         }
-        if (Bukkit.getPlayer(uuid) == null) {
+        if (!online.containsKey(uuid)) {
             makePendingEditsOffline(uuid);
             dropIfSaved(uuid);
             return;
@@ -666,8 +709,7 @@ public class UserManager implements Listener {
         // An earlier join's load finished first, their session goes on with what's in memory
         if (maybeUser != null && maybeUser.isLoaded()) {
             makePendingEdits(uuid, maybeUser);
-            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                    (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(maybeUser)));
+            callEvents(uuid, new AuroraUserLoadedEvent(maybeUser));
             return;
         }
 
@@ -699,16 +741,14 @@ public class UserManager implements Listener {
         }
 
         makePendingEdits(uuid, user);
-        var loadedUser = user;
-        Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(),
-                (task) -> Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(loadedUser)));
+        callEvents(uuid, new AuroraUserLoadedEvent(user));
     }
 
     private void onLoadFailed(UUID uuid, int attempt) {
         if (attempt < LOAD_ATTEMPTS) {
             Aurora.logger().warning("Failed to load the data of " + uuid + " (attempt " + attempt + "/" + LOAD_ATTEMPTS + "), trying again in " + LOAD_RETRY_SECONDS + " seconds");
             Bukkit.getAsyncScheduler().runDelayed(Aurora.getInstance(), (task) -> {
-                if (Bukkit.getPlayer(uuid) != null) loadUser(uuid, attempt + 1);
+                if (online.containsKey(uuid)) loadUser(uuid, attempt + 1);
             }, LOAD_RETRY_SECONDS, TimeUnit.SECONDS);
             return;
         }
@@ -768,10 +808,7 @@ public class UserManager implements Listener {
             newUser.initData(new YamlConfiguration(), dataHolders);
             cache.put(uuid, newUser);
             storage.purgeUser(uuid);
-            Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (task) -> {
-                Bukkit.getPluginManager().callEvent(new AuroraUserUnloadedEvent(oldUser));
-                Bukkit.getPluginManager().callEvent(new AuroraUserLoadedEvent(newUser));
-            });
+            callEvents(uuid, new AuroraUserUnloadedEvent(oldUser), new AuroraUserLoadedEvent(newUser));
         } else {
             if (oldUser != null) cache.invalidate(uuid);
             storage.purgeUser(uuid);
@@ -821,7 +858,7 @@ public class UserManager implements Listener {
             var uuid = player.getUniqueId();
             runAsync(() -> {
                 synchronized (getPlayerLock(uuid)) {
-                    if (Bukkit.getPlayer(uuid) == null) makePendingEditsOffline(uuid);
+                    if (!online.containsKey(uuid)) makePendingEditsOffline(uuid);
                 }
                 dropIfSavedLocking(uuid);
             });
@@ -843,7 +880,7 @@ public class UserManager implements Listener {
         var uuid = user.getUniqueId();
         synchronized (getPlayerLock(uuid)) {
             // Rejoined before we got here, their session just goes on
-            if (user.getPlayer() != null || cache.getIfPresent(uuid) != user) return;
+            if (online.containsKey(uuid) || cache.getIfPresent(uuid) != user) return;
             cache.asMap().remove(uuid, user);
             Aurora.logger().debug("Removed user " + uuid + " from cache");
             if (!user.isLoaded()) {
@@ -873,6 +910,22 @@ public class UserManager implements Listener {
         loadUser(e.getPlayer().getUniqueId());
     }
 
+    // Before every other join listener, so they all see the player as online here (their edits wait for the load)
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerJoinEarly(PlayerJoinEvent e) {
+        // Kicked by an earlier listener already, their quit came before this
+        if (!e.getPlayer().isConnected()) return;
+        online.put(e.getPlayer().getUniqueId(), e.getPlayer());
+    }
+
+    /**
+     * Whether the player is online on this server, as far as their data is concerned: from the start of their join
+     * until their quit.
+     */
+    public boolean isOnline(UUID uuid) {
+        return online.containsKey(uuid);
+    }
+
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
         if (migrator.isMigrating()) {
@@ -883,6 +936,7 @@ public class UserManager implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
+        online.remove(e.getPlayer().getUniqueId(), e.getPlayer());
         if (migrator.isMigrating()) return;
         Bukkit.getGlobalRegionScheduler().runDelayed(Aurora.getInstance(),
                 (task) -> invalidate(e.getPlayer()), 1);
