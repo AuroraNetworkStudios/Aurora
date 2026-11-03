@@ -49,6 +49,13 @@ public class ExpansionManager {
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException |
                  InvocationTargetException e) {
             Aurora.logger().severe("Failed to load expansion: " + clazz.getName());
+        } catch (Exception | LinkageError e) {
+            // Usually an integration that is outdated for the installed plugin. Aurora and every plugin that
+            // depends on it still enable. The expansion stays registered with whatever it could set up,
+            // removing it would make every getExpansion call for it fail instead
+            preload.remove(clazz);
+            Aurora.logger().severe("Failed to fully hook expansion: " + clazz.getSimpleName() + ", parts of it may not work. Is the plugin it hooks into up to date? Error: " + e);
+            e.printStackTrace();
         }
     }
 
@@ -61,6 +68,13 @@ public class ExpansionManager {
     }
 
     public void reloadExpansions() {
-        expansions.values().forEach(AuroraExpansion::reload);
+        for (var expansion : expansions.values()) {
+            try {
+                expansion.reload();
+            } catch (Exception | LinkageError e) {
+                Aurora.logger().severe("Failed to reload expansion: " + expansion.getClass().getSimpleName() + " error: " + e);
+                e.printStackTrace();
+            }
+        }
     }
 }

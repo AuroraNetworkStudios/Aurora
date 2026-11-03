@@ -19,6 +19,13 @@ public class PlayerPointsEconomy implements AuroraEconomy {
     }
 
     @Override
+    public boolean tryWithdraw(Player player, String currency, double amount) {
+        // Points are whole numbers, rounding down would make a cost below 1 free
+        var points = (int) Math.ceil(amount);
+        return points <= 0 || playerPointsAPI.take(player.getUniqueId(), points);
+    }
+
+    @Override
     public void deposit(Player player, String currency, double amount) {
         playerPointsAPI.give(player.getUniqueId(), ((Double) amount).intValue());
     }

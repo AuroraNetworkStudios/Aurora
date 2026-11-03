@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Load and save YamlConfigurations in a Paper plugin
@@ -58,10 +59,20 @@ public final class ConfigManager {
             } catch (IllegalAccessException | InstantiationException | InvocationTargetException |
                      NoSuchMethodException e) {
                 e.printStackTrace();
+            } catch (RuntimeException e) {
+                // One bad value shouldn't stop the whole file (and the plugin) from loading
+                LOGGER.warning("Invalid value at '" + path(section, key) + "', using the default instead. Error: " + e);
             }
         }
 
         return config;
+    }
+
+    private static final Logger LOGGER = Logger.getLogger("Aurora");
+
+    private static String path(ConfigurationSection section, String key) {
+        var parent = section == null ? null : section.getCurrentPath();
+        return parent == null || parent.isEmpty() ? key : parent + "." + key;
     }
 
     private static void handleMapLoading(Field field, Object config, ConfigurationSection section) {
@@ -89,7 +100,13 @@ public final class ConfigManager {
         }
 
         for (String keyString : section.getKeys(false)) {
-            Object mapKey = convertKey(keyType, keyString);
+            Object mapKey;
+            try {
+                mapKey = convertKey(keyType, keyString);
+            } catch (NumberFormatException e) {
+                LOGGER.warning("Invalid key at '" + path(section, keyString) + "', it has to be a number. Skipping it.");
+                continue;
+            }
             if (mapKey == null) continue;
 
             Object mapValue;
@@ -163,7 +180,16 @@ public final class ConfigManager {
                 list.add(item);
             } else if (isPrimitiveOrWrapper(itemType)) {
                 // Directly add primitives or their wrappers if elem matches expected type
-                list.add(loadPrimitiveType(itemType, elem));
+                if (elem == null) {
+                    list.add(null);
+                    continue;
+                }
+                var converted = convertElement(itemType, elem);
+                if (converted != null) {
+                    list.add(converted);
+                } else {
+                    LOGGER.warning("Invalid list element '" + elem + "' at '" + path(section, key) + "', skipping it.");
+                }
             }
         }
         field.set(config, list);
@@ -197,7 +223,16 @@ public final class ConfigManager {
                 list.add(item);
             } else if (isPrimitiveOrWrapper(itemType)) {
                 // Directly add primitives or their wrappers if elem matches expected type
-                list.add(loadPrimitiveType(itemType, elem));
+                if (elem == null) {
+                    list.add(null);
+                    continue;
+                }
+                var converted = convertElement(itemType, elem);
+                if (converted != null) {
+                    list.add(converted);
+                } else {
+                    LOGGER.warning("Invalid list element '" + elem + "' at '" + path(section, key) + "', skipping it.");
+                }
             }
         }
         field.set(config, list);
@@ -239,9 +274,64 @@ public final class ConfigManager {
         return null;
     }
 
-    private static Object loadPrimitiveType(Class<?> type, Object value) {
-        if (value == null) return null;
-        return type.cast(value);
+    /**
+     * Converts a list element to the list's type. An unquoted number in a list of strings is the text of that number,
+     * and a whole number in a list of decimals is that decimal.
+     *
+     * @return null if it can't be converted
+     */
+    @Nullable
+    private static Object convertElement(Class<?> type, Object value) {
+        var boxed = box(type);
+        if (boxed.isInstance(value)) return value;
+
+        if (boxed == String.class) {
+            return value instanceof Number || value instanceof Boolean || value instanceof Character ? String.valueOf(value) : null;
+        }
+
+        if (value instanceof Number number) {
+            var integral = boxed == Integer.class || boxed == Long.class || boxed == Short.class || boxed == Byte.class;
+            // 1.5 in a list of whole numbers is a mistake, not 1
+            if (integral && (number instanceof Double || number instanceof Float) && number.doubleValue() % 1 != 0) return null;
+            if (boxed == Integer.class) return number.intValue();
+            if (boxed == Double.class) return number.doubleValue();
+            if (boxed == Long.class) return number.longValue();
+            if (boxed == Float.class) return number.floatValue();
+            if (boxed == Short.class) return number.shortValue();
+            if (boxed == Byte.class) return number.byteValue();
+            return null;
+        }
+
+        if (value instanceof String text) {
+            try {
+                if (boxed == Integer.class) return Integer.parseInt(text.strip());
+                if (boxed == Double.class) return Double.parseDouble(text.strip());
+                if (boxed == Long.class) return Long.parseLong(text.strip());
+                if (boxed == Float.class) return Float.parseFloat(text.strip());
+                if (boxed == Short.class) return Short.parseShort(text.strip());
+                if (boxed == Byte.class) return Byte.parseByte(text.strip());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            if (boxed == Boolean.class && (text.equalsIgnoreCase("true") || text.equalsIgnoreCase("false"))) {
+                return Boolean.parseBoolean(text);
+            }
+            if (boxed == Character.class && text.length() == 1) return text.charAt(0);
+        }
+        return null;
+    }
+
+    private static Class<?> box(Class<?> type) {
+        if (!type.isPrimitive()) return type;
+        if (type == int.class) return Integer.class;
+        if (type == double.class) return Double.class;
+        if (type == long.class) return Long.class;
+        if (type == float.class) return Float.class;
+        if (type == boolean.class) return Boolean.class;
+        if (type == short.class) return Short.class;
+        if (type == byte.class) return Byte.class;
+        if (type == char.class) return Character.class;
+        return type;
     }
 
     private static boolean isPrimitiveOrWrapper(Class<?> type) {

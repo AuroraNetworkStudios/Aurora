@@ -46,6 +46,8 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
 
     public void open(Player player) {
         if (menus.containsKey(player.getUniqueId())) return;
+        // Menus don't open while sleeping, it would stay in the map and block opening the stash again
+        if (player.isSleeping()) return;
         menus.put(player.getUniqueId(), new StashMenu(player, config, menus::remove));
     }
 

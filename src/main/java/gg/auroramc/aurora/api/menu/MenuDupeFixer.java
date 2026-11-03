@@ -28,6 +28,8 @@ public class MenuDupeFixer implements Listener {
             return;
 
         plugin.getLogger().warning(event.getEntity().getName() + " picked up an AuroraMenu item. Removing it.");
+        // Removing the entity alone doesn't stop this pickup
+        event.setCancelled(true);
         event.getItem().remove();
     }
 

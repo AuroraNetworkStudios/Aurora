@@ -39,6 +39,7 @@ public class AuroraMenu implements InventoryHolder {
     @Getter
     @Setter
     private NamespacedId id;
+    private final boolean refreshEnabled;
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, Placeholder<?>... placeholders) {
         this(player, title, size, refreshEnabled, (LocalizationProvider) null, placeholders);
@@ -52,9 +53,8 @@ public class AuroraMenu implements InventoryHolder {
         this.player = player;
         this.inventory = Bukkit.createInventory(this, size, Text.component(player, title, placeholders));
         this.filler = ItemBuilder.filler();
-        if (refreshEnabled) {
-            Aurora.getMenuManager().getRefresher().add(this);
-        }
+        // Added to the refresher once it's actually opened, otherwise a menu that never opens would stay there
+        this.refreshEnabled = refreshEnabled;
     }
 
     public AuroraMenu(Player player, String title, int size, boolean refreshEnabled, NamespacedId id, Placeholder<?>... placeholders) {
@@ -201,7 +201,7 @@ public class AuroraMenu implements InventoryHolder {
 
     public boolean handleEvent(InventoryClickEvent e) {
         if (freeSlots != null && freeSlots.contains(e.getSlot())) {
-            e.setCancelled(false);
+            e.setCancelled(!MenuClickPolicy.allowsFreeSlotClick(e.getAction()));
             handleFreeSlotUpdate(e.getInventory());
             return false;
         } else {
@@ -227,7 +227,12 @@ public class AuroraMenu implements InventoryHolder {
                         recalcSlotItem(menuEntries, e.getSlot());
                         player.updateInventory();
                     } else if (result == MenuAction.CLOSE) {
-                        player.closeInventory();
+                        // Closing inside the click event isn't safe, and by the next tick another menu may be open
+                        player.getScheduler().run(Aurora.getInstance(), (task) -> {
+                            if (player.getOpenInventory().getTopInventory().getHolder() == this) {
+                                player.closeInventory();
+                            }
+                        }, null);
                     } else if (result == MenuAction.REFRESH_MENU) {
                         refresh();
                     } else if (result == MenuAction.REFRESH_MENU_DELAYED) {
@@ -264,33 +269,45 @@ public class AuroraMenu implements InventoryHolder {
         populateInventory(player, false);
 
         if (useScheduler) {
-            player.getScheduler().run(Aurora.getInstance(), (task) -> {
-                player.openInventory(inventory);
-                if (onOpen != null) {
-                    onOpen.accept(this);
-                }
-            }, null);
+            player.getScheduler().run(Aurora.getInstance(), (task) -> openNow(player, onOpen), null);
         } else {
-            player.openInventory(inventory);
-            if (onOpen != null) {
-                onOpen.accept(this);
-            }
+            openNow(player, onOpen);
+        }
+    }
+
+    private void openNow(Player player, Consumer<AuroraMenu> onOpen) {
+        player.openInventory(inventory);
+        if (player.getOpenInventory().getTopInventory().getHolder() != this) {
+            // Another plugin cancelled the open
+            return;
+        }
+        if (refreshEnabled) {
+            Aurora.getMenuManager().getRefresher().add(this);
+        }
+        if (onOpen != null) {
+            onOpen.accept(this);
         }
     }
 
     private void populateInventory(Player player, boolean isRefresh) {
-        inventory.clear();
         Aurora.getMenuManager().getDupeFixer().getMarker().mark(filler);
 
         int j = 0;
         for (int i = 0; i < inventory.getSize(); i++) {
             if (freeSlots != null && freeSlots.contains(i)) {
+                // Free slots belong to the player once the menu is open, a refresh must not put the
+                // original items back (they would be duplicated) or delete what the player placed there
+                if (isRefresh) continue;
                 if (freeItems != null && j < freeItems.size()) {
                     inventory.setItem(i, freeItems.get(j));
                     j++;
+                } else {
+                    inventory.setItem(i, null);
                 }
             } else if (managedSlots == null || !managedSlots.contains(i)) {
                 inventory.setItem(i, filler);
+            } else {
+                inventory.setItem(i, null);
             }
         }
 

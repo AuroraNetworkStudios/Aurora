@@ -116,12 +116,13 @@ public class Gui implements AuroraGui {
                     return MenuAction.NONE;
                 }));
 
-        if (config.getCloseActions() != null) {
-            menu.onClose((m, e) -> {
-                menus.remove(m);
+        // Always untrack the menu on close, not only when there are close actions
+        menu.onClose((m, e) -> {
+            menus.remove(m);
+            if (config.getCloseActions() != null) {
                 CommandDispatcher.dispatchAll(player, config.getCloseActions(), List.of(Placeholder.of("{player}", player.getName())));
-            });
-        }
+            }
+        });
 
         player.getScheduler().run(Aurora.getInstance(), (task) -> {
             menu.open(player, false, menus::add);

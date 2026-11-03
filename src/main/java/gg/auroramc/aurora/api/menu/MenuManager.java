@@ -10,8 +10,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
+import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Getter
@@ -24,6 +27,10 @@ public class MenuManager implements Listener {
 
     private final Cache<UUID, Long> shiftCache = CacheBuilder.newBuilder()
             .expireAfterWrite(200L, TimeUnit.MILLISECONDS).build();
+
+    // Players whose last click still has actions waiting to run. Console and player commands run on the next tick,
+    // so another click before that could pass the same requirements again (e.g. [money] before the money is taken)
+    private final Set<UUID> clicksInFlight = ConcurrentHashMap.newKeySet();
 
     public MenuManager(Aurora plugin) {
         dupeFixer = new MenuDupeFixer(plugin);
@@ -38,7 +45,7 @@ public class MenuManager implements Listener {
 
             if (event.getClickedInventory() != null) {
                 if (!(event.getClickedInventory().getHolder() instanceof AuroraMenu)) {
-                    if (menu.hasFreeSlots()) {
+                    if (menu.hasFreeSlots() && MenuClickPolicy.allowsBottomClick(menu, event)) {
                         event.setCancelled(false);
                         if (event.isShiftClick()) {
                             menu.handleFreeSlotUpdate(event.getInventory());
@@ -48,11 +55,17 @@ public class MenuManager implements Listener {
                 }
             }
 
-            if (cache.getIfPresent(event.getWhoClicked().getUniqueId()) != null) {
+            var uuid = event.getWhoClicked().getUniqueId();
+
+            if (cache.getIfPresent(uuid) != null) {
                 return;
             }
 
-            if (shiftCache.getIfPresent(event.getWhoClicked().getUniqueId()) != null) {
+            if (shiftCache.getIfPresent(uuid) != null) {
+                return;
+            }
+
+            if (clicksInFlight.contains(uuid)) {
                 return;
             }
 
@@ -60,24 +73,55 @@ public class MenuManager implements Listener {
                 return;
             }
 
+            // Free slots handle every click type themselves, buttons only react to the plain mouse clicks
+            if (!menu.isFreeSlot(event.getSlot()) && !MenuClickPolicy.isButtonClick(event.getClick())) {
+                return;
+            }
+
             if (event.getClick() == ClickType.SHIFT_LEFT) {
-                shiftCache.put(event.getWhoClicked().getUniqueId(), System.currentTimeMillis());
+                shiftCache.put(uuid, System.currentTimeMillis());
             }
 
             var valid = menu.handleEvent(event);
 
             if (valid) {
-                cache.put(event.getWhoClicked().getUniqueId(), System.currentTimeMillis());
+                cache.put(uuid, System.currentTimeMillis());
+                if (event.getWhoClicked() instanceof Player player) {
+                    holdClicksUntilActionsRan(player);
+                }
             }
         }
     }
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    // Actions after a [delay] check the requirements again when they run, so only the ones that run right away are waited for
+    private void holdClicksUntilActionsRan(Player player) {
+        var uuid = player.getUniqueId();
+        if (!clicksInFlight.add(uuid)) return;
+
+        // The click's console commands are already queued on the global scheduler and its player commands on the
+        // player's, so a task queued on the global scheduler from the next player task only runs after both
+        var task = player.getScheduler().run(Aurora.getInstance(),
+                (t) -> Bukkit.getGlobalRegionScheduler().run(Aurora.getInstance(), (g) -> clicksInFlight.remove(uuid)),
+                () -> clicksInFlight.remove(uuid));
+        // null means the player is already gone
+        if (task == null) clicksInFlight.remove(uuid);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onDrag(InventoryDragEvent event) {
         if (event.getInventory().getHolder() instanceof AuroraMenu menu) {
+            var topSize = event.getView().getTopInventory().getSize();
+            for (var rawSlot : event.getRawSlots()) {
+                // Dragging over the player's own inventory is fine, but items must never land in a menu slot
+                if (rawSlot < topSize && !menu.isFreeSlot(rawSlot)) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+
             if (menu.hasFreeSlots()) {
-                for (var slot : event.getInventorySlots()) {
-                    if (menu.isFreeSlot(slot)) {
+                for (var rawSlot : event.getRawSlots()) {
+                    if (rawSlot < topSize) {
                         menu.handleFreeSlotUpdate(event.getInventory());
                         return;
                     }
@@ -96,16 +140,28 @@ public class MenuManager implements Listener {
         }
     }
 
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        clicksInFlight.remove(event.getPlayer().getUniqueId());
+    }
+
     public void cleanInventory(Player player, MenuItemMarker marker) {
         if (player == null) {
             return;
         }
-        for (var itemStack : player.getInventory().getContents()) {
-            if (itemStack != null &&
-                    marker.isMarked(itemStack)) {
-                Aurora.getInstance().getLogger().warning("Found a AuroraMenu item in a player's inventory. Removing it.");
-                player.getInventory().remove(itemStack);
+        var inventory = player.getInventory();
+        // Every slot, so armor and offhand too, not just the storage contents
+        for (int i = 0; i < inventory.getSize(); i++) {
+            var itemStack = inventory.getItem(i);
+            if (itemStack != null && marker.isMarked(itemStack)) {
+                Aurora.getInstance().getLogger().warning("Found a AuroraMenu item in " + player.getName() + "'s inventory. Removing it.");
+                inventory.setItem(i, null);
             }
+        }
+        var cursor = player.getItemOnCursor();
+        if (!cursor.isEmpty() && marker.isMarked(cursor)) {
+            Aurora.getInstance().getLogger().warning("Found a AuroraMenu item on " + player.getName() + "'s cursor. Removing it.");
+            player.setItemOnCursor(null);
         }
         player.updateInventory();
     }

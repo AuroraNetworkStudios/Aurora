@@ -11,7 +11,6 @@ import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.user.change.StashAddItemsChange;
 import gg.auroramc.aurora.api.util.ItemUtils;
-import gg.auroramc.aurora.api.util.TriConsumer;
 import gg.auroramc.aurora.expansions.economy.AuroraEconomy;
 import gg.auroramc.aurora.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.expansions.gui.GuiExpansion;
@@ -27,17 +26,20 @@ import org.jetbrains.annotations.Nullable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 
 public class CommandDispatcher {
     private static final Map<String, BiConsumer<Player, String>> actions = Maps.newConcurrentMap();
+    // Actions that take something from the player, the rest of an action list only runs if they could
+    private static final Map<String, BiPredicate<Player, String>> costActions = Maps.newConcurrentMap();
     // [delay: 20], [delay:20], [delay 20] or [delay] 20
     private static final Pattern DELAY_PATTERN = Pattern.compile("^\\[delay(?:\\s*:\\s*|\\s+|(?=\\]))([^\\]]*)\\]\\s*(.*)$", Pattern.CASE_INSENSITIVE);
 
@@ -63,19 +65,29 @@ public class CommandDispatcher {
             Aurora.getExpansionManager().getExpansion(GuiExpansion.class).openGui(args.get("prefix"), player, args);
         });
 
-        registerActionHandler("take-items", CommandDispatcher::takeItems);
+        registerCostAction("take-items", CommandDispatcher::takeItems);
         registerActionHandler("give-item", CommandDispatcher::giveItem);
 
         registerActionHandler("placeholder", (player, placeholder) -> {
             if (DependencyManager.hasDep(Dep.PAPI)) PlaceholderAPI.setPlaceholders(player, placeholder);
         });
 
-        registerActionHandler("give-money", (player, input) -> useEconomy(input, (econ, currency, amount) -> econ.deposit(player, currency, amount)));
-        registerActionHandler("take-money", (player, input) -> useEconomy(input, (econ, currency, amount) -> econ.withdraw(player, currency, amount)));
+        registerActionHandler("give-money", (player, input) -> useEconomy(input, (econ, currency, amount) -> {
+            econ.deposit(player, currency, amount);
+            return true;
+        }));
+        registerCostAction("take-money", (player, input) -> useEconomy(input, (econ, currency, amount) -> econ.tryWithdraw(player, currency, amount)));
     }
 
     public static void registerActionHandler(String id, BiConsumer<Player, String> handler) {
+        // Replacing a built-in cost action makes it a normal action
+        costActions.remove(id);
         actions.put(id, handler);
+    }
+
+    private static void registerCostAction(String id, BiPredicate<Player, String> cost) {
+        actions.put(id, cost::test);
+        costActions.put(id, cost);
     }
 
     public static Collection<String> getActions() {
@@ -99,12 +111,19 @@ public class CommandDispatcher {
     }
 
     public static void dispatch(Player player, String command) {
+        run(player, command);
+    }
+
+    /**
+     * @return false if this was a cost action (like [take-items]) that couldn't take everything, true otherwise
+     */
+    private static boolean run(Player player, String command) {
         if (command.startsWith("[meta")) {
             var data = Aurora.getUserManager().getUser(player).getMetaData();
             var meta = parseMetaString(command);
 
-            if (meta.action == null) return;
-            if (meta.key == null) return;
+            if (meta.action == null) return true;
+            if (meta.key == null) return true;
 
             switch (meta.action) {
                 case "set" -> {
@@ -121,15 +140,27 @@ public class CommandDispatcher {
                 case "decrement" ->
                         data.decrementMeta(meta.key, meta.value == null ? 1 : Double.parseDouble(meta.value));
             }
-            return;
+            return true;
         }
 
         if (parseDelay(command, null, false) != null) {
             Aurora.logger().warning("[delay] only works in action lists (menu actions, open/close actions, deny-actions, command rewards), ignoring: " + command);
-            return;
+            return true;
         }
 
         var action = extractActionAndContent(command);
+        var cost = costActions.get(action.getKey());
+
+        if (cost != null) {
+            try {
+                return cost.test(player, action.getValue());
+            } catch (Exception e) {
+                Aurora.logger().severe("Failed to execute action: " + action.getKey() + " with content: " + action.getValue() + " for player: " + player.getName() + " with error: " + e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
+        }
+
         var handler = actions.get(action.getKey());
 
         if (handler != null) {
@@ -142,6 +173,7 @@ public class CommandDispatcher {
         } else {
             Aurora.logger().warning("Invalid dispatcher action: " + action.getKey());
         }
+        return true;
     }
 
     public static void dispatch(Player player, String command, List<Placeholder<?>> placeholders) {
@@ -155,6 +187,7 @@ public class CommandDispatcher {
     /**
      * Dispatches the actions in order. A "[delay: ticks]" line pauses the list and the actions
      * below it run after that many ticks. If the player leaves before that, they are skipped and logged.
+     * If a cost action like [take-items] or [take-money] can't take everything, the actions below it are skipped.
      */
     public static void dispatchAll(Player player, List<String> commands, List<Placeholder<?>> placeholders) {
         dispatchAll(player, commands, placeholders, null);
@@ -174,7 +207,10 @@ public class CommandDispatcher {
             var delay = parseDelay(command, placeholders, true);
 
             if (delay == null) {
-                dispatch(player, command, placeholders);
+                if (!run(player, Placeholder.execute(command, placeholders))) {
+                    Aurora.logger().debug(player.getName() + " couldn't pay for: " + Placeholder.execute(command, placeholders) + ", skipping the actions after it");
+                    return;
+                }
                 continue;
             }
 
@@ -304,8 +340,12 @@ public class CommandDispatcher {
         return text;
     }
 
-    private static void useEconomy(String input, TriConsumer<AuroraEconomy, String, Double> action) {
+    private static boolean useEconomy(String input, EconomyAction action) {
         var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
+        if (expansion == null) {
+            Aurora.logger().warning("There is no economy plugin installed, can't run: " + input);
+            return false;
+        }
         var econ = expansion.getDefaultEconomy();
         var args = ArgumentParser.parseString(input);
         if (args.containsKey("economy")) {
@@ -313,15 +353,26 @@ public class CommandDispatcher {
         }
         if (econ == null) {
             Aurora.logger().warning("Invalid economy provider: " + args.get("economy"));
-            return;
+            return false;
         }
         if (args.containsKey("currency")) {
             if (!econ.supportsCurrency() || !econ.validateCurrency(args.get("currency"))) {
                 Aurora.logger().warning("Currency " + args.get("currency") + " is not supported by economy provider " + args.get("economy") + ". Please check your configuration.");
-                return;
+                return false;
             }
         }
-        action.accept(econ, args.getOrDefault("currency", "default"), Double.parseDouble(args.get("prefix")));
+        var amount = Double.parseDouble(args.get("prefix"));
+        // A negative amount would turn taking into giving
+        if (!Double.isFinite(amount) || amount < 0) {
+            Aurora.logger().warning("Invalid money amount: " + args.get("prefix") + ", it has to be a positive number.");
+            return false;
+        }
+        return action.apply(econ, args.getOrDefault("currency", "default"), amount);
+    }
+
+    @FunctionalInterface
+    private interface EconomyAction {
+        boolean apply(AuroraEconomy economy, String currency, double amount);
     }
 
     private static void giveItem(Player player, String input) {
@@ -352,39 +403,48 @@ public class CommandDispatcher {
         }
     }
 
-    private static void takeItems(Player player, String input) {
+    private static boolean takeItems(Player player, String input) {
         // oraxen:example/45 oraxen:example2/32
 
-        var items = Stream.of(input.split(" ")).map(id -> {
+        // Matched the same way as [has-items], so it only takes what that requirement counted.
+        // The same item listed twice has to be there twice.
+        var wanted = new LinkedHashMap<TypeId, Integer>();
+        for (var id : input.split(" ")) {
+            if (id.isBlank()) continue;
             var split = id.split("/");
-            var typeId = TypeId.fromDefault(split[0]);
-            return new ItemData(AuroraAPI.getItemManager().resolveItem(typeId), typeId, Integer.parseInt(split[1]));
-        }).toList();
+            wanted.merge(TypeId.fromDefault(split[0]), Integer.parseInt(split[1]), Integer::sum);
+        }
 
         var inv = player.getInventory();
+        // Item to take, with the amount. Two ids can resolve to the same item, then both amounts are needed from the same stacks.
+        var toTake = new LinkedHashMap<ItemStack, Integer>();
 
-        var success = true;
-
-        for (var itemData : items) {
-            if (!inv.containsAtLeast(AuroraAPI.getItemManager().resolveItem(itemData.typeId()), itemData.amount)) {
-                success = false;
-                break;
+        for (var entry : wanted.entrySet()) {
+            var item = AuroraAPI.getItemManager().resolveItem(entry.getKey());
+            if (item == null || item.isEmpty()) {
+                Aurora.logger().warning("Failed to resolve item: " + entry.getKey());
+                return false;
             }
+            if (entry.getValue() <= 0) continue;
+            var same = toTake.keySet().stream().filter(key -> key.isSimilar(item)).findFirst();
+            toTake.merge(same.orElse(item), entry.getValue(), Integer::sum);
         }
 
-        if (success) {
-            for (var item : inv.getContents()) {
-                if (item == null || item.isEmpty()) continue;
-                for (var itemData : items) {
-                    if (itemData.amount() == 0) continue;
-                    if (AuroraAPI.getItemManager().resolveId(item).equals(itemData.typeId())) {
-                        var decrementAmount = Math.min(itemData.amount(), item.getAmount());
-                        itemData.decrement(decrementAmount);
-                        item.setAmount(item.getAmount() - decrementAmount);
-                    }
-                }
+        var stacks = new ArrayList<ItemStack>();
+        for (var entry : toTake.entrySet()) {
+            if (!inv.containsAtLeast(entry.getKey(), entry.getValue())) {
+                return false;
             }
+            stacks.addAll(List.of(ItemUtils.createStacksFromAmount(entry.getKey(), entry.getValue())));
         }
+
+        // Only the storage contents, like containsAtLeast, so armor and the offhand are never taken
+        var left = inv.removeItem(stacks.toArray(ItemStack[]::new));
+        if (!left.isEmpty()) {
+            Aurora.logger().severe("Couldn't take all items from " + player.getName() + " for: " + input + ", missing: " + left.values());
+            return false;
+        }
+        return true;
     }
 
     public static class ItemData {

@@ -18,7 +18,8 @@ public class MenuRefresher {
         this.plugin = plugin;
     }
 
-    public void add(AuroraMenu menu) {
+    // Menus are opened and closed on different threads on Folia
+    public synchronized void add(AuroraMenu menu) {
         menus.add(menu);
         if(refreshTask == null || refreshTask.isCancelled()) {
             refreshTask = Bukkit.getAsyncScheduler().runAtFixedRate(plugin, (task) -> {
@@ -29,7 +30,7 @@ public class MenuRefresher {
         }
     }
 
-    public void remove(AuroraMenu menu) {
+    public synchronized void remove(AuroraMenu menu) {
         menus.remove(menu);
 
         if(menus.isEmpty() && refreshTask != null) {

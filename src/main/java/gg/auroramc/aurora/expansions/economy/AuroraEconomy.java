@@ -21,6 +21,17 @@ public interface AuroraEconomy {
     void deposit(Player player, String currency, double amount);
     double getBalance(Player player, String currency);
     boolean hasBalance(Player player, String currency, double amount);
+
+    /**
+     * Takes the money only if they have all of it.
+     *
+     * @return whether the money was taken
+     */
+    default boolean tryWithdraw(Player player, String currency, double amount) {
+        if (!hasBalance(player, currency, amount)) return false;
+        withdraw(player, currency, amount);
+        return true;
+    }
     boolean validateCurrency(String currency);
     boolean supportsCurrency();
 

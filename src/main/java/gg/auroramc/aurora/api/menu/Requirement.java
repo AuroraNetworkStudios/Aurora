@@ -65,7 +65,11 @@ public class Requirement {
 
         if (args[0].equalsIgnoreCase("[money]")) {
             var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
-            var economy = args.length > 2 ? expansion.getEconomy(args[2]) : expansion.getDefaultEconomy();
+            var economy = expansion == null ? null : args.length > 2 ? expansion.getEconomy(args[2]) : expansion.getDefaultEconomy();
+            if (economy == null) {
+                Aurora.logger().warning("There is no economy provider for the requirement: " + requirement);
+                return false;
+            }
             String currency = null;
             if (args.length > 3) {
                 currency = args[3];
@@ -75,6 +79,7 @@ public class Requirement {
                     return economy.hasBalance(player, currency, Double.parseDouble(args[1]));
                 } else {
                     Aurora.logger().warning("Currency " + currency + " is not supported by economy provider " + economy + ". Please check your requirement configuration: " + requirement);
+                    return false;
                 }
             } else {
                 return economy.hasBalance(player, Double.parseDouble(args[1]));
