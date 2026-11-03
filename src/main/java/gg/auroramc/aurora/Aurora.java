@@ -38,12 +38,18 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import gg.auroramc.aurora.api.AuroraAPI;
+import org.bukkit.configuration.file.YamlConfiguration;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import org.bukkit.Bukkit;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -129,7 +135,8 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         expansionManager = new ExpansionManager();
         expansionManager.preloadExpansion(LeaderboardExpansion.class);
-
+        // Before plugins that depend on Aurora run their onLoad, where old ones already fail
+        warnAboutOldPlugins();
     }
 
     @Override
@@ -167,6 +174,30 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         var metrics = new Metrics(this, 23780);
         metrics.addCustomChart(new SimplePie("storage_type", () -> libConfig.getStorageType().equals("mysql") ? "mysql" : "yaml"));
+    }
+
+    // Plugins built for an older Aurora fail with errors deep in their code, say which ones and why up front
+    private void warnAboutOldPlugins() {
+        for (var plugin : Bukkit.getPluginManager().getPlugins()) {
+            var meta = plugin.getPluginMeta();
+            if (plugin == this || !meta.getPluginDependencies().contains("Aurora") && !meta.getPluginSoftDependencies().contains("Aurora")) continue;
+            if (auroraApiVersion(plugin) < AuroraAPI.API_VERSION) {
+                logger().severe(plugin.getName() + " " + meta.getVersion() + " was made for an older Aurora and won't work with Aurora "
+                        + getPluginMeta().getVersion() + ". Update " + plugin.getName() + " to a version made for Aurora " + AuroraAPI.API_VERSION + ".");
+            }
+        }
+    }
+
+    // aurora-api from the plugin's paper-plugin.yml or plugin.yml, 0 if it has none
+    private static int auroraApiVersion(org.bukkit.plugin.Plugin plugin) {
+        for (var file : List.of("paper-plugin.yml", "plugin.yml")) {
+            try (var in = plugin.getResource(file)) {
+                if (in == null) continue;
+                return YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)).getInt("aurora-api", 0);
+            } catch (IOException ignored) {
+            }
+        }
+        return 0;
     }
 
     public static void runInSafeMode(Runnable runnable, String errorMessage) {

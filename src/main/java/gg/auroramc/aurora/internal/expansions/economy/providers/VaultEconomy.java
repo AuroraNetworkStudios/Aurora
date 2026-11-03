@@ -17,6 +17,12 @@ public class VaultEconomy implements AuroraEconomy {
     }
 
     // The economy plugin may register its provider after we hooked, so it's looked up again until found
+    // Vault alone isn't an economy, one has to be registered with it
+    @Override
+    public boolean isAvailable() {
+        return economy() != null;
+    }
+
     private Economy economy() {
         if (economy == null) {
             economy = resolveEconomy();

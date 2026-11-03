@@ -3,7 +3,6 @@ package gg.auroramc.aurora.api;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.command.CommandDispatcher;
 import gg.auroramc.aurora.api.entity.EntityManager;
-import gg.auroramc.aurora.internal.expansions.ExpansionManager;
 import gg.auroramc.aurora.api.item.ItemManager;
 import gg.auroramc.aurora.api.localization.LanguageProvider;
 import gg.auroramc.aurora.api.menu.Requirement;
@@ -12,6 +11,10 @@ import gg.auroramc.aurora.internal.placeholder.PlaceholderHandlerRegistry;
 import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.leaderboard.Leaderboards;
+import gg.auroramc.aurora.api.region.RegionManager;
+import gg.auroramc.aurora.internal.expansions.economy.NoEconomy;
+import gg.auroramc.aurora.internal.expansions.region.NoRegions;
 import gg.auroramc.aurora.internal.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.internal.expansions.entity.EntityExpansion;
 import gg.auroramc.aurora.internal.expansions.item.ItemExpansion;
@@ -26,9 +29,11 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public class AuroraAPI {
-    public static ExpansionManager getExpansions() {
-        return Aurora.getExpansionManager();
-    }
+    /**
+     * The version of Aurora's API. It changes when the API changes in a way plugins built for an older one break.
+     * A plugin built for this API sets {@code aurora-api: 3} in its plugin.yml, Aurora warns about those that don't.
+     */
+    public static final int API_VERSION = 3;
 
     /**
      * @return the logger instance of Aurora
@@ -58,13 +63,13 @@ public class AuroraAPI {
     }
 
     /**
-     * Get the default economy provider.
-     *
-     * @return the default economy provider, or null if no economy plugin is installed
+     * The default economy, never null. Without an economy plugin it isn't {@link AuroraEconomy#isAvailable() available}:
+     * balances are 0 and nothing can be taken or given.
      */
-    public static AuroraEconomy getDefaultEconomy() {
+    public static AuroraEconomy getEconomy() {
         var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
-        return expansion == null ? null : expansion.getDefaultEconomy();
+        var economy = expansion == null ? null : expansion.getDefaultEconomy();
+        return economy != null ? economy : NoEconomy.INSTANCE;
     }
 
     /**
@@ -79,11 +84,9 @@ public class AuroraAPI {
     }
 
     /**
-     * Get the leaderboard expansion.
-     *
-     * @return the leaderboard expansion
+     * The leaderboards.
      */
-    public static LeaderboardExpansion getLeaderboards() {
+    public static Leaderboards getLeaderboards() {
         return Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
     }
 
@@ -178,8 +181,9 @@ public class AuroraAPI {
         PlaceholderHandlerRegistry.removeHandler(handler);
     }
 
-    public static RegionExpansion getRegionManager() {
-        return Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+    public static RegionManager getRegionManager() {
+        var regions = Aurora.getExpansionManager().getExpansion(RegionExpansion.class);
+        return regions != null ? regions : NoRegions.INSTANCE;
     }
 
     public static ItemManager getItemManager() {

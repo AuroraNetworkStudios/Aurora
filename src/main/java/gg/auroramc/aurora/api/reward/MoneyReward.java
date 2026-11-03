@@ -60,10 +60,11 @@ public class MoneyReward extends NumberReward {
         }
     }
 
+    // Null when there is no economy
     private AuroraEconomy getEconomy() {
         var econ = AuroraAPI.getEconomy(economy);
-        if (econ == null) econ = AuroraAPI.getDefaultEconomy();
-        return econ;
+        if (econ == null) econ = AuroraAPI.getEconomy();
+        return econ.isAvailable() ? econ : null;
     }
 
     private boolean isCurrencySupported(AuroraEconomy economy, String currency) {

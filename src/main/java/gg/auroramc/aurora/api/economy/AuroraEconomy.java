@@ -4,6 +4,13 @@ import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.entity.Player;
 
 public interface AuroraEconomy {
+    /**
+     * False when no economy plugin is installed. Then balances are 0 and nothing can be taken or given.
+     */
+    default boolean isAvailable() {
+        return true;
+    }
+
     default void withdraw(Player player, double amount) {
         withdraw(player, "default", amount);
     }

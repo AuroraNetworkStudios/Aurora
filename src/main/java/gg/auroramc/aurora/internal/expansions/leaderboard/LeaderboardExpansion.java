@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.internal.expansions.leaderboard;
 
+import gg.auroramc.aurora.api.leaderboard.Leaderboards;
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.AuroraAPI;
@@ -25,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 
-public class LeaderboardExpansion implements AuroraExpansion, Listener {
+public class LeaderboardExpansion implements AuroraExpansion, Leaderboards, Listener {
     private final Map<UUID, Object> updateLocks = Maps.newConcurrentMap();
     private final Map<String, List<LbEntry>> boards = Maps.newConcurrentMap();
     private final Map<String, LbDescriptor> descriptors = Maps.newConcurrentMap();

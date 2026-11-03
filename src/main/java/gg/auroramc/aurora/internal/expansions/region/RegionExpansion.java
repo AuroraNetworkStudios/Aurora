@@ -1,5 +1,6 @@
 package gg.auroramc.aurora.internal.expansions.region;
 
+import gg.auroramc.aurora.api.region.RegionManager;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.internal.expansions.AuroraExpansion;
 import org.bukkit.Bukkit;
@@ -8,7 +9,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.persistence.PersistentDataType;
 
-public class RegionExpansion implements AuroraExpansion {
+public class RegionExpansion implements AuroraExpansion, RegionManager {
     private NamespacedKey createKey(Block block) {
         var loc = Integer.toHexString(block.getLocation().hashCode());
         return new NamespacedKey(Aurora.getInstance(), loc);
