@@ -6,13 +6,13 @@ CREATE TABLE IF NOT EXISTS `%user_table%`
     data        MEDIUMTEXT,
     UNIQUE KEY unique_player_holder (player_uuid, holder),
     INDEX idx_player_uuid (player_uuid)
-) CHARACTER SET utf8;
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `%sync_table%`
 (
     player_uuid VARCHAR(36) NOT NULL PRIMARY KEY,
     created     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
-) CHARACTER SET utf8;
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `%leaderboard_table%`
 (
@@ -23,4 +23,4 @@ CREATE TABLE IF NOT EXISTS `%leaderboard_table%`
     value        DOUBLE DEFAULT 0.0,
     UNIQUE KEY unique_player_board (player_uuid, board),
     INDEX idx_board_value (board, value)
-) CHARACTER SET utf8;
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

@@ -14,6 +14,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -82,14 +83,26 @@ public class YamlStorage implements UserStorage {
     @Override
     public PendingSave prepareSave(AuroraUser user, SaveReason reason) {
         var uuid = user.getUniqueId();
+        // The whole file is written, so every holder counts as saved. A change made meanwhile marks it again.
+        var taken = new ArrayList<UserDataHolder>();
         String data;
         try {
-            data = user.serializeToString();
+            synchronized (user.getSerializeLock()) {
+                for (var holder : user.getDataHolders()) {
+                    if (holder.clearDirty()) taken.add(holder);
+                }
+                data = user.serializeToString();
+            }
         } catch (Exception e) {
+            taken.forEach(holder -> holder.setDirty(true));
             Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
             return () -> false;
         }
-        return () -> write(uuid, data);
+        return () -> {
+            if (write(uuid, data)) return true;
+            taken.forEach(holder -> holder.setDirty(true));
+            return false;
+        };
     }
 
     private synchronized boolean write(UUID uuid, String data) {

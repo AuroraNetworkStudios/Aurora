@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class UserDataHolder implements DataHolder {
     protected AtomicReference<UUID> uuid = new AtomicReference<>();
+    // Set it AFTER changing the data, never before: a save clears it when it takes the data, so a mark made before a
+    // change that lands after the save took the data would be lost along with the change.
     protected final AtomicBoolean dirty = new AtomicBoolean(false);
     // The user this data belongs to, which isn't always the one in the cache (like a player loaded to be edited offline)
     private volatile AuroraUser owner;
@@ -51,5 +53,14 @@ public abstract class UserDataHolder implements DataHolder {
 
     public void setDirty(boolean dirty) {
         this.dirty.set(dirty);
+    }
+
+    /**
+     * Clears the dirty flag, for storages taking the data to save it.
+     *
+     * @return whether it was dirty
+     */
+    public boolean clearDirty() {
+        return dirty.getAndSet(false);
     }
 }

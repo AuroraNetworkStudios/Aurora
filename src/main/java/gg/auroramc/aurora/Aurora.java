@@ -45,6 +45,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class Aurora extends JavaPlugin implements Listener {
 
@@ -72,6 +76,19 @@ public final class Aurora extends JavaPlugin implements Listener {
     private static LocalizationProvider localizationProvider;
     @Getter
     private static boolean disabling = false;
+    // Loading, editing and saving player data. Not the JVM's common pool, so a slow database doesn't hold up every
+    // plugin that uses it, and other plugins' tasks don't hold up player data.
+    @Getter
+    private static final ExecutorService storageExecutor = Executors.newFixedThreadPool(8, new ThreadFactory() {
+        private final AtomicInteger count = new AtomicInteger();
+
+        @Override
+        public Thread newThread(Runnable runnable) {
+            var thread = new Thread(runnable, "Aurora Storage #" + count.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        }
+    });
 
     private static final AuroraLogger l = new AuroraLogger();
 
@@ -172,6 +189,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         disabling = true;
         userManager.stopTasksAndSaveAllData(true);
         expansionManager.getExpansion(LeaderboardExpansion.class).dispose();
+        storageExecutor.shutdown();
     }
 
     private void setupExpansions() {

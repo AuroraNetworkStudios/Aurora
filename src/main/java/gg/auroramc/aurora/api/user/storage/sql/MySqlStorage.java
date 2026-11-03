@@ -196,30 +196,57 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         var uuid = user.getUniqueId();
         // Holder id to its data
         var rows = new LinkedHashMap<String, String>();
+        var taken = new ArrayList<UserDataHolder>();
         try {
             synchronized (user.getSerializeLock()) {
-                for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
+                for (var holder : user.getDataHolders()) {
+                    // Before serializing it, so a change made meanwhile marks it again and is saved next time
+                    if (!holder.clearDirty()) continue;
+                    taken.add(holder);
                     var data = new YamlConfiguration();
                     holder.serializeInto(data);
                     rows.put(holder.getId().toString(), data.saveToString());
                 }
             }
         } catch (Exception e) {
+            taken.forEach(holder -> holder.setDirty(true));
             Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
             return () -> false;
         }
-        return () -> write(uuid, rows, reason);
+        return () -> {
+            if (write(uuid, rows, reason)) return true;
+            taken.forEach(holder -> holder.setDirty(true));
+            return false;
+        };
     }
 
+    private static final int WRITE_ATTEMPTS = 3;
+
     private boolean write(UUID uuid, Map<String, String> rows, SaveReason reason) {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                writeOnce(uuid, rows, reason);
+                return true;
+            } catch (Exception e) {
+                // Saves of different players at the same time can deadlock in MySQL, it asks to just try again
+                if (isDeadlock(e) && attempt < WRITE_ATTEMPTS) {
+                    sleepQuietly(20L * attempt);
+                    continue;
+                }
+                Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
+                return false;
+            }
+        }
+    }
+
+    private void writeOnce(UUID uuid, Map<String, String> rows, SaveReason reason) throws SQLException {
         String saveQuery = "INSERT INTO " + tableName + " (player_uuid, holder, data) VALUES (?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE data=?;";
 
-        try {
-            final var start = System.nanoTime();
-            try (Connection connection = connection()) {
-                connection.setAutoCommit(false);
-
+        final var start = System.nanoTime();
+        try (Connection connection = connection()) {
+            connection.setAutoCommit(false);
+            try {
                 try (PreparedStatement statement = connection.prepareStatement(saveQuery)) {
                     for (var row : rows.entrySet()) {
                         statement.setString(1, uuid.toString());
@@ -239,12 +266,32 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 }
 
                 connection.commit();
+            } catch (SQLException e) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+                throw e;
+            }
+        }
+    }
 
+    private static boolean isDeadlock(Throwable e) {
+        for (var cause = e; cause != null; cause = cause.getCause()) {
+            // 40001 is a deadlock or a lock wait timeout that was rolled back, 1213 is MySQL's deadlock error
+            if (cause instanceof SQLException sql && ("40001".equals(sql.getSQLState()) || sql.getErrorCode() == 1213)) {
                 return true;
             }
-        } catch (Exception e) {
-            Aurora.logger().severe("Failed to save user data for player: " + uuid + " error: " + e);
-            return false;
+        }
+        return false;
+    }
+
+    private static void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -253,6 +300,8 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         String saveQuery = "INSERT INTO " + tableName + " (player_uuid, holder, data) VALUES (?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE data=?;";
 
+        // Marked again if the save fails
+        var taken = new ArrayList<UserDataHolder>();
         try (Connection connection = connection()) {
             connection.setAutoCommit(false);
 
@@ -263,7 +312,9 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 for (var user : users) {
                     var uuid = user.getUniqueId();
                     synchronized (user.getSerializeLock()) {
-                        for (var holder : user.getDataHolders().stream().filter(UserDataHolder::isDirty).toList()) {
+                        for (var holder : user.getDataHolders()) {
+                            if (!holder.clearDirty()) continue;
+                            taken.add(holder);
                             var data = new YamlConfiguration();
                             holder.serializeInto(data);
                             var serializedData = data.saveToString();
@@ -291,7 +342,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
             }
 
             if (reason == SaveReason.QUIT) {
-                String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=? OR created < NOW() - INTERVAL 2 DAY;";
+                String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=?;";
 
                 try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
                     for (var user : users) {
@@ -305,6 +356,7 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
             connection.commit();
             return users.size();
         } catch (Exception e) {
+            taken.forEach(holder -> holder.setDirty(true));
             Aurora.logger().severe("Failed to save user data for players.");
             e.printStackTrace();
             return 0;
@@ -343,16 +395,22 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
         }
     }
 
-    private void removeSyncFlag(UUID uuid, Connection connection) {
-        String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=? OR created < NOW() - INTERVAL 2 DAY;";
+    // Part of the quit save's transaction: if it fails, MySQL may have rolled back the whole save, so it has to fail too
+    private void removeSyncFlag(UUID uuid, Connection connection) throws SQLException {
+        String deleteQuery = "DELETE FROM " + syncTableName + " WHERE player_uuid=?;";
 
-        try {
-            try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
-                statement.setString(1, uuid.toString());
-                statement.executeUpdate();
-            }
+        try (PreparedStatement statement = connection.prepareStatement(deleteQuery)) {
+            statement.setString(1, uuid.toString());
+            statement.executeUpdate();
+        }
+    }
+
+    // Flags older than 2 days are ignored anyway, they are left behind by servers that crashed
+    private void removeOldSyncFlags(Connection connection) {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM " + syncTableName + " WHERE created < NOW() - INTERVAL 2 DAY;");
         } catch (SQLException e) {
-            Aurora.logger().warning("Failed to remove sync flag for player: " + uuid);
+            Aurora.logger().warning("Failed to remove old sync flags: " + e.getMessage());
         }
     }
 
@@ -394,6 +452,46 @@ public class MySqlStorage implements UserStorage, LeaderboardStorage {
                 for (var schema : getTableSchema()) {
                     statement.execute(schema);
                 }
+            }
+            try {
+                convertToUtf8mb4(connection);
+            } catch (SQLException e) {
+                // Aurora works without it, only data with 4 byte characters (like emojis) can't be saved
+                Aurora.logger().warning("Failed to convert the tables to utf8mb4, player data with emojis or other 4 byte characters can't be saved until they are. "
+                        + "You can do it yourself: ALTER TABLE <table> CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; for "
+                        + tableName + ", " + syncTableName + " and " + leaderboardTableName + ". Error: " + e.getMessage());
+            }
+            removeOldSyncFlags(connection);
+        }
+    }
+
+    // Tables created before 3.0 use utf8 (3 bytes), saving data with emojis or other 4 byte characters fails there
+    private void convertToUtf8mb4(Connection connection) throws SQLException {
+        String query = "SELECT TABLE_NAME FROM information_schema.TABLES " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (?, ?, ?) AND TABLE_COLLATION NOT LIKE 'utf8mb4\\_%'";
+        var tables = new ArrayList<String>();
+        try (PreparedStatement ps = connection.prepareStatement(query)) {
+            ps.setString(1, tableName);
+            ps.setString(2, syncTableName);
+            ps.setString(3, leaderboardTableName);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) tables.add(rs.getString(1));
+            }
+        }
+        if (tables.isEmpty()) return;
+        try (Statement statement = connection.createStatement()) {
+            // If another server is using a table, give up quickly instead of waiting (the default is a year), every
+            // query on that table would queue up behind this one meanwhile
+            statement.execute("SET SESSION lock_wait_timeout = 10");
+            try {
+                for (var table : tables) {
+                    Aurora.logger().info("Converting the table " + table + " to utf8mb4, this happens once and can take a while on big tables...");
+                    statement.execute("ALTER TABLE `" + table + "` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                    Aurora.logger().info("Converted the table " + table + " to utf8mb4");
+                }
+            } finally {
+                // The connection goes back to the pool
+                statement.execute("SET SESSION lock_wait_timeout = DEFAULT");
             }
         }
     }

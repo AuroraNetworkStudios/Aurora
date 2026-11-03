@@ -29,6 +29,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -104,7 +105,7 @@ public class UserManager implements Listener {
         migrator.markMigrating();
         finishEdits();
 
-        return CompletableFuture.supplyAsync(() -> {
+        return supplyAsync(() -> {
             // No write gets between saving everyone and copying the storage
             writes.writeLock().lock();
             try {
@@ -336,6 +337,24 @@ public class UserManager implements Listener {
         }
     }
 
+    // On Aurora's storage threads, see Aurora#getStorageExecutor
+    // After shutting down, it fails instead of throwing at the caller
+    private static CompletableFuture<Void> runAsync(Runnable task) {
+        try {
+            return CompletableFuture.runAsync(task, Aurora.getStorageExecutor());
+        } catch (RejectedExecutionException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    private static <T> CompletableFuture<T> supplyAsync(Supplier<T> task) {
+        try {
+            return CompletableFuture.supplyAsync(task, Aurora.getStorageExecutor());
+        } catch (RejectedExecutionException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
     private Object getPlayerLock(UUID playerId) {
         return playerLocks[Math.floorMod(playerId.hashCode(), playerLocks.length)];
     }
@@ -370,7 +389,7 @@ public class UserManager implements Listener {
      */
     public CompletableFuture<Boolean> editUser(UUID uuid, Predicate<AuroraUser> edit) {
         var result = new CompletableFuture<Boolean>();
-        CompletableFuture.runAsync(() -> {
+        runAsync(() -> {
             synchronized (getPlayerLock(uuid)) {
                 // Their data is being moved to another storage, or saved for shutting down
                 if (stopping || migrator.isMigrating()) {
@@ -588,7 +607,7 @@ public class UserManager implements Listener {
     }
 
     private void loadUser(UUID uuid, int attempt) {
-        CompletableFuture.runAsync(() -> {
+        runAsync(() -> {
             synchronized (getPlayerLock(uuid)) {
                 var cached = cache.getIfPresent(uuid);
                 // Joined again before their quit was handled, their session just goes on
@@ -710,14 +729,15 @@ public class UserManager implements Listener {
      * @param uuid player's uuid to load data for
      */
     public CompletableFuture<AuroraUser> loadUserFromStorage(UUID uuid) {
-        return CompletableFuture.supplyAsync(() -> {
+        return supplyAsync(() -> {
             var edited = offlineCache.getIfPresent(uuid);
             return edited != null ? edited : storage.loadUser(uuid, dataHolders);
-        });
+        // Callbacks run off the storage threads, one waiting for another storage task can't starve them
+        }).thenApplyAsync(Function.identity());
     }
 
     public void purgeUserData(UUID uuid) {
-        CompletableFuture.runAsync(() -> {
+        runAsync(() -> {
             // After a write of theirs that's running, so it can't bring the data back. The storage is purged under their
             // player lock, so an edit can't load the old data meanwhile.
             writes.readLock().lock();
@@ -799,7 +819,7 @@ public class UserManager implements Listener {
         if (user == null) {
             // Left before their data loaded, edits waiting for it are made to their saved data
             var uuid = player.getUniqueId();
-            CompletableFuture.runAsync(() -> {
+            runAsync(() -> {
                 synchronized (getPlayerLock(uuid)) {
                     if (Bukkit.getPlayer(uuid) == null) makePendingEditsOffline(uuid);
                 }
@@ -807,7 +827,7 @@ public class UserManager implements Listener {
             });
             return;
         }
-        CompletableFuture.runAsync(() -> {
+        runAsync(() -> {
             try {
                 if (user.isLoaded()) {
                     var lbm = Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class);
