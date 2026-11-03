@@ -60,20 +60,22 @@ public class AuroraAPI {
     /**
      * Get the default economy provider.
      *
-     * @return the default economy provider
+     * @return the default economy provider, or null if no economy plugin is installed
      */
     public static AuroraEconomy getDefaultEconomy() {
-        return Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getDefaultEconomy();
+        var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
+        return expansion == null ? null : expansion.getDefaultEconomy();
     }
 
     /**
      * Get an economy provider by its plugin name.
      *
      * @param providerPluginName the plugin name of the economy provider
-     * @return the economy provider
+     * @return the economy provider, or null if it isn't installed (or no economy plugin is)
      */
     public static AuroraEconomy getEconomy(String providerPluginName) {
-        return Aurora.getExpansionManager().getExpansion(EconomyExpansion.class).getEconomy(providerPluginName);
+        var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
+        return expansion == null || providerPluginName == null ? null : expansion.getEconomy(providerPluginName);
     }
 
     /**
