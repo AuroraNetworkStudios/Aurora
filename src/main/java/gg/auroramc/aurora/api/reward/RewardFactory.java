@@ -5,13 +5,13 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.util.NamespacedId;
 import org.bukkit.configuration.ConfigurationSection;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class RewardFactory {
-    private final Map<NamespacedId, Class<? extends Reward>> rewardTypes = Maps.newConcurrentMap();
+    private final Map<NamespacedId, Supplier<? extends Reward>> rewardTypes = Maps.newConcurrentMap();
 
     /**
      * Register a reward type.
@@ -22,7 +22,25 @@ public class RewardFactory {
      * @param clazz implementation of the reward type
      */
     public void registerRewardType(NamespacedId id, Class<? extends Reward> clazz) {
-        rewardTypes.put(id, clazz);
+        rewardTypes.put(id, () -> {
+            try {
+                return clazz.getDeclaredConstructor().newInstance();
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException(clazz.getSimpleName() + " needs a constructor without arguments");
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                throw new IllegalStateException(clazz.getSimpleName() + " failed to create: " + e.getCause(), e.getCause());
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException(clazz.getSimpleName() + " can't be created: " + e, e);
+            }
+        });
+    }
+
+    /**
+     * Register a reward type created by the supplier, for rewards that take arguments (like the shared ones in
+     * {@code api.reward.integration}, which take the plugin's own stat key).
+     */
+    public void registerRewardType(NamespacedId id, Supplier<? extends Reward> supplier) {
+        rewardTypes.put(id, supplier);
     }
 
     public Optional<Reward> createReward(ConfigurationSection args) {
@@ -31,17 +49,17 @@ public class RewardFactory {
         Reward reward;
 
         try {
-            var clazz = rewardTypes.get(type);
-            if (clazz == null) {
+            var supplier = rewardTypes.get(type);
+            if (supplier == null) {
                 Aurora.logger().warning("Failed to create reward of type " + type + ": Reward type not found");
                 return Optional.empty();
             }
-            reward = clazz.getDeclaredConstructor().newInstance();
+            reward = supplier.get();
             reward.init(args);
             return Optional.of(reward);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                 NoSuchMethodException e) {
-            Aurora.logger().warning("Failed to create reward of type " + type + ": " + e.getMessage());
+        } catch (RuntimeException | LinkageError e) {
+            // A bad reward is skipped, the others still load
+            Aurora.logger().warning("Failed to create reward of type " + type + ": " + e);
             return Optional.empty();
         }
     }
