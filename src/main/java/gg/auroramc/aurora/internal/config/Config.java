@@ -1,23 +1,18 @@
 package gg.auroramc.aurora.internal.config;
 
 import com.google.common.collect.Lists;
-import gg.auroramc.aurora.Aurora;
-import gg.auroramc.aurora.api.config.AuroraConfig;
 import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.io.File;
 import java.util.*;
 import java.util.function.Consumer;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Getter
-public class Config extends AuroraConfig {
+public class Config {
     private Boolean debug = false;
     private NumberFormatConfig numberFormat;
     private Integer userAutoSaveInMinutes = 30;
-    @Setter
     private String storageType = "yaml";
     private Boolean offlinePlayerCache = true;
     private BlockTrackerConfig blockTracker;
@@ -72,12 +67,8 @@ public class Config extends AuroraConfig {
     }
 
 
-    public Config() {
-        super(new File(Aurora.getInstance().getDataFolder(), "config.yml"));
-    }
-
-    @Override
-    protected List<Consumer<YamlConfiguration>> getMigrationSteps() {
+    // Steps by config-version, only ever appended, each sets config-version itself
+    public static List<Consumer<YamlConfiguration>> migrations() {
         return List.of(
                 (yaml) -> {
                     yaml.set("block-tracker.enabled", true);

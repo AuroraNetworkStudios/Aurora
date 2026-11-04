@@ -157,8 +157,8 @@ public class UserManager implements Listener {
                     } else {
                         Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(new SqliteLeaderboardStorage());
                     }
-                    Aurora.getLibConfig().setStorageType(newStorageId);
-                    Aurora.getLibConfig().saveChanges();
+                    // Only that line of the file changes
+                    Aurora.getLibConfigFile().set("storage-type", newStorageId);
                 }
 
                 // With whichever storage is used now

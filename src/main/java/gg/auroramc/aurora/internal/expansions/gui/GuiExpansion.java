@@ -70,8 +70,7 @@ public class GuiExpansion implements AuroraExpansion {
         if (files != null) {
             for (var file : files) {
                 if (file.getName().endsWith(".yml")) {
-                    var config = new GuiConfig(file);
-                    config.load();
+                    var config = GuiConfig.load(file);
                     var id = file.getName().replace(".yml", "");
                     if (!Pattern.compile("^[a-z0-9_]+$").matcher(id).matches()) {
                         Aurora.getInstance().getLogger().warning("Invalid gui id: " + id + ", Only lowercase letters, numbers, and underscores are allowed.");

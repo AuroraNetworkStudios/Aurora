@@ -13,6 +13,7 @@ import gg.auroramc.aurora.api.user.UserManager;
 import gg.auroramc.aurora.api.user.UserMetaHolder;
 import gg.auroramc.aurora.api.user.UserStashHolder;
 import gg.auroramc.aurora.internal.commands.CommandManager;
+import gg.auroramc.aurora.api.config.ConfigFile;
 import gg.auroramc.aurora.internal.config.Config;
 import gg.auroramc.aurora.internal.config.MessageConfig;
 import gg.auroramc.aurora.internal.expansions.economy.EconomyExpansion;
@@ -64,7 +65,7 @@ public final class Aurora extends JavaPlugin implements Listener {
     @Getter
     private static final MiniMessage miniMessage = MiniMessage.miniMessage();
     @Getter
-    private static Config libConfig;
+    private static ConfigFile<Config> libConfigFile;
     @Getter
     private static Map<Locale, MessageConfig> messageConfigs = new HashMap<>();
     @Getter
@@ -108,8 +109,8 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         saveDefaultConfig();
         instance = this;
-        libConfig = new Config();
-        libConfig.load();
+        libConfigFile = ConfigFile.builder(this, "config.yml", Config.class).migrations(Config.migrations()).build();
+        libConfigFile.get();
 
         var oldFile = new File(getDataFolder(), "messages.yml");
         if (oldFile.exists()) {
@@ -121,17 +122,15 @@ public final class Aurora extends JavaPlugin implements Listener {
 
         var locales = new ArrayList<Locale>();
 
-        for (var lang : libConfig.getSupportedLanguages()) {
+        for (var lang : getLibConfig().getSupportedLanguages()) {
             var locale = Locale.forLanguageTag(lang);
-            MessageConfig.saveDefault(lang);
-            var messageConfig = new MessageConfig(lang);
-            messageConfig.load();
+            var messageConfig = MessageConfig.load(lang);
             messageConfigs.put(locale, messageConfig);
             locales.add(locale);
         }
 
         languageProvider.setSupportedLocales(locales);
-        languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getLocale()));
+        languageProvider.setFallbackLocale(Locale.forLanguageTag(getLibConfig().getLocale()));
 
         expansionManager = new ExpansionManager();
         expansionManager.preloadExpansion(LeaderboardExpansion.class);
@@ -173,7 +172,7 @@ public final class Aurora extends JavaPlugin implements Listener {
         commandManager.reload();
 
         var metrics = new Metrics(this, 23780);
-        metrics.addCustomChart(new SimplePie("storage_type", () -> libConfig.getStorageType().equals("mysql") ? "mysql" : "yaml"));
+        metrics.addCustomChart(new SimplePie("storage_type", () -> getLibConfig().getStorageType().equals("mysql") ? "mysql" : "yaml"));
     }
 
     // Plugins built for an older Aurora fail with errors deep in their code, say which ones and why up front
@@ -198,6 +197,10 @@ public final class Aurora extends JavaPlugin implements Listener {
             }
         }
         return 0;
+    }
+
+    public static Config getLibConfig() {
+        return libConfigFile.get();
     }
 
     public static void runInSafeMode(Runnable runnable, String errorMessage) {
@@ -237,30 +240,27 @@ public final class Aurora extends JavaPlugin implements Listener {
             runInSafeMode(() -> expansionManager.loadExpansion(WorldGuardExpansion.class), "Failed to hook into WorldGuard.");
         }
 
-        if (libConfig.getBlockTracker().getEnabled()) {
+        if (getLibConfig().getBlockTracker().getEnabled()) {
             expansionManager.loadExpansion(RegionExpansion.class);
         }
     }
 
     public void reload() {
         // Reloading lib config is considered unsafe if storage options are changed
-        libConfig = new Config();
-        libConfig.load();
+        libConfigFile.reload();
 
         var locales = new ArrayList<Locale>();
 
-        for (var lang : libConfig.getSupportedLanguages()) {
+        for (var lang : getLibConfig().getSupportedLanguages()) {
             var locale = Locale.forLanguageTag(lang);
-            MessageConfig.saveDefault(lang);
-            var messageConfig = new MessageConfig(lang);
-            messageConfig.load();
+            var messageConfig = MessageConfig.load(lang);
             messageConfigs.put(locale, messageConfig);
             locales.add(locale);
         }
 
         if (languageProvider instanceof AuroraLanguageProvider) {
             languageProvider.setSupportedLocales(locales);
-            languageProvider.setFallbackLocale(Locale.forLanguageTag(libConfig.getLocale()));
+            languageProvider.setFallbackLocale(Locale.forLanguageTag(getLibConfig().getLocale()));
         }
 
         localizationProvider.clear();
@@ -274,17 +274,17 @@ public final class Aurora extends JavaPlugin implements Listener {
     }
 
     public static MessageConfig getMsg(Player player) {
-        if (libConfig.getUsePerPlayerLocale()) {
+        if (getLibConfig().getUsePerPlayerLocale()) {
             return messageConfigs.get(languageProvider.getPlayerLocale(player));
         }
-        return messageConfigs.get(Locale.forLanguageTag(libConfig.getLocale()));
+        return messageConfigs.get(Locale.forLanguageTag(getLibConfig().getLocale()));
     }
 
     public static MessageConfig getMsg(CommandSender sender) {
         if (sender instanceof Player player) {
             return getMsg(player);
         } else {
-            return messageConfigs.get(Locale.forLanguageTag(libConfig.getLocale()));
+            return messageConfigs.get(Locale.forLanguageTag(getLibConfig().getLocale()));
         }
     }
 }

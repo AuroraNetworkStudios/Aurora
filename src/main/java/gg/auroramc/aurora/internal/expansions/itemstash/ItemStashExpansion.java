@@ -42,9 +42,7 @@ public class ItemStashExpansion implements AuroraExpansion, Listener {
 
     @Override
     public void reload() {
-        Config.saveDefault();
-        config = new Config();
-        config.load();
+        config = Config.load();
     }
 
     public void open(Player player) {

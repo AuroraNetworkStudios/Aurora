@@ -1,13 +1,15 @@
 package gg.auroramc.aurora.internal.config;
 
 import gg.auroramc.aurora.Aurora;
-import gg.auroramc.aurora.api.config.AuroraConfig;
+import gg.auroramc.aurora.api.config.ConfigFile;
+import gg.auroramc.aurora.api.config.decorators.IgnoreField;
 import lombok.Getter;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +17,7 @@ import java.util.function.Consumer;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Getter
-public class MessageConfig extends AuroraConfig {
+public class MessageConfig {
     private String reloaded = "&aReloaded configuration!";
     private String dataNotLoadedYet = "&cData for this player hasn't loaded yet, try again later!";
     private String dataNotLoadedYetSelf = "&cYour data isn't loaded yet, please try again later!";
@@ -50,26 +52,39 @@ public class MessageConfig extends AuroraConfig {
     private String localeInvalid = "&cInvalid language code";
     private String localeChanged = "&cLocale changed to english.";
 
-    public MessageConfig(String language) {
-        super(new File(Aurora.getInstance().getDataFolder(), "messages_" + language + ".yml"), Map.of("language", language));
+    // Every key of the file, sections under "custom" flattened, for the localization provider
+    @IgnoreField
+    private Map<String, String> flat = Map.of();
+
+    // Kept across reloads, so a file broken while the server runs keeps the messages from before
+    private static final Map<String, ConfigFile<MessageConfig>> files = new ConcurrentHashMap<>();
+
+    /**
+     * Loads the language's messages, or reloads them if they were loaded before.
+     */
+    public static MessageConfig load(String language) {
+        var existing = files.get(language);
+        var file = existing != null ? existing : files.computeIfAbsent(language, k -> ConfigFile.builder(Aurora.getInstance(), "messages_" + language + ".yml", MessageConfig.class)
+                .bundled(hasResource("messages_" + language + ".yml") ? "messages_" + language + ".yml" : "messages_en.yml")
+                .migrations(migrations(language))
+                .build());
+        var config = existing != null ? file.reload() : file.get();
+        config.flat = flatten(file.getYaml());
+        return config;
     }
 
-    public static void saveDefault(String language) {
-        var file = new File(Aurora.getInstance().getDataFolder(), "messages_" + language + ".yml");
-        if (!file.exists()) {
-            try {
-                Aurora.getInstance().saveResource("messages_" + language + ".yml", false);
-            } catch (IllegalArgumentException e) {
-
-            }
+    private static boolean hasResource(String name) {
+        try (var in = Aurora.getInstance().getResource(name)) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
         }
     }
 
-    @Override
-    protected List<Consumer<YamlConfiguration>> getMigrationSteps(Map<String, Object> params) {
+    // Not versioned: it runs on every load and copies the keys missing from the file
+    private static List<Consumer<YamlConfiguration>> migrations(String language) {
         return List.of(
                 (yaml) -> {
-                    var language = (String) params.get("language");
 
                     try (var in = getInternalFile(language)) {
                         var original = YamlConfiguration.loadConfiguration(new InputStreamReader(in));
@@ -86,7 +101,7 @@ public class MessageConfig extends AuroraConfig {
         );
     }
 
-    private InputStream getInternalFile(String language) {
+    private static InputStream getInternalFile(String language) {
         var in = Aurora.getInstance().getResource("messages_" + language + ".yml");
         if (in == null) {
             return Aurora.getInstance().getResource("messages_en.yml");
@@ -95,15 +110,19 @@ public class MessageConfig extends AuroraConfig {
     }
 
     public Map<String, String> toFlatMap() {
+        return flat;
+    }
+
+    private static Map<String, String> flatten(YamlConfiguration yaml) {
         var map = new HashMap<String, String>();
 
-        for (var key : getRawConfig().getKeys(false)) {
+        for (var key : yaml.getKeys(false)) {
             if (key.equals("custom")) {
-                for (var customKey : getRawConfig().getConfigurationSection("custom").getKeys(true)) {
-                    map.put(customKey, getRawConfig().getString("custom." + customKey));
+                for (var customKey : yaml.getConfigurationSection("custom").getKeys(true)) {
+                    map.put(customKey, yaml.getString("custom." + customKey));
                 }
             } else {
-                map.put(key, getRawConfig().getString(key));
+                map.put(key, yaml.getString(key));
             }
 
         }

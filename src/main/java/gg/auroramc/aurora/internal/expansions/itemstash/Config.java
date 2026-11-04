@@ -1,16 +1,15 @@
 package gg.auroramc.aurora.internal.expansions.itemstash;
 
 import gg.auroramc.aurora.Aurora;
-import gg.auroramc.aurora.api.config.AuroraConfig;
+import gg.auroramc.aurora.api.config.ConfigFile;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import lombok.Getter;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
 @Getter
-public class Config extends AuroraConfig {
+public class Config {
     private Boolean notifyOnJoin = true;
     private List<String> commandAliases = List.of("stash", "itemstash");
     private List<Integer> stashArea;
@@ -38,13 +37,17 @@ public class Config extends AuroraConfig {
         public ItemConfig item;
     }
 
-    public Config() {
-        super(new File(Aurora.getInstance().getDataFolder(), "/itemstash.yml"));
-    }
+    // Kept across reloads, so a file broken while the server runs keeps the config from before
+    private static ConfigFile<Config> file;
 
-    public static void saveDefault() {
-        if (!new File(Aurora.getInstance().getDataFolder(), "/itemstash.yml").exists()) {
-            Aurora.getInstance().saveResource("itemstash.yml", false);
+    /**
+     * Loads itemstash.yml, or reloads it if it was loaded before.
+     */
+    public static synchronized Config load() {
+        if (file == null) {
+            file = ConfigFile.builder(Aurora.getInstance(), "itemstash.yml", Config.class).build();
+            return file.get();
         }
+        return file.reload();
     }
 }
