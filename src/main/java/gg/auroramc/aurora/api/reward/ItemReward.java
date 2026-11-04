@@ -1,7 +1,7 @@
 package gg.auroramc.aurora.api.reward;
 
 import gg.auroramc.aurora.Aurora;
-import gg.auroramc.aurora.api.config.ConfigManager;
+import gg.auroramc.aurora.api.config.ConfigLoader;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import gg.auroramc.aurora.api.menu.ItemBuilder;
 import gg.auroramc.aurora.api.message.Placeholder;
@@ -66,8 +66,7 @@ public class ItemReward extends NumberReward {
             Aurora.logger().warning("Item reward doesn't have a valid item configuration under the key 'item'!");
             return;
         }
-        itemConfig = new ItemConfig();
-        ConfigManager.load(itemConfig, config);
+        itemConfig = ConfigLoader.load(ItemConfig.class, "item reward at " + config.getCurrentPath(), config);
         if (args.contains("stash")) {
             stash = StashHandle.valueOf(args.getString("stash", "none").toUpperCase(Locale.ROOT));
         }

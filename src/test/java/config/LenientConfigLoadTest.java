@@ -1,6 +1,6 @@
 package config;
 
-import gg.auroramc.aurora.api.config.ConfigManager;
+import gg.auroramc.aurora.api.config.ConfigLoader;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ public class LenientConfigLoadTest {
     private static Config load(String yaml) throws Exception {
         var config = new YamlConfiguration();
         config.loadFromString(yaml);
-        return ConfigManager.load(new Config(), config);
+        return ConfigLoader.load(Config.class, "test", config);
     }
 
     @Test

@@ -1,11 +1,7 @@
-package gg.auroramc.aurora.api.config;
-
-import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.config.decorators.IgnoreField;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,9 +13,10 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Load and save YamlConfigurations in a Paper plugin
+ * Aurora 2.x's config loader (was {@code gg.auroramc.aurora.api.config.ConfigManager}), kept only so ConfigDiff can
+ * compare it with the new one. Unchanged apart from its name and package, and its logging.
  */
-public final class ConfigManager {
+public final class OldConfigLoader {
 
     /**
      * Loads the configuration values from a ConfigurationSection into the provided object.
@@ -253,7 +250,6 @@ public final class ConfigManager {
         return getPrimitive(type, section, key);
     }
 
-    @Nullable
     public static Object getPrimitive(Class<?> type, ConfigurationSection section, String key) {
         if (type == Integer.class || type == int.class) {
             return section.contains(key) || type == int.class ? section.getInt(key, -1) : null;
@@ -280,7 +276,6 @@ public final class ConfigManager {
      *
      * @return null if it can't be converted
      */
-    @Nullable
     private static Object convertElement(Class<?> type, Object value) {
         var boxed = box(type);
         if (boxed.isInstance(value)) return value;
@@ -514,7 +509,7 @@ public final class ConfigManager {
             // Save the YamlConfiguration to the file
             yaml.save(file);
         } catch (IOException e) {
-            Aurora.getPlugin(Aurora.class).getLogger().warning("Failed to save " + file.getAbsolutePath());
+            LOGGER.warning("Failed to save " + file.getAbsolutePath());
         }
     }
 

@@ -1,5 +1,4 @@
 import gg.auroramc.aurora.api.config.ConfigLoader;
-import gg.auroramc.aurora.api.config.ConfigManager;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -13,8 +12,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Compares the old config loader (ConfigManager) with the new one (ConfigLoader) on real config files, so converting a
- * plugin's config classes can't silently change what a server's files load to.
+ * Compares the old config loader (OldConfigLoader, next to this file) with the new one (ConfigLoader) on real config
+ * files, so converting a plugin's config classes can't silently change what a server's files load to.
  * <p>
  * usage: java -cp <Aurora jar>:<paper-api jar and its libraries>:<plugin jar> ConfigDiff.java <list file>
  * <p>
@@ -45,7 +44,7 @@ public class ConfigDiff {
             var yaml = reload(migrate(type, YamlConfiguration.loadConfiguration(file)));
             var problems = new ArrayList<String>();
 
-            var old = ConfigManager.load(newInstance(type), yaml);
+            var old = OldConfigLoader.load(newInstance(type), yaml);
             var fresh = ConfigLoader.load(type, file.getName(), List.of(yaml), problems::add);
             var diffs = new ArrayList<String>();
             compare("", dump(old), dump(fresh), diffs);
@@ -100,7 +99,11 @@ public class ConfigDiff {
     private static Object dump(Object value) {
         if (value == null) return null;
         if (value instanceof String || value instanceof Boolean || value instanceof Character || value instanceof Enum<?>) return value;
-        if (value instanceof Number n) return n.doubleValue() == Math.rint(n.doubleValue()) && !(n instanceof Double || n instanceof Float) ? n.longValue() : n.doubleValue();
+        // Whole numbers as longs, so an int and a long compare equal (a ternary would make both doubles)
+        if (value instanceof Number n) {
+            if (n instanceof Double || n instanceof Float) return n.doubleValue();
+            return n.longValue();
+        }
         if (value instanceof ConfigurationSection section) return dump(section.getValues(false));
         if (value instanceof Map<?, ?> map) {
             var tree = new TreeMap<String, Object>();

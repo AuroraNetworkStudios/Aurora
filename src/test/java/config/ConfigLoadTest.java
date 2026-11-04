@@ -1,6 +1,6 @@
 package config;
 
-import gg.auroramc.aurora.api.config.ConfigManager;
+import gg.auroramc.aurora.api.config.ConfigLoader;
 import gg.auroramc.aurora.api.config.decorators.IgnoreField;
 import gg.auroramc.aurora.api.config.premade.ItemConfig;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -77,9 +77,9 @@ public class ConfigLoadTest {
         private Integer ignore = -10;
         private Integer defaultValue = -10;
         private Integer shouldBeNullInteger;
-        private int shouldBeNegative1int;
+        private int missingInt = 7;
         private Double shouldBeNullDouble;
-        private double shouldBeNegative1double;
+        private double missingDouble = 7.5;
         private String shouldBeNullString;
         private Integer simpleInt;
         private Double simpleDouble;
@@ -132,7 +132,7 @@ public class ConfigLoadTest {
 
     @Test
     public void testComplexList() {
-        var config = ConfigManager.load(new Config(), yaml);
+        var config = ConfigLoader.load(Config.class, "test", yaml);
         assertEquals(2, config.items.size());
         assertEquals("diamond", config.items.get(0).getMaterial());
         assertEquals("emerald", config.items.get(1).getMaterial());
@@ -144,7 +144,7 @@ public class ConfigLoadTest {
 
     @Test
     public void testPrimitiveTypes() {
-        var config = ConfigManager.load(new Config(), yaml);
+        var config = ConfigLoader.load(Config.class, "test", yaml);
         assertEquals(10, config.simpleInt);
         assertEquals("ExampleName", config.simpleString);
         assertEquals(12.5, config.simpleDouble, 0);
@@ -152,9 +152,10 @@ public class ConfigLoadTest {
         assertEquals(1L, config.simpleLong);
         assertEquals(1.5F, config.simpleFloat);
         assertNull(config.shouldBeNullInteger);
-        assertEquals(-1, config.shouldBeNegative1int);
+        // The old loader gave -1 for a missing number, the new one keeps the field's default
+        assertEquals(7, config.missingInt);
         assertNull(config.shouldBeNullDouble);
-        assertEquals(-1, config.shouldBeNegative1double);
+        assertEquals(7.5, config.missingDouble);
         assertNull(config.shouldBeNullString);
         assertEquals(-10, config.ignore);
         assertEquals(-10, config.defaultValue);
@@ -162,14 +163,14 @@ public class ConfigLoadTest {
 
     @Test
     public void testNestedObjects() {
-        var config = ConfigManager.load(new Config(), yaml);
+        var config = ConfigLoader.load(Config.class, "test", yaml);
         assertEquals("Nested name", config.nestedObject.longNestedName);
         assertNull(config.nullNestedObject);
     }
 
     @Test
     public void testPrimitiveLists() {
-        var config = ConfigManager.load(new Config(), yaml);
+        var config = ConfigLoader.load(Config.class, "test", yaml);
         assertEquals(List.of("one", "two", "three"), config.listString);
         assertEquals(List.of(1, 2, 3), config.listInteger);
         assertEquals(List.of(1.5, 2.5, 3.5), config.listDouble);
@@ -180,7 +181,7 @@ public class ConfigLoadTest {
 
     @Test
     public void testMapClasses() {
-        var config = ConfigManager.load(new Config(), yaml);
+        var config = ConfigLoader.load(Config.class, "test", yaml);
 
         assertEquals("value1", config.mapClassList.get(0).key1);
         assertEquals("value2", config.mapClassList.get(0).key2);
@@ -191,7 +192,7 @@ public class ConfigLoadTest {
 
     @Test
     public void testMaps() {
-        var config = ConfigManager.load(new Config(), yaml);
+        var config = ConfigLoader.load(Config.class, "test", yaml);
 
         assertEquals("hello", config.tags.get("test-tag").getName());
 
