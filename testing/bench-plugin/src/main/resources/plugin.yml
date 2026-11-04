@@ -1,0 +1,10 @@
+name: AuroraBench
+version: '1.0'
+main: bench.BenchPlugin
+api-version: '26.2'
+depend: [Aurora]
+commands:
+  opbench:
+    permission: aurorabench.use
+folia-supported: true
+aurora-api: 3

@@ -1,0 +1,4 @@
+# Servers, downloads and node modules of testing/run.sh
+work/
+bench-plugin/build/
+bench-plugin/.gradle/
