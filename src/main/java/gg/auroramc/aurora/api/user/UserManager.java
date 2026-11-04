@@ -6,14 +6,14 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.events.user.AuroraUserLoadedEvent;
 import gg.auroramc.aurora.api.events.user.AuroraUserUnloadedEvent;
 import gg.auroramc.aurora.api.message.Text;
-import gg.auroramc.aurora.internal.user.migration.StorageMigrator;
-import gg.auroramc.aurora.internal.user.storage.LatencyMeasure;
 import gg.auroramc.aurora.api.user.storage.SaveReason;
 import gg.auroramc.aurora.api.user.storage.UserStorage;
+import gg.auroramc.aurora.internal.expansions.leaderboard.LeaderboardExpansion;
+import gg.auroramc.aurora.internal.expansions.leaderboard.storage.LeaderboardStorage;
+import gg.auroramc.aurora.internal.user.migration.StorageMigrator;
+import gg.auroramc.aurora.internal.user.storage.LatencyMeasure;
 import gg.auroramc.aurora.internal.user.storage.YamlStorage;
 import gg.auroramc.aurora.internal.user.storage.sql.MySqlStorage;
-import gg.auroramc.aurora.internal.expansions.leaderboard.LeaderboardExpansion;
-import gg.auroramc.aurora.internal.expansions.leaderboard.storage.sqlite.SqliteLeaderboardStorage;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -94,7 +94,6 @@ public class UserManager implements Listener {
     private record ToSave(AuroraUser user, SaveReason reason) {
     }
 
-
     public UserManager() {
         Bukkit.getPluginManager().registerEvents(this, Aurora.getInstance());
         Bukkit.getOnlinePlayers().forEach(player -> online.put(player.getUniqueId(), player));
@@ -152,11 +151,7 @@ public class UserManager implements Listener {
                 if (success) {
                     storage.dispose();
                     storage = newStorage;
-                    if (newStorage instanceof MySqlStorage mySqlStorage) {
-                        Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(mySqlStorage);
-                    } else {
-                        Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(new SqliteLeaderboardStorage());
-                    }
+                    Aurora.getExpansionManager().getExpansion(LeaderboardExpansion.class).setStorage(LeaderboardStorage.forUserStorage(newStorage));
                     // Only that line of the file changes
                     Aurora.getLibConfigFile().set("storage-type", newStorageId);
                 }

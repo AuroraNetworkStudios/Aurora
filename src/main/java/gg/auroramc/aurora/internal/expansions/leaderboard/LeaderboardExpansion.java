@@ -1,17 +1,15 @@
 package gg.auroramc.aurora.internal.expansions.leaderboard;
 
-import gg.auroramc.aurora.api.leaderboard.Leaderboards;
 import com.google.common.collect.Maps;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.AuroraAPI;
-import gg.auroramc.aurora.internal.expansions.AuroraExpansion;
-import gg.auroramc.aurora.internal.placeholder.PlaceholderHandlerRegistry;
-import gg.auroramc.aurora.api.user.AuroraUser;
-import gg.auroramc.aurora.internal.user.storage.sql.MySqlStorage;
 import gg.auroramc.aurora.api.leaderboard.LbEntry;
+import gg.auroramc.aurora.api.leaderboard.Leaderboards;
+import gg.auroramc.aurora.api.user.AuroraUser;
+import gg.auroramc.aurora.internal.expansions.AuroraExpansion;
 import gg.auroramc.aurora.internal.expansions.leaderboard.storage.BoardValue;
 import gg.auroramc.aurora.internal.expansions.leaderboard.storage.LeaderboardStorage;
-import gg.auroramc.aurora.internal.expansions.leaderboard.storage.sqlite.SqliteLeaderboardStorage;
+import gg.auroramc.aurora.internal.placeholder.PlaceholderHandlerRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,11 +18,10 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-
+import javax.annotation.Nullable;
 
 public class LeaderboardExpansion implements AuroraExpansion, Leaderboards, Listener {
     private final Map<UUID, Object> updateLocks = Maps.newConcurrentMap();
@@ -39,26 +36,22 @@ public class LeaderboardExpansion implements AuroraExpansion, Leaderboards, List
     }
 
     public void setStorage(LeaderboardStorage storage) {
-        this.storage.dispose();
+        // Swapped first, so a leaderboard task starting meanwhile doesn't get the closed one
+        var previous = this.storage;
         this.storage = storage;
+        previous.dispose();
     }
 
     @Override
     public void hook() {
-        if (Aurora.getLibConfig().getStorageType().equalsIgnoreCase("mysql")) {
-            storage = (MySqlStorage) Aurora.getUserManager().getStorage();
-        } else {
-            storage = new SqliteLeaderboardStorage();
-        }
+        storage = LeaderboardStorage.forUserStorage(Aurora.getUserManager().getStorage());
 
         PlaceholderHandlerRegistry.addHandler(new LbPlaceholderHandler(this));
-
 
         for (var board : descriptors.keySet()) {
             registerPreventPermission(board);
         }
         hooked = true;
-
 
         for (var board : descriptors.keySet()) {
             boards.putIfAbsent(board, List.of());
