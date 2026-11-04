@@ -1,6 +1,6 @@
 package gg.auroramc.aurora.internal.expansions.economy;
 
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import com.Zrips.CMI.CMI;
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.dependency.Dep;
@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EconomyExpansion implements AuroraExpansion {
-    private final Map<String, AuroraEconomy> economies = new ConcurrentHashMap<>();
+    private final Map<String, EconomyProvider> economies = new ConcurrentHashMap<>();
     private String defaultEconomy = null;
 
     @Override
@@ -95,27 +95,27 @@ public class EconomyExpansion implements AuroraExpansion {
             );
     }
 
-    public AuroraEconomy getEconomy(String economyPlugin) {
+    public EconomyProvider getEconomy(String economyPlugin) {
         return economies.get(economyPlugin);
     }
 
-    public AuroraEconomy getEconomy(Dep economyPlugin) {
+    public EconomyProvider getEconomy(Dep economyPlugin) {
         return economies.get(economyPlugin.getId());
     }
 
-    public AuroraEconomy getDefaultEconomy() {
+    public EconomyProvider getDefaultEconomy() {
         return economies.get(defaultEconomy);
     }
 
-    public AuroraEconomy getOrDefaultEconomy(String economyPlugin) {
+    public EconomyProvider getOrDefaultEconomy(String economyPlugin) {
         return economies.getOrDefault(economyPlugin, getDefaultEconomy());
     }
 
-    public void addEconomy(String economyPlugin, AuroraEconomy economy) {
+    public void addEconomy(String economyPlugin, EconomyProvider economy) {
         economies.put(economyPlugin, economy);
     }
 
-    public void addEconomy(String economyPlugin, AuroraEconomy economy, boolean isDefault) {
+    public void addEconomy(String economyPlugin, EconomyProvider economy, boolean isDefault) {
         economies.put(economyPlugin, economy);
         if (isDefault) {
             defaultEconomy = economyPlugin;

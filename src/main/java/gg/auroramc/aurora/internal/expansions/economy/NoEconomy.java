@@ -1,11 +1,11 @@
 package gg.auroramc.aurora.internal.expansions.economy;
 
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.entity.Player;
 
 // No economy plugin is installed: everyone has nothing, and nothing can be taken or given
-public final class NoEconomy implements AuroraEconomy {
+public final class NoEconomy implements EconomyProvider {
     public static final NoEconomy INSTANCE = new NoEconomy();
 
     private NoEconomy() {

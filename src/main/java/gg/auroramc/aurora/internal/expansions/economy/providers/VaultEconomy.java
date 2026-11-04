@@ -2,13 +2,13 @@ package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import net.milkbowl.vault.economy.Economy;
 
-public class VaultEconomy implements AuroraEconomy {
+public class VaultEconomy implements EconomyProvider {
     private volatile Economy economy;
     private boolean warnedMissing = false;
 

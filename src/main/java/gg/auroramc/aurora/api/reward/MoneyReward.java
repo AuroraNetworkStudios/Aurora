@@ -4,7 +4,7 @@ import gg.auroramc.aurora.Aurora;
 import gg.auroramc.aurora.api.AuroraAPI;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import gg.auroramc.aurora.internal.expansions.economy.EconomyExpansion;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -61,13 +61,13 @@ public class MoneyReward extends NumberReward {
     }
 
     // Null when there is no economy
-    private AuroraEconomy getEconomy() {
+    private EconomyProvider getEconomy() {
         var econ = AuroraAPI.getEconomy(economy);
         if (econ == null) econ = AuroraAPI.getEconomy();
         return econ.isAvailable() ? econ : null;
     }
 
-    private boolean isCurrencySupported(AuroraEconomy economy, String currency) {
+    private boolean isCurrencySupported(EconomyProvider economy, String currency) {
         return economy.supportsCurrency() && economy.validateCurrency(currency);
     }
 

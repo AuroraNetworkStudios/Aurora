@@ -10,7 +10,7 @@ import gg.auroramc.aurora.api.placeholder.PlaceholderHandler;
 import gg.auroramc.aurora.internal.placeholder.PlaceholderHandlerRegistry;
 import gg.auroramc.aurora.api.user.AuroraUser;
 import gg.auroramc.aurora.api.user.UserManager;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import gg.auroramc.aurora.api.leaderboard.Leaderboards;
 import gg.auroramc.aurora.api.region.RegionManager;
 import gg.auroramc.aurora.internal.expansions.economy.NoEconomy;
@@ -63,10 +63,10 @@ public class AuroraAPI {
     }
 
     /**
-     * The default economy, never null. Without an economy plugin it isn't {@link AuroraEconomy#isAvailable() available}:
+     * The default economy, never null. Without an economy plugin it isn't {@link EconomyProvider#isAvailable() available}:
      * balances are 0 and nothing can be taken or given.
      */
-    public static AuroraEconomy getEconomy() {
+    public static EconomyProvider getEconomy() {
         var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
         var economy = expansion == null ? null : expansion.getDefaultEconomy();
         return economy != null ? economy : NoEconomy.INSTANCE;
@@ -78,7 +78,7 @@ public class AuroraAPI {
      * @param providerPluginName the plugin name of the economy provider
      * @return the economy provider, or null if it isn't installed (or no economy plugin is)
      */
-    public static AuroraEconomy getEconomy(String providerPluginName) {
+    public static EconomyProvider getEconomy(String providerPluginName) {
         var expansion = Aurora.getExpansionManager().getExpansion(EconomyExpansion.class);
         return expansion == null || providerPluginName == null ? null : expansion.getEconomy(providerPluginName);
     }

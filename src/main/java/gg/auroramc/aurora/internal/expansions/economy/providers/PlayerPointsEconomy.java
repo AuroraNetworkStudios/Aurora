@@ -1,12 +1,12 @@
 package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.black_ixx.playerpoints.PlayerPoints;
 import org.black_ixx.playerpoints.PlayerPointsAPI;
 import org.bukkit.entity.Player;
 
-public class PlayerPointsEconomy implements AuroraEconomy {
+public class PlayerPointsEconomy implements EconomyProvider {
     private final PlayerPointsAPI playerPointsAPI;
 
     public PlayerPointsEconomy() {

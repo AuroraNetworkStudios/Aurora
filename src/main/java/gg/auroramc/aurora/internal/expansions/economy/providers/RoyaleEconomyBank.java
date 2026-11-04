@@ -1,11 +1,11 @@
 package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import me.qKing12.RoyaleEconomy.RoyaleEconomy;
 import org.bukkit.entity.Player;
 
-public class RoyaleEconomyBank implements AuroraEconomy {
+public class RoyaleEconomyBank implements EconomyProvider {
     @Override
     public void withdraw(Player player, String currency, double amount) {
         RoyaleEconomy.apiHandler.balance.removeBankBalance(player.getUniqueId().toString(), amount);

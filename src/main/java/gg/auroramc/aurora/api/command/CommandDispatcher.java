@@ -10,7 +10,7 @@ import gg.auroramc.aurora.api.message.ActionBar;
 import gg.auroramc.aurora.api.message.Placeholder;
 import gg.auroramc.aurora.api.message.Text;
 import gg.auroramc.aurora.api.util.ItemUtils;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import gg.auroramc.aurora.internal.expansions.economy.EconomyExpansion;
 import gg.auroramc.aurora.internal.expansions.gui.GuiExpansion;
 import gg.auroramc.aurora.internal.hooks.LuckPermsHook;
@@ -387,7 +387,7 @@ public class CommandDispatcher {
 
     @FunctionalInterface
     private interface EconomyAction {
-        boolean apply(AuroraEconomy economy, String currency, double amount);
+        boolean apply(EconomyProvider economy, String currency, double amount);
     }
 
     private static void giveItem(Player player, String input) {

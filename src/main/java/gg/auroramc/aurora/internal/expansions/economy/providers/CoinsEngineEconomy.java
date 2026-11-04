@@ -1,11 +1,11 @@
 package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.bukkit.entity.Player;
 import su.nightexpress.coinsengine.api.CoinsEngineAPI;
 
-public class CoinsEngineEconomy implements AuroraEconomy {
+public class CoinsEngineEconomy implements EconomyProvider {
     private String getCurrencyId(String currency) {
         return currency == null || currency.equals("default") ? "coins" : currency;
     }

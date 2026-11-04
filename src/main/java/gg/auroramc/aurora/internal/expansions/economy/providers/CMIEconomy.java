@@ -2,10 +2,10 @@ package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import com.Zrips.CMI.CMI;
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.bukkit.entity.Player;
 
-public class CMIEconomy implements AuroraEconomy {
+public class CMIEconomy implements EconomyProvider {
     @Override
     public void withdraw(Player player, String currency, double amount) {
         CMI.getInstance().getPlayerManager().getUser(player).withdraw(amount);

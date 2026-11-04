@@ -3,7 +3,7 @@ package gg.auroramc.aurora.api.economy;
 import gg.auroramc.aurora.api.util.ThreadSafety;
 import org.bukkit.entity.Player;
 
-public interface AuroraEconomy {
+public interface EconomyProvider {
     /**
      * False when no economy plugin is installed. Then balances are 0 and nothing can be taken or given.
      */

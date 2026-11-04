@@ -1,7 +1,7 @@
 package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -9,7 +9,7 @@ import su.nightexpress.excellenteconomy.api.ExcellentEconomyAPI;
 import su.nightexpress.excellenteconomy.api.currency.operation.NotificationTarget;
 import su.nightexpress.excellenteconomy.api.currency.operation.OperationContext;
 
-public class ExcellentEconomyEconomy implements AuroraEconomy {
+public class ExcellentEconomyEconomy implements EconomyProvider {
     private final ExcellentEconomyAPI api;
     private final OperationContext context = OperationContext.custom("Aurora")
             .silentFor(NotificationTarget.USER, NotificationTarget.EXECUTOR, NotificationTarget.CONSOLE_LOGGER);

@@ -2,10 +2,10 @@ package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import gg.auroramc.aurora.api.dependency.DependencyManager;
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.bukkit.entity.Player;
 
-public class EssentialsEconomy implements AuroraEconomy {
+public class EssentialsEconomy implements EconomyProvider {
     @Override
     public void withdraw(Player player, String currency, double amount) {
         DependencyManager.getEssentials().withdrawMoney(player, amount);

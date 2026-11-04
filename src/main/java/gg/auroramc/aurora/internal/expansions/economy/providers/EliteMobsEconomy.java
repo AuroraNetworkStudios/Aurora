@@ -2,10 +2,10 @@ package gg.auroramc.aurora.internal.expansions.economy.providers;
 
 import com.magmaguy.elitemobs.economy.EconomyHandler;
 import gg.auroramc.aurora.api.util.ThreadSafety;
-import gg.auroramc.aurora.api.economy.AuroraEconomy;
+import gg.auroramc.aurora.api.economy.EconomyProvider;
 import org.bukkit.entity.Player;
 
-public class EliteMobsEconomy implements AuroraEconomy {
+public class EliteMobsEconomy implements EconomyProvider {
     @Override
     public void withdraw(Player player, String currency, double amount) {
         EconomyHandler.subtractCurrency(player.getUniqueId(), amount);
