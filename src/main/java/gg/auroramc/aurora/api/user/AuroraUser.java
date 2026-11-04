@@ -11,6 +11,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,7 +83,9 @@ public class AuroraUser {
         }
     }
 
-    void loadFromUser(AuroraUser user) {
+    // For the user manager (internal.user.Sessions), not for plugins
+    @ApiStatus.Internal
+    public void loadFromUser(AuroraUser user) {
         synchronized (serializeLock) {
             this.configuration = user.configuration;
             this.dataHolderMap.clear();
