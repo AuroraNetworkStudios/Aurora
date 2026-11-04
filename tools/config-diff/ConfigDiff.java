@@ -40,7 +40,9 @@ public class ConfigDiff {
             var parts = line.split("\\s+");
             var type = Class.forName(parts[0]);
             var file = new File(parts[1]);
-            var yaml = migrate(type, YamlConfiguration.loadConfiguration(file));
+            // Read back like the server's next start does: a migration can set plain Java maps, which only become
+            // sections in the saved file (the old loader skipped those on the start that migrated)
+            var yaml = reload(migrate(type, YamlConfiguration.loadConfiguration(file)));
             var problems = new ArrayList<String>();
 
             var old = ConfigManager.load(newInstance(type), yaml);
@@ -54,7 +56,7 @@ public class ConfigDiff {
             for (var p : problems) System.out.println("PROBLEM  " + p);
 
             if (parts.length > 2) {
-                var defaults = migrate(type, YamlConfiguration.loadConfiguration(new File(parts[2])));
+                var defaults = reload(migrate(type, YamlConfiguration.loadConfiguration(new File(parts[2]))));
                 var layered = ConfigLoader.load(type, file.getName(), List.of(defaults, yaml), p -> {
                 });
                 var defaultsDiff = new ArrayList<String>();
@@ -80,6 +82,12 @@ public class ConfigDiff {
             System.out.println("MIGRATE  " + type.getSimpleName() + ": " + e);
         }
         return yaml;
+    }
+
+    private static YamlConfiguration reload(YamlConfiguration yaml) throws Exception {
+        var read = new YamlConfiguration();
+        read.loadFromString(yaml.saveToString());
+        return read;
     }
 
     private static Object newInstance(Class<?> type) throws Exception {
