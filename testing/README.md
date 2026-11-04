@@ -9,13 +9,13 @@ They aren't part of the build or CI.
 ## Running
 
 ```sh
-testing/run.sh <server jar> [single] [threads] [proxy]
+testing/run.sh <server jar> [single] [threads] [proxy] [crafting]
 ```
 
 - `<server jar>`: a Paper or Folia server jar, for example `paper-26.2-135.jar` or `folia-26.3-6.jar` from
   [papermc.io](https://papermc.io/downloads). Run it once per server type you release for.
 - The Aurora jar under test is `build/libs/Aurora-*.jar` (build it first: `./gradlew build`), or `AURORA_JAR=<path>`.
-- Without suite names, all three run. That takes about 30 minutes.
+- Without suite names, single, threads and proxy run. That takes about 30 minutes.
 
 It needs Docker (for MySQL), Node with npm, Java 25, Python 3, curl and perl. The first run downloads ViaVersion,
 ViaBackwards and Velocity (checked against fixed checksums) and mineflayer 4.39.0 into `testing/work/`, and builds the
@@ -42,6 +42,11 @@ zero. Each check prints `PASS` or `FAIL` with what it saw; a bot script that cra
 - **threads**: player events and rewards happen on the player's own thread (this is what fails on Folia when they
   don't), then `aurora dbmigrate` from YAML to MySQL.
 - **proxy**: two servers on one MySQL behind Velocity, players moving between them while their data changes.
+- **crafting** (only when named, with `CRAFTING_JAR=<AuroraCrafting jar>`): AuroraCrafting's recipe views with the test
+  recipes in `crafting/` (a group of three for every kind of workbench but the stonecutter, which has one recipe that the
+  others use as an ingredient). Every view shows its result and the amounts it gives and takes, clicking an
+  ingredient that has its own recipe shows that recipe and its back button comes back, and previous/next go through the
+  group. On Folia it needs 26.3 or newer, like AuroraCrafting.
 
 ## Layout
 

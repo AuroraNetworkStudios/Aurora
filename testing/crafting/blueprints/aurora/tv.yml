@@ -1,0 +1,20 @@
+recipes:
+  - id: tv_a1
+    workbench: default
+    result: "minecraft:beacon"
+    ingredients: ["minecraft:glass", "minecraft:glass", "minecraft:glass", "minecraft:glass", "minecraft:amethyst_shard", "minecraft:glass", "minecraft:obsidian", "minecraft:obsidian", "minecraft:obsidian"]
+    vanilla-options:
+      group: "tva"
+  - id: tv_a2
+    workbench: default
+    shapeless: true
+    result: "minecraft:conduit/3"
+    ingredients: ["minecraft:nautilus_shell", "minecraft:heart_of_the_sea", "minecraft:amethyst_shard/4"]
+    vanilla-options:
+      group: "tva"
+  - id: tv_a3
+    workbench: default
+    result: "minecraft:end_crystal"
+    ingredients: ["minecraft:glass", "minecraft:glass", "minecraft:glass", "minecraft:glass", "minecraft:ender_eye", "minecraft:glass", "minecraft:glass", "minecraft:ghast_tear", "minecraft:glass"]
+    vanilla-options:
+      group: "tva"

@@ -1,0 +1,17 @@
+recipes:
+  - id: tv_ct1
+    result: "minecraft:lodestone"
+    ingredients: ["minecraft:chiseled_stone_bricks", "minecraft:chiseled_stone_bricks", "minecraft:chiseled_stone_bricks", "minecraft:chiseled_stone_bricks", "minecraft:amethyst_shard/2", "minecraft:chiseled_stone_bricks", "minecraft:chiseled_stone_bricks", "minecraft:chiseled_stone_bricks", "minecraft:chiseled_stone_bricks"]
+    vanilla-options:
+      group: "tvct"
+  - id: tv_ct2
+    shapeless: true
+    result: "minecraft:target"
+    ingredients: ["minecraft:hay_block", "minecraft:redstone", "minecraft:amethyst_shard"]
+    vanilla-options:
+      group: "tvct"
+  - id: tv_ct3
+    result: "minecraft:lectern/2"
+    ingredients: ["minecraft:oak_slab", "minecraft:oak_slab", "minecraft:oak_slab", "", "minecraft:bookshelf", "", "", "minecraft:oak_slab", ""]
+    vanilla-options:
+      group: "tvct"

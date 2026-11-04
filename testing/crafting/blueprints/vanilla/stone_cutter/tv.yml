@@ -1,0 +1,4 @@
+recipes:
+  - id: tv_cut
+    input: "minecraft:calcite"
+    result: "minecraft:amethyst_shard/2"

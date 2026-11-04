@@ -1,0 +1,13 @@
+recipes:
+  - id: tv_ca1
+    input: "minecraft:amethyst_shard"
+    result: "minecraft:quartz"
+    group: "tvca"
+  - id: tv_ca2
+    input: "minecraft:tuff"
+    result: "minecraft:flint"
+    group: "tvca"
+  - id: tv_ca3
+    input: "minecraft:clay_ball"
+    result: "minecraft:brick"
+    group: "tvca"

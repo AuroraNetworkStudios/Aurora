@@ -1,11 +1,12 @@
 #!/bin/sh
-# Aurora's bot tests. usage: testing/run.sh <server jar> [single] [threads] [proxy]
-# Runs the given suites (all three by default) against build/libs/Aurora-*.jar (or $AURORA_JAR). See README.md.
+# Aurora's bot tests. usage: testing/run.sh <server jar> [single] [threads] [proxy] [crafting]
+# Runs the given suites (single, threads and proxy by default) against build/libs/Aurora-*.jar (or $AURORA_JAR).
+# The crafting suite also needs CRAFTING_JAR. See README.md.
 # Only one run per machine: the ports, the MySQL container and the process names are fixed.
 set -e
 T=$(cd "$(dirname "$0")" && pwd)
 A=$(dirname "$T")
-if [ ! -f "$1" ]; then echo "usage: testing/run.sh <server jar> [single] [threads] [proxy]"; exit 2; fi
+if [ ! -f "$1" ]; then echo "usage: testing/run.sh <server jar> [single] [threads] [proxy] [crafting]"; exit 2; fi
 SERVER_JAR=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 shift
 SUITES=${*:-single threads proxy}
@@ -18,6 +19,9 @@ if [ -z "$AURORA_JAR" ]; then
 fi
 # Absolute, the bench plugin's build resolves it from its own folder
 AURORA_JAR=$(cd "$(dirname "$AURORA_JAR")" && pwd)/$(basename "$AURORA_JAR")
+if [ -n "$CRAFTING_JAR" ] && [ -f "$CRAFTING_JAR" ]; then
+  CRAFTING_JAR=$(cd "$(dirname "$CRAFTING_JAR")" && pwd)/$(basename "$CRAFTING_JAR")
+fi
 echo "Testing $AURORA_JAR on $(basename "$SERVER_JAR")"
 export AURORA_TEST_WORK=$W
 export NODE_PATH=$W/node_modules
@@ -82,6 +86,8 @@ for n in a b; do
   # Peaceful: a bot that dies loses its open menu and its inventory
   printf 'server-ip=127.0.0.1\nserver-port=%s\nonline-mode=false\nmax-players=100\nspawn-protection=0\ndifficulty=peaceful\nspawn-monsters=false\nview-distance=4\nsimulation-distance=4\n' $port > "$S/server.properties"
   cp "$AURORA_JAR" "$S/plugins/Aurora.jar"
+  # Left behind by a crafting suite that was stopped
+  if [ -f "$S/plugins/AuroraCrafting.jar" ]; then mv "$S/plugins/AuroraCrafting.jar" "$W/AuroraCrafting-$n-$$.jar"; fi
   cp "$BENCH_JAR" "$DL/ViaVersion-5.12.2.jar" "$DL/ViaBackwards-5.12.2.jar" "$S/plugins/"
 done
 # The first start writes the configs, which are set up for the tests below (every time, it does no harm)
@@ -226,6 +232,27 @@ for suite in $SUITES; do
     "$B/stop.sh" >/dev/null 2>&1
     velocity off
     for n in a b; do edit 's/^offline-player-cache: .*/offline-player-cache: true/m' "$B/srv-$n/plugins/Aurora/config.yml"; done
+    ;;
+  crafting)
+    # AuroraCrafting's recipe views, with the test recipes in crafting/: ingredients lead to their recipes and back,
+    # previous/next go through the recipe's group. Only when asked for, and it needs CRAFTING_JAR.
+    echo "=== crafting recipe views"
+    if [ -z "$CRAFTING_JAR" ] || [ ! -f "$CRAFTING_JAR" ]; then
+      echo "FAIL  the crafting suite needs CRAFTING_JAR=<AuroraCrafting jar>"; FAILED=$((FAILED + 1)); continue
+    fi
+    velocity off
+    "$B/stop.sh" >/dev/null 2>&1; "$B/reset.sh" >/dev/null
+    python3 "$B/cfg.py" "$B/srv-a/plugins/Aurora/config.yml" storage=yaml
+    CP=$B/srv-a/plugins
+    [ -d "$CP/AuroraCrafting" ] && mv "$CP/AuroraCrafting" "$W/old-crafting-$$"
+    mkdir -p "$CP/AuroraCrafting" && cp -R "$T/crafting/blueprints" "$CP/AuroraCrafting/"
+    cp "$CRAFTING_JAR" "$CP/AuroraCrafting.jar"
+    "$B/start.sh" "$B/srv-a" a; wait_done "$B/srv-a"
+    bot env PREFIX=Rv node recipeviews.js
+    errs a
+    "$B/stop.sh" >/dev/null 2>&1
+    # The other suites run without it
+    mv "$CP/AuroraCrafting.jar" "$W/AuroraCrafting-$$.jar"
     ;;
   *) echo "unknown suite: $suite"; exit 2 ;;
   esac

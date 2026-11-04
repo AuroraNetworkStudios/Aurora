@@ -1,0 +1,19 @@
+recipes:
+  - id: tv_cl1
+    input: "minecraft:amethyst_shard"
+    result: "minecraft:prismarine_crystals"
+    fluid-level: 1
+    fluid: WATER_CAULDRON
+    group: "tvcl"
+  - id: tv_cl2
+    input: "minecraft:cobblestone/3"
+    result: "minecraft:magma_block"
+    fluid-level: 2
+    fluid: LAVA_CAULDRON
+    group: "tvcl"
+  - id: tv_cl3
+    input: "minecraft:snowball"
+    result: "minecraft:snow_block"
+    fluid-level: 3
+    fluid: POWDER_SNOW_CAULDRON
+    group: "tvcl"

@@ -1,0 +1,22 @@
+recipes:
+  - id: tv_st1
+    template: "minecraft:amethyst_shard"
+    base: "minecraft:iron_sword"
+    addition: "minecraft:diamond"
+    result: "minecraft:diamond_sword"
+    vanilla-options:
+      group: "tvst"
+  - id: tv_st2
+    template: "minecraft:amethyst_shard"
+    base: "minecraft:iron_axe"
+    addition: "minecraft:diamond"
+    result: "minecraft:diamond_axe"
+    vanilla-options:
+      group: "tvst"
+  - id: tv_st3
+    template: "minecraft:amethyst_shard"
+    base: "minecraft:iron_hoe"
+    addition: "minecraft:diamond"
+    result: "minecraft:diamond_hoe"
+    vanilla-options:
+      group: "tvst"

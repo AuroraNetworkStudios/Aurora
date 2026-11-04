@@ -1,0 +1,16 @@
+recipes:
+  - id: tv_br1
+    input: "minecraft:amethyst_shard"
+    ingredient: "minecraft:glowstone_dust"
+    result: "minecraft:honey_bottle"
+    group: "tvbr"
+  - id: tv_br2
+    input: "minecraft:glass_bottle"
+    ingredient: "minecraft:amethyst_shard"
+    result: "minecraft:experience_bottle"
+    group: "tvbr"
+  - id: tv_br3
+    input: "minecraft:glass_bottle"
+    ingredient: "minecraft:sugar"
+    result: "minecraft:dragon_breath"
+    group: "tvbr"

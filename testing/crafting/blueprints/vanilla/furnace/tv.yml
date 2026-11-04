@@ -1,0 +1,13 @@
+recipes:
+  - id: tv_fu1
+    input: "minecraft:amethyst_shard"
+    result: "minecraft:quartz"
+    group: "tvfu"
+  - id: tv_fu2
+    input: "minecraft:tuff/4"
+    result: "minecraft:flint"
+    group: "tvfu"
+  - id: tv_fu3
+    input: "minecraft:clay_ball"
+    result: "minecraft:brick"
+    group: "tvfu"
